@@ -62,6 +62,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/health", () => Results.Ok("healthy"));
 app.MapControllerRoute("default", "{controller=Dashboard}/{action=Index}/{id?}");
 
 // Seed de dados iniciais

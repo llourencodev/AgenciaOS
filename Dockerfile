@@ -19,6 +19,7 @@ RUN mkdir -p wwwroot/uploads wwwroot/brand
 
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV DOTNET_RUNNING_IN_CONTAINER=true
+ENV PORT=8080
 
 # Railway injeta $PORT — shell form expande a variável
-CMD dotnet AgenciaOS.dll --urls "http://0.0.0.0:$PORT"
+CMD dotnet AgenciaOS.dll --urls "http://0.0.0.0:${PORT:-8080}"
