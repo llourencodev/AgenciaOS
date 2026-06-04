@@ -59,31 +59,34 @@
                 <div class="card-header"><span class="card-title"><i class="bi bi-layout-sidebar me-2"></i>Estilo do Menu Lateral</span></div>
                 <div class="card-body">
                     <div class="row g-3 mb-4">
+                        <!-- Campo hidden que guarda o valor real -->
+                        <input type="hidden" name="SidebarClara" id="inputSidebarClara" value="@(Model.SidebarClara ? "true" : "false")" />
+
                         <div class="col-12">
                             <label class="form-label mb-2">Tema do Sidebar</label>
                             <div class="d-flex gap-3">
-                                <label class="flex-fill cursor-pointer" style="cursor:pointer;">
-                                    <input type="radio" asp-for="SidebarClara" value="false" class="d-none" id="temaDark" />
-                                    <div class="p-3 rounded border @(!Model.SidebarClara ? "border-primary" : "border-light")" style="transition:.2s;" onclick="document.getElementById('temaDark').checked=true;selecionarTema('dark')">
-                                        <div style="height:80px;border-radius:10px;background:linear-gradient(180deg,#0f0d22,#1a0a0e);display:flex;flex-direction:column;gap:6px;padding:10px;">
-                                            <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.15);width:70%;"></div>
-                                            <div style="height:8px;border-radius:4px;background:rgba(99,102,241,.6);width:55%;"></div>
-                                            <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.07);width:65%;"></div>
-                                        </div>
-                                        <div class="text-center mt-2 small fw-600 @(!Model.SidebarClara ? "text-primary" : "text-muted")">🌙 Escuro</div>
+                                <!-- ESCURO -->
+                                <div id="cardDark" onclick="selecionarTema('dark')"
+                                     class="flex-fill p-3 rounded border @(!Model.SidebarClara ? "border-primary shadow-sm" : "border-light")"
+                                     style="cursor:pointer;transition:all .2s;">
+                                    <div style="height:80px;border-radius:10px;background:linear-gradient(180deg,#0f0d22,#1a0a0e);display:flex;flex-direction:column;gap:6px;padding:10px;">
+                                        <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.15);width:70%;"></div>
+                                        <div style="height:8px;border-radius:4px;background:rgba(99,102,241,.6);width:55%;"></div>
+                                        <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.07);width:65%;"></div>
                                     </div>
-                                </label>
-                                <label class="flex-fill cursor-pointer" style="cursor:pointer;">
-                                    <input type="radio" asp-for="SidebarClara" value="true" class="d-none" id="temaLight" />
-                                    <div class="p-3 rounded border @(Model.SidebarClara ? "border-primary" : "border-light")" style="transition:.2s;" onclick="document.getElementById('temaLight').checked=true;selecionarTema('light')">
-                                        <div style="height:80px;border-radius:10px;background:#ffffff;border:1px solid #e8eaf2;display:flex;flex-direction:column;gap:6px;padding:10px;">
-                                            <div style="height:8px;border-radius:4px;background:#e2e8f0;width:70%;"></div>
-                                            <div style="height:8px;border-radius:4px;background:var(--primary);width:55%;opacity:.7;"></div>
-                                            <div style="height:8px;border-radius:4px;background:#e2e8f0;width:65%;"></div>
-                                        </div>
-                                        <div class="text-center mt-2 small fw-600 @(Model.SidebarClara ? "text-primary" : "text-muted")">☀️ Claro</div>
+                                    <div id="labelDark" class="text-center mt-2 small fw-700 @(!Model.SidebarClara ? "text-primary" : "text-muted")">🌙 Escuro</div>
+                                </div>
+                                <!-- CLARO -->
+                                <div id="cardLight" onclick="selecionarTema('light')"
+                                     class="flex-fill p-3 rounded border @(Model.SidebarClara ? "border-primary shadow-sm" : "border-light")"
+                                     style="cursor:pointer;transition:all .2s;">
+                                    <div style="height:80px;border-radius:10px;background:#ffffff;border:1px solid #e8eaf2;display:flex;flex-direction:column;gap:6px;padding:10px;">
+                                        <div style="height:8px;border-radius:4px;background:#e2e8f0;width:70%;"></div>
+                                        <div style="height:8px;border-radius:4px;background:#6366f1;width:55%;opacity:.6;"></div>
+                                        <div style="height:8px;border-radius:4px;background:#e2e8f0;width:65%;"></div>
                                     </div>
-                                </label>
+                                    <div id="labelLight" class="text-center mt-2 small fw-700 @(Model.SidebarClara ? "text-primary" : "text-muted")">☀️ Claro</div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-sm-6">
@@ -231,55 +234,67 @@
 
 @section Scripts {
 <script>
-// Sincroniza color picker ↔ input de texto
+// Sincroniza color picker ↔ input de texto (pelo name)
 function sync(el, campo) {
-    document.querySelectorAll(`[name="${campo}"]`).forEach(x => x.value = el.value);
+    document.querySelectorAll(`[name="${campo}"]`).forEach(x => { if (x !== el) x.value = el.value; });
+}
+
+// Detecta se uma cor hex é clara
+function isClaroHex(hex) {
+    hex = hex.replace('#','');
+    if (hex.length !== 6) return false;
+    const r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+    return (r*299 + g*587 + b*114) / 1000 > 128;
 }
 
 // Selecionar tema claro/escuro visualmente
 function selecionarTema(tema) {
-    const isDark = tema === 'dark';
-    document.querySelectorAll('[name="SidebarClara"]').forEach(r => {
-        r.checked = (r.value === 'false' && isDark) || (r.value === 'true' && !isDark);
-    });
-    atualizarPvSidebar();
+    const isClaro = tema === 'light';
+    document.getElementById('inputSidebarClara').value = isClaro ? 'true' : 'false';
+
+    // Visual dos cards
+    document.getElementById('cardDark').className  = 'flex-fill p-3 rounded border ' + (!isClaro ? 'border-primary shadow-sm' : 'border-light');
+    document.getElementById('cardLight').className = 'flex-fill p-3 rounded border ' + (isClaro  ? 'border-primary shadow-sm' : 'border-light');
+    document.getElementById('labelDark').className  = 'text-center mt-2 small fw-700 ' + (!isClaro ? 'text-primary' : 'text-muted');
+    document.getElementById('labelLight').className = 'text-center mt-2 small fw-700 ' + (isClaro  ? 'text-primary' : 'text-muted');
+
+    // Preview
+    const sidebarVal = document.querySelector('[name="CorSidebar"]')?.value || '#ffffff';
+    atualizarPreviewTexto(isClaro || isClaroHex(sidebarVal));
+}
+
+// Atualiza textos do preview conforme claridade
+function atualizarPreviewTexto(isClaro) {
+    document.getElementById('pvNome').style.color = isClaro ? '#0f172a' : 'white';
+    document.getElementById('pvTag').style.color  = isClaro ? '#94a3b8' : 'rgba(255,255,255,.35)';
+    document.getElementById('pvSidebar').style.borderRight = isClaro ? '1.5px solid #e8eaf2' : 'none';
 }
 
 // Aplicar template completo
 function aplicarTemplate(clara, primaria, sidebar, gradIcone, gradBanner, texto) {
-    // Atualizar campos
+    // Campos de cor
     document.querySelectorAll('[name="CorPrimaria"]').forEach(e => e.value = primaria);
-    document.querySelectorAll('[name="CorPrimariaDark"]').forEach(e => e.value = primaria + 'cc');
+    document.querySelectorAll('[name="CorPrimariaDark"]').forEach(e => e.value = primaria);
     document.querySelectorAll('[name="CorSidebar"]').forEach(e => e.value = sidebar);
     document.querySelectorAll('[name="CorTextoSobrePrimaria"]').forEach(e => e.value = texto);
-    document.getElementById('inpGradIcone').value = gradIcone;
-    document.getElementById('inpGradBanner').value = gradBanner;
-    document.querySelectorAll('[name="SidebarClara"]').forEach(r => {
-        r.checked = (clara && r.value==='true') || (!clara && r.value==='false');
-    });
 
-    // Atualizar preview
-    document.getElementById('pvSidebar').style.background = sidebar;
-    document.getElementById('pvBanner').style.background = gradBanner;
-    document.getElementById('pvLogo').style.background = gradIcone;
-    document.getElementById('pvIconAtivo').style.background = gradIcone;
-    document.getElementById('pvBtn').style.background = gradIcone;
-    document.getElementById('pvBtn').style.color = texto;
+    // Gradientes
+    document.getElementById('inpGradIcone').value = gradIcone;
     document.getElementById('pvGradIcone').style.background = gradIcone;
+    document.getElementById('inpGradBanner').value = gradBanner;
     document.getElementById('pvGradBanner').style.background = gradBanner;
 
-    // Cor do texto do preview baseado no brilho da cor de fundo
-    function isClaroColor(hex) {
-        hex = hex.replace('#','');
-        const r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
-        return (r*299 + g*587 + b*114) / 1000 > 128;
-    }
-    const isLight = clara || isClaroColor(sidebar);
-    document.getElementById('pvNome').style.color = isLight ? '#0f172a' : 'white';
-    document.getElementById('pvTag').style.color  = isLight ? '#94a3b8' : 'rgba(255,255,255,.35)';
+    // Tema
+    selecionarTema(clara ? 'light' : 'dark');
 
-    // Atualizar borda do sidebar no preview
-    document.getElementById('pvSidebar').style.borderRight = isLight ? '1.5px solid #e8eaf2' : 'none';
+    // Preview sidebar
+    document.getElementById('pvSidebar').style.background = sidebar;
+    document.getElementById('pvBanner').style.background  = gradBanner;
+    document.getElementById('pvLogo').style.background    = gradIcone;
+    document.getElementById('pvIconAtivo').style.background = gradIcone;
+    document.getElementById('pvBtn').style.background     = gradIcone;
+    document.getElementById('pvBtn').style.color          = texto;
+    atualizarPreviewTexto(clara || isClaroHex(sidebar));
 }
 
 // Sincronizar inputs de texto com color pickers

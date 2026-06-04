@@ -29,7 +29,7 @@ public class ConfiguracaoController(ApplicationDbContext db, IWebHostEnvironment
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Salvar(Configuracao model, IFormFile? logoFile, IFormFile? logoMarcaFile)
+    public async Task<IActionResult> Salvar(Configuracao model, IFormFile? logoFile, IFormFile? logoMarcaFile, string? SidebarClara)
     {
         var config = await ObterConfig();
 
@@ -44,7 +44,7 @@ public class ConfiguracaoController(ApplicationDbContext db, IWebHostEnvironment
         config.GradienteSaudacao = model.GradienteSaudacao;
         config.IconesMonocromados = model.IconesMonocromados;
         config.CorIconesInativos  = model.CorIconesInativos;
-        config.SidebarClara      = model.SidebarClara;
+        config.SidebarClara      = SidebarClara == "true";
         config.TamanhoLogo       = model.TamanhoLogo;
         config.AtualizadoEm      = DateTime.UtcNow;
 
