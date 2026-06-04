@@ -6,3 +6,4 @@ appsettings.Development.json
 wwwroot/uploads/
 .git/
 .claude/
+**/*.md

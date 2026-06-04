@@ -1,6 +1,7 @@
 using AgenciaOS.Data;
 using AgenciaOS.Models;
 using AgenciaOS.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,13 +43,20 @@ builder.Services.AddScoped<NotificacaoService>();
 
 var app = builder.Build();
 
+// Proxy headers (Railway / reverse proxy)
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Não redirecionar HTTPS no Railway (proxy cuida disso)
+if (app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
