@@ -1,0 +1,174 @@
+@model AgenciaOS.Models.Contrato
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Novo Contrato";
+    var clientes      = ViewData["Clientes"] as IEnumerable<Cliente> ?? [];
+    var clienteIdPre  = ViewData["ClienteIdPre"];
+}
+
+<div class="page-header">
+    <div><h1>Novo Contrato</h1></div>
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Voltar</a>
+</div>
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Conteúdo do Contrato</span></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Título *</label>
+                        <input asp-for="Titulo" class="form-control" required placeholder="Ex: Contrato de Prestação de Serviços — Cliente X" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Texto do Contrato *</label>
+                        <textarea asp-for="Conteudo" id="editorContrato" class="form-control" rows="20"
+                                  style="font-family:Georgia,serif;line-height:1.8;font-size:14px;"
+                                  placeholder="Digite o conteúdo do contrato aqui..." required></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Detalhes</span></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Cliente *</label>
+                        <select asp-for="ClienteId" class="form-select" required>
+                            <option value="">Selecione o cliente...</option>
+                            @foreach (var c in clientes)
+                            {
+                                <option value="@c.Id" selected="@(clienteIdPre?.ToString() == c.Id.ToString())">@c.NomeEmpresa</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Valor do Contrato</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input asp-for="Valor" type="number" step="0.01" class="form-control" placeholder="0,00" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Vigência até</label>
+                        <input asp-for="DataVigencia" type="date" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea asp-for="Observacoes" class="form-control" rows="3" placeholder="Observações internas..."></textarea>
+                    </div>
+
+                    <!-- TEMPLATES -->
+                    <div class="mb-3">
+                        <label class="form-label">Template rápido</label>
+                        <select class="form-select" onchange="aplicarTemplate(this.value)">
+                            <option value="">Selecione um template...</option>
+                            <option value="gestao">Gestão de Redes Sociais</option>
+                            <option value="trafego">Gestão de Tráfego Pago</option>
+                            <option value="projeto">Projeto Pontual</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 mt-3" style="padding:14px;">
+                <i class="bi bi-check-lg me-1"></i> Criar Contrato
+            </button>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+const templates = {
+    gestao: `CONTRATO DE PRESTAÇÃO DE SERVIÇOS — GESTÃO DE REDES SOCIAIS
+
+Entre as partes:
+CONTRATANTE: _________________________, doravante denominado CONTRATANTE.
+CONTRATADA: _________________________, doravante denominada CONTRATADA.
+
+CLÁUSULA 1 — OBJETO
+A CONTRATADA prestará serviços de gestão de redes sociais, incluindo criação de conteúdo, agendamento de publicações, relatórios de desempenho e atendimento às demandas do CONTRATANTE.
+
+CLÁUSULA 2 — PRAZO
+O presente contrato tem vigência de 12 (doze) meses, podendo ser renovado mediante acordo entre as partes.
+
+CLÁUSULA 3 — REMUNERAÇÃO
+O CONTRATANTE pagará à CONTRATADA o valor de R$ _______ mensais, vencíveis todo dia ___ de cada mês.
+
+CLÁUSULA 4 — ENTREGAS
+A CONTRATADA se compromete a entregar:
+- ___ posts mensais para o feed
+- ___ Stories por semana
+- Relatório mensal de desempenho
+
+CLÁUSULA 5 — RESCISÃO
+Qualquer das partes poderá rescindir o contrato mediante aviso prévio de 30 dias.
+
+Local e data: _________________, ___/___/_______.
+
+_______________________________        _______________________________
+CONTRATANTE                              CONTRATADA`,
+
+    trafego: `CONTRATO DE PRESTAÇÃO DE SERVIÇOS — GESTÃO DE TRÁFEGO PAGO
+
+Entre as partes:
+CONTRATANTE: _________________________, doravante denominado CONTRATANTE.
+CONTRATADA: _________________________, doravante denominada CONTRATADA.
+
+CLÁUSULA 1 — OBJETO
+A CONTRATADA prestará serviços de gestão de tráfego pago nas plataformas Meta Ads e/ou Google Ads, incluindo criação de campanhas, otimização e relatórios de resultados.
+
+CLÁUSULA 2 — PRAZO
+O presente contrato tem vigência de _____ meses, a contar da data de assinatura.
+
+CLÁUSULA 3 — REMUNERAÇÃO
+a) Taxa de gerenciamento: R$ _______ mensais
+b) Verba de mídia: R$ _______ mensais (de responsabilidade do CONTRATANTE)
+
+CLÁUSULA 4 — RESPONSABILIDADES
+A CONTRATADA não se responsabiliza pelos resultados decorrentes de restrições das plataformas ou fatores externos ao controle da gestão.
+
+Local e data: _________________, ___/___/_______.
+
+_______________________________        _______________________________
+CONTRATANTE                              CONTRATADA`,
+
+    projeto: `CONTRATO DE PRESTAÇÃO DE SERVIÇOS — PROJETO PONTUAL
+
+Entre as partes:
+CONTRATANTE: _________________________, doravante denominado CONTRATANTE.
+CONTRATADA: _________________________, doravante denominada CONTRATADA.
+
+CLÁUSULA 1 — OBJETO
+A CONTRATADA prestará os seguintes serviços:
+__________________________________________
+
+CLÁUSULA 2 — PRAZO DE ENTREGA
+O prazo para entrega do projeto é de _______ dias a contar da aprovação do briefing e do pagamento do sinal.
+
+CLÁUSULA 3 — REMUNERAÇÃO
+Valor total: R$ _______
+- 50% (sinal) no ato da assinatura: R$ _______
+- 50% na entrega final: R$ _______
+
+CLÁUSULA 4 — REVISÕES
+Estão incluídas _____ rodadas de revisão. Revisões adicionais serão cobradas separadamente.
+
+Local e data: _________________, ___/___/_______.
+
+_______________________________        _______________________________
+CONTRATANTE                              CONTRATADA`
+};
+
+function aplicarTemplate(key) {
+    if (!key) return;
+    if (confirm('Substituir o conteúdo atual pelo template?')) {
+        document.getElementById('editorContrato').value = templates[key];
+    }
+}
+</script>
+}

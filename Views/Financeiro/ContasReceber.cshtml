@@ -8,8 +8,10 @@
     var aReceber = (decimal)ViewData["AReceber"]!;
     var receita  = (decimal)ViewData["Receita"]!;
     var cultura  = new System.Globalization.CultureInfo("pt-BR");
-    var vencidas = ViewData["Vencidas"] as bool?;
-    var clienteId = ViewData["ClienteId"];
+    var vencidas      = ViewData["Vencidas"] as bool?;
+    var clienteId     = ViewData["ClienteId"];
+    var respFiltro    = ViewData["ResponsavelId"] as string;
+    var usuarios      = ViewData["Usuarios"] as IEnumerable<Usuario> ?? [];
     string NomeMes(int m) => new DateTime(2000, m, 1).ToString("MMMM", cultura);
 
     var totalPendente = Model.Where(f => !f.Pago).Sum(f => f.Valor);
@@ -74,15 +76,22 @@
             <i class="bi bi-chevron-right"></i>
         </a>
     </div>
-    <form method="get" class="d-flex gap-2">
-        <select name="clienteId" class="form-select form-select-sm" style="width:200px;" onchange="this.form.submit()">
+    <form method="get" class="d-flex gap-2 flex-wrap">
+        <select name="clienteId" class="form-select form-select-sm" style="width:180px;" onchange="this.form.submit()">
             <option value="">Todos os clientes</option>
             @foreach (var c in clientes)
             {
                 <option value="@c.Id" selected="@(clienteId?.ToString() == c.Id.ToString())">@c.NomeEmpresa</option>
             }
         </select>
-        <select name="vencidas" class="form-select form-select-sm" style="width:160px;" onchange="this.form.submit()">
+        <select name="responsavelId" class="form-select form-select-sm" style="width:160px;" onchange="this.form.submit()">
+            <option value="">Todos responsáveis</option>
+            @foreach (var u in usuarios)
+            {
+                <option value="@u.Id" selected="@(respFiltro == u.Id)">@u.Nome</option>
+            }
+        </select>
+        <select name="vencidas" class="form-select form-select-sm" style="width:135px;" onchange="this.form.submit()">
             <option value="">Todas</option>
             <option value="true" selected="@(vencidas == true)">Somente Vencidas</option>
         </select>

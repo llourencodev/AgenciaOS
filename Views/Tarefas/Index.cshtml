@@ -2,10 +2,11 @@
 @using AgenciaOS.Models
 @{
     ViewData["Title"] = "Tarefas";
-    var clientes = ViewData["Clientes"] as IEnumerable<Cliente> ?? [];
-    var pendentes = Model.Where(t => t.Status == StatusTarefa.Pendente).ToList();
-    var andamento = Model.Where(t => t.Status == StatusTarefa.EmAndamento).ToList();
-    var revisao   = Model.Where(t => t.Status == StatusTarefa.AguardandoRevisao).ToList();
+    var clientes  = ViewData["Clientes"] as IEnumerable<Cliente> ?? [];
+    var usuarios  = ViewData["Usuarios"] as IEnumerable<Usuario> ?? [];
+    var pendentes  = Model.Where(t => t.Status == StatusTarefa.Pendente).ToList();
+    var andamento  = Model.Where(t => t.Status == StatusTarefa.EmAndamento).ToList();
+    var revisao    = Model.Where(t => t.Status == StatusTarefa.AguardandoRevisao).ToList();
     var concluidas = Model.Where(t => t.Status == StatusTarefa.Concluido).ToList();
 }
 
@@ -25,15 +26,28 @@
 <!-- FILTROS -->
 <div class="filter-bar">
     <form method="get" class="d-flex gap-2 flex-wrap">
-        <select name="clienteId" class="form-select form-select-sm" style="width:210px;" onchange="this.form.submit()">
+        <select name="clienteId" class="form-select form-select-sm" style="width:190px;" onchange="this.form.submit()">
             <option value="">Todos os clientes</option>
             @foreach (var c in clientes)
             {
                 <option value="@c.Id" selected="@(ViewData["ClienteId"]?.ToString() == c.Id.ToString())">@c.NomeEmpresa</option>
             }
         </select>
+        <select name="responsavelId" class="form-select form-select-sm" style="width:180px;" onchange="this.form.submit()">
+            <option value="">Todos responsáveis</option>
+            @foreach (var u in usuarios)
+            {
+                <option value="@u.Id" selected="@(ViewData["ResponsavelId"]?.ToString() == u.Id)">@u.NomeCompleto</option>
+            }
+        </select>
+        <select name="tipo" class="form-select form-select-sm" style="width:145px;" onchange="this.form.submit()">
+            <option value="">Todos os tipos</option>
+            @foreach (var tp in Enum.GetValues<TipoTarefa>())
+            {
+                <option value="@tp" selected="@(ViewData["TipoFiltro"]?.ToString() == tp.ToString())">@tp</option>
+            }
+        </select>
     </form>
-    <!-- Contadores rápidos -->
     <div class="ms-auto d-flex gap-2">
         <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2">
             <i class="bi bi-circle me-1"></i> @pendentes.Count Pendentes
@@ -47,61 +61,142 @@
     </div>
 </div>
 
+<!-- LEGENDA DE TIPOS -->
+<div class="d-flex flex-wrap gap-3 mb-3">
+    @foreach (var tp in Enum.GetValues<TipoTarefa>())
+    {
+        var cor = new Tarefa { Tipo = tp }.CorTipo;
+        var icone = new Tarefa { Tipo = tp }.IconeTipo;
+        <span class="d-flex align-items-center gap-1 text-xs" style="color:@cor;font-weight:600;">
+            <i class="bi bi-@icone"></i> @tp
+        </span>
+    }
+</div>
+
 <!-- KANBAN BOARD -->
-<div class="board">
+<div class="board" id="kanbanBoard">
     <!-- PENDENTE -->
-    <div class="board-col">
+    <div class="board-col" data-status="Pendente">
         <div class="board-col-header">
             <div class="board-col-title">
                 <span class="board-col-dot" style="background:#f59e0b;"></span> Pendente
             </div>
             <span class="board-col-count">@pendentes.Count</span>
         </div>
-        <div class="board-col-body">
+        <div class="board-col-body" id="col-Pendente">
             @foreach (var t in pendentes) { <partial name="_TarefaCard" model="t" /> }
             @if (!pendentes.Any()) { <div class="task-empty"><i class="bi bi-inbox me-1"></i>Vazio</div> }
         </div>
     </div>
 
     <!-- EM ANDAMENTO -->
-    <div class="board-col">
+    <div class="board-col" data-status="EmAndamento">
         <div class="board-col-header">
             <div class="board-col-title">
                 <span class="board-col-dot" style="background:#3b82f6;"></span> Em Andamento
             </div>
             <span class="board-col-count">@andamento.Count</span>
         </div>
-        <div class="board-col-body">
+        <div class="board-col-body" id="col-EmAndamento">
             @foreach (var t in andamento) { <partial name="_TarefaCard" model="t" /> }
             @if (!andamento.Any()) { <div class="task-empty"><i class="bi bi-inbox me-1"></i>Vazio</div> }
         </div>
     </div>
 
     <!-- REVISÃO -->
-    <div class="board-col">
+    <div class="board-col" data-status="AguardandoRevisao">
         <div class="board-col-header">
             <div class="board-col-title">
                 <span class="board-col-dot" style="background:#8b5cf6;"></span> Aguard. Revisão
             </div>
             <span class="board-col-count">@revisao.Count</span>
         </div>
-        <div class="board-col-body">
+        <div class="board-col-body" id="col-AguardandoRevisao">
             @foreach (var t in revisao) { <partial name="_TarefaCard" model="t" /> }
             @if (!revisao.Any()) { <div class="task-empty"><i class="bi bi-inbox me-1"></i>Vazio</div> }
         </div>
     </div>
 
     <!-- CONCLUÍDO -->
-    <div class="board-col">
+    <div class="board-col" data-status="Concluido">
         <div class="board-col-header">
             <div class="board-col-title">
                 <span class="board-col-dot" style="background:#10b981;"></span> Concluído
             </div>
             <span class="board-col-count">@concluidas.Count</span>
         </div>
-        <div class="board-col-body" style="opacity:.85;">
-            @foreach (var t in concluidas.Take(10)) { <partial name="_TarefaCard" model="t" /> }
+        <div class="board-col-body" id="col-Concluido" style="opacity:.85;">
+            @foreach (var t in concluidas.Take(15)) { <partial name="_TarefaCard" model="t" /> }
             @if (!concluidas.Any()) { <div class="task-empty"><i class="bi bi-inbox me-1"></i>Vazio</div> }
         </div>
     </div>
 </div>
+
+@section Scripts {
+<script>
+const token = document.querySelector('meta[name="csrf"]')?.content
+    || document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+// Drag & Drop Kanban
+let dragging = null;
+
+document.querySelectorAll('.task-card').forEach(card => {
+    card.addEventListener('dragstart', e => {
+        dragging = card;
+        setTimeout(() => card.classList.add('dragging'), 0);
+    });
+    card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        document.querySelectorAll('.board-col-body').forEach(c => c.classList.remove('drag-over'));
+        dragging = null;
+    });
+});
+
+document.querySelectorAll('.board-col-body').forEach(col => {
+    col.addEventListener('dragover', e => {
+        e.preventDefault();
+        col.classList.add('drag-over');
+        const after = getDragAfterElement(col, e.clientY);
+        if (after == null) col.appendChild(dragging);
+        else col.insertBefore(dragging, after);
+    });
+    col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+    col.addEventListener('drop', async e => {
+        e.preventDefault();
+        col.classList.remove('drag-over');
+        if (!dragging) return;
+        const novoStatus = col.id.replace('col-', '');
+        const id = dragging.dataset.id;
+        const fd = new FormData();
+        fd.append('id', id);
+        fd.append('status', novoStatus);
+        fd.append('__RequestVerificationToken', token);
+        await fetch('/Tarefas/AlterarStatus', { method: 'POST', body: fd });
+        dragging.dataset.status = novoStatus;
+        updateCounts();
+    });
+});
+
+function getDragAfterElement(container, y) {
+    const els = [...container.querySelectorAll('.task-card:not(.dragging)')];
+    return els.reduce((closest, el) => {
+        const box = el.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) return { offset, element: el };
+        return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+function updateCounts() {
+    document.querySelectorAll('.board-col').forEach(col => {
+        const status = col.dataset.status;
+        const count = col.querySelectorAll('.task-card').length;
+        col.querySelector('.board-col-count').textContent = count;
+    });
+}
+</script>
+<style>
+.task-card.dragging { opacity: .4; }
+.board-col-body.drag-over { background: rgba(99,102,241,.07); border-radius: 10px; outline: 2px dashed #6366f1; }
+</style>
+}

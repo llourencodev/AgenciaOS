@@ -16,6 +16,8 @@ public class ApplicationDbContext : IdentityDbContext<Usuario>
     public DbSet<Arquivo> Arquivos => Set<Arquivo>();
     public DbSet<Financeiro> Financeiros => Set<Financeiro>();
     public DbSet<Notificacao> Notificacoes => Set<Notificacao>();
+    public DbSet<DataComemorativa> DatasComemorativas => Set<DataComemorativa>();
+    public DbSet<Contrato> Contratos => Set<Contrato>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -27,7 +29,6 @@ public class ApplicationDbContext : IdentityDbContext<Usuario>
             e.Property(u => u.Sobrenome).HasMaxLength(100);
         });
 
-        // SQL Server não permite múltiplos caminhos de cascade para a mesma tabela pai
         builder.Entity<Conteudo>(e =>
         {
             e.HasOne(c => c.CriadoPor).WithMany().HasForeignKey(c => c.CriadoPorId).OnDelete(DeleteBehavior.NoAction);
@@ -59,11 +60,19 @@ public class ApplicationDbContext : IdentityDbContext<Usuario>
         {
             e.Property(f => f.Valor).HasPrecision(18, 2);
             e.HasOne(f => f.CriadoPor).WithMany().HasForeignKey(f => f.CriadoPorId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(f => f.Responsavel).WithMany().HasForeignKey(f => f.ResponsavelId).OnDelete(DeleteBehavior.NoAction);
         });
 
         builder.Entity<Cliente>(e =>
         {
             e.HasOne(c => c.UsuarioCliente).WithMany().HasForeignKey(c => c.UsuarioClienteId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        builder.Entity<Contrato>(e =>
+        {
+            e.HasOne(c => c.Cliente).WithMany().HasForeignKey(c => c.ClienteId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(c => c.CriadoPor).WithMany().HasForeignKey(c => c.CriadoPorId).OnDelete(DeleteBehavior.NoAction);
+            e.Property(c => c.Valor).HasPrecision(18, 2);
         });
     }
 }

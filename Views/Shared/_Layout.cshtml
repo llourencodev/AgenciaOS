@@ -15,6 +15,14 @@
 
 @if (User.Identity?.IsAuthenticated == true)
 {
+    @inject AgenciaOS.Data.ApplicationDbContext _layoutDb
+    @inject Microsoft.AspNetCore.Identity.UserManager<AgenciaOS.Models.Usuario> _layoutUserMgr
+
+    var _currentUser = await _layoutUserMgr.GetUserAsync(User);
+    var _abas = _currentUser?.AbasPermitidas?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? [];
+    bool TemAcesso(string aba) => !_abas.Any() || User.IsInRole("Admin") || _abas.Contains(aba);
+    string ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+
     <!-- SIDEBAR -->
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
     <aside class="sidebar" id="sidebar">
@@ -28,64 +36,100 @@
             </div>
         </div>
 
-        <div class="sidebar-search">
-            <div class="input-group input-group-sm">
-                <span class="input-group-text bg-transparent border-0 text-white-50"><i class="bi bi-search"></i></span>
-                <input type="text" class="form-control form-control-sm bg-transparent border-0 text-white sidebar-search-input" placeholder="Buscar..." />
-            </div>
-        </div>
-
         <nav class="sidebar-nav">
+            <!-- GESTÃO -->
             <div class="nav-group">
-                <div class="nav-group-label">PRINCIPAL</div>
-                <a asp-controller="Dashboard" asp-action="Index" class="nav-link-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")">
-                    <span class="nav-icon"><i class="bi bi-grid-1x2-fill"></i></span>
-                    <span>Dashboard</span>
-                </a>
-                <a asp-controller="Clientes" asp-action="Index" class="nav-link-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Clientes" ? "active" : "")">
-                    <span class="nav-icon"><i class="bi bi-people-fill"></i></span>
-                    <span>Clientes</span>
-                    <span class="nav-badge ms-auto">●</span>
-                </a>
-            </div>
-
-            <div class="nav-group">
-                <div class="nav-group-label">CONTEÚDO</div>
-                <a asp-controller="Calendario" asp-action="Index" class="nav-link-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Calendario" ? "active" : "")">
-                    <span class="nav-icon"><i class="bi bi-calendar3-week-fill"></i></span>
-                    <span>Calendário</span>
-                </a>
-                <a asp-controller="Arquivos" asp-action="Index" class="nav-link-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Arquivos" ? "active" : "")">
-                    <span class="nav-icon"><i class="bi bi-folder2-open"></i></span>
-                    <span>Arquivos</span>
-                </a>
-            </div>
-
-            <div class="nav-group">
-                <div class="nav-group-label">OPERAÇÃO</div>
-                <a asp-controller="Tarefas" asp-action="Index" class="nav-link-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tarefas" ? "active" : "")">
-                    <span class="nav-icon"><i class="bi bi-kanban-fill"></i></span>
-                    <span>Tarefas</span>
-                </a>
-                @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+                <div class="nav-group-label">GESTÃO</div>
+                @if (TemAcesso("Dashboard"))
                 {
-                    <a asp-controller="Financeiro" asp-action="Index" class="nav-link-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Financeiro" ? "active" : "")">
+                    <a asp-controller="Dashboard" asp-action="Index" class="nav-link-item @(ctrl == "Dashboard" ? "active" : "")">
+                        <span class="nav-icon"><i class="bi bi-grid-1x2-fill"></i></span>
+                        <span>Dashboard</span>
+                    </a>
+                }
+                @if (TemAcesso("Tarefas"))
+                {
+                    <a asp-controller="Tarefas" asp-action="Index" class="nav-link-item @(ctrl == "Tarefas" ? "active" : "")">
+                        <span class="nav-icon"><i class="bi bi-kanban-fill"></i></span>
+                        <span>Tarefas</span>
+                    </a>
+                }
+                @if ((User.IsInRole("Admin") || User.IsInRole("Equipe")) && TemAcesso("Financeiro"))
+                {
+                    <a asp-controller="Financeiro" asp-action="Index" class="nav-link-item @(ctrl == "Financeiro" ? "active" : "")">
                         <span class="nav-icon"><i class="bi bi-bar-chart-line-fill"></i></span>
                         <span>Financeiro</span>
                     </a>
                 }
             </div>
+
+            <!-- CRIATIVO -->
+            <div class="nav-group">
+                <div class="nav-group-label">CRIATIVO</div>
+                @if (TemAcesso("Calendario"))
+                {
+                    <a asp-controller="Calendario" asp-action="Index" class="nav-link-item @(ctrl == "Calendario" ? "active" : "")">
+                        <span class="nav-icon"><i class="bi bi-calendar3-week-fill"></i></span>
+                        <span>Calendário</span>
+                    </a>
+                }
+                @if (TemAcesso("Arquivos"))
+                {
+                    <a asp-controller="Arquivos" asp-action="Index" class="nav-link-item @(ctrl == "Arquivos" ? "active" : "")">
+                        <span class="nav-icon"><i class="bi bi-folder2-open"></i></span>
+                        <span>Arquivos</span>
+                    </a>
+                }
+                @if (TemAcesso("DatasComemorativas"))
+                {
+                    <a asp-controller="DatasComemorativas" asp-action="Index" class="nav-link-item @(ctrl == "DatasComemorativas" ? "active" : "")">
+                        <span class="nav-icon"><i class="bi bi-calendar-heart-fill"></i></span>
+                        <span>Datas Comemorativas</span>
+                    </a>
+                }
+            </div>
+
+            <!-- COMERCIAL -->
+            <div class="nav-group">
+                <div class="nav-group-label">COMERCIAL</div>
+                @if (TemAcesso("Clientes"))
+                {
+                    <a asp-controller="Clientes" asp-action="Index" class="nav-link-item @(ctrl == "Clientes" ? "active" : "")">
+                        <span class="nav-icon"><i class="bi bi-people-fill"></i></span>
+                        <span>Clientes</span>
+                    </a>
+                }
+                @if (TemAcesso("Contratos"))
+                {
+                    <a asp-controller="Contratos" asp-action="Index" class="nav-link-item @(ctrl == "Contratos" ? "active" : "")">
+                        <span class="nav-icon"><i class="bi bi-file-earmark-text-fill"></i></span>
+                        <span>Contratos</span>
+                    </a>
+                }
+            </div>
+
+            <!-- ADMIN -->
+            @if (User.IsInRole("Admin"))
+            {
+                <div class="nav-group">
+                    <div class="nav-group-label">ADMIN</div>
+                    <a asp-controller="Usuarios" asp-action="Index" class="nav-link-item @(ctrl == "Usuarios" ? "active" : "")">
+                        <span class="nav-icon"><i class="bi bi-person-gear"></i></span>
+                        <span>Usuários</span>
+                    </a>
+                </div>
+            }
         </nav>
 
         <div class="sidebar-footer">
             <div class="sidebar-user">
                 <div class="sidebar-user-avatar">
-                    @(User.Identity?.Name?.FirstOrDefault().ToString().ToUpper() ?? "U")
+                    @(_currentUser?.Iniciais ?? User.Identity?.Name?.FirstOrDefault().ToString().ToUpper() ?? "U")
                 </div>
                 <div class="sidebar-user-info">
-                    <div class="sidebar-user-name">@(User.Identity?.Name?.Split('@')[0])</div>
+                    <div class="sidebar-user-name">@(_currentUser?.Nome ?? User.Identity?.Name?.Split('@')[0])</div>
                     <div class="sidebar-user-role">
-                        @(User.IsInRole("Admin") ? "Administrador" : User.IsInRole("Cliente") ? "Cliente" : "Equipe")
+                        @(User.IsInRole("Admin") ? "Administrador" : User.IsInRole("Cliente") ? "Cliente" : User.IsInRole("ColaboradorExterno") ? "Colaborador" : "Equipe")
                     </div>
                 </div>
                 <form asp-controller="Account" asp-action="Logout" method="post" class="ms-auto">
@@ -141,11 +185,11 @@
                 <!-- User menu -->
                 <div class="dropdown">
                     <button class="topbar-user-btn" data-bs-toggle="dropdown">
-                        <div class="topbar-avatar">@(User.Identity?.Name?.FirstOrDefault().ToString().ToUpper() ?? "U")</div>
+                        <div class="topbar-avatar">@(_currentUser?.Iniciais ?? User.Identity?.Name?.FirstOrDefault().ToString().ToUpper() ?? "U")</div>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="min-width:200px;">
                         <li class="px-3 py-2 border-bottom">
-                            <div class="fw-600 small">@(User.Identity?.Name?.Split('@')[0])</div>
+                            <div class="fw-600 small">@(_currentUser?.NomeCompleto ?? User.Identity?.Name?.Split('@')[0])</div>
                             <div class="text-muted" style="font-size:11px;">@User.Identity?.Name</div>
                         </li>
                         <li>

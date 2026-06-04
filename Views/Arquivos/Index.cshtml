@@ -33,7 +33,8 @@
                 <option value="@cat" selected="@(ViewData["Categoria"]?.ToString() == cat.ToString())">@cat</option>
             }
         </select>
-        <input type="month" name="mes" value="@ViewData["Mes"]" class="form-control form-control-sm" style="width:180px;" />
+        <input type="month" name="mes" value="@ViewData["Mes"]" class="form-control form-control-sm" style="width:160px;" />
+        <input type="date" name="dia" value="@ViewData["Dia"]" class="form-control form-control-sm" style="width:155px;" title="Filtrar por dia específico" />
         <button type="submit" class="btn btn-outline-secondary btn-sm px-3">
             <i class="bi bi-funnel me-1"></i> Filtrar
         </button>

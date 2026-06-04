@@ -1,0 +1,160 @@
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Relatório Financeiro";
+    var ano        = (int)ViewData["Ano"]!;
+    var receita    = (decimal)ViewData["TotalReceita"]!;
+    var despesa    = (decimal)ViewData["TotalDespesa"]!;
+    var lucro      = (decimal)ViewData["TotalLucro"]!;
+    var cultura    = new System.Globalization.CultureInfo("pt-BR");
+    var porMes     = ViewData["PorMes"];
+    var porCliente = ViewData["PorCliente"];
+    var porCat     = ViewData["PorCategoria"];
+}
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-file-earmark-bar-graph-fill me-2 text-primary"></i>Relatório Financeiro</h1>
+        <p>Visão anual — @ano</p>
+    </div>
+    <div class="d-flex gap-2">
+        <form method="get" class="d-flex gap-2">
+            <select name="ano" class="form-select form-select-sm" onchange="this.form.submit()">
+                @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 3; y--)
+                {
+                    <option value="@y" selected="@(ano == y)">@y</option>
+                }
+            </select>
+        </form>
+        <a asp-action="ContasPagar" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Voltar</a>
+        <button onclick="window.print()" class="btn btn-outline-secondary"><i class="bi bi-printer me-1"></i> Imprimir</button>
+    </div>
+</div>
+
+<!-- CARDS RESUMO -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card text-center py-4" style="border-top:4px solid #10b981;">
+            <div class="fw-800 fs-3 text-success">@receita.ToString("C0", cultura)</div>
+            <div class="text-muted">Receita Total @ano</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center py-4" style="border-top:4px solid #ef4444;">
+            <div class="fw-800 fs-3 text-danger">@despesa.ToString("C0", cultura)</div>
+            <div class="text-muted">Despesa Total @ano</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center py-4" style="border-top:4px solid @(lucro >= 0 ? "#6366f1" : "#ef4444");">
+            <div class="fw-800 fs-3" style="color:@(lucro >= 0 ? "var(--primary)" : "var(--danger)")">@lucro.ToString("C0", cultura)</div>
+            <div class="text-muted">Lucro Líquido @ano</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- EVOLUÇÃO MENSAL -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><span class="card-title">Evolução Mensal</span></div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Mês</th>
+                            <th class="text-end text-success">Receita</th>
+                            <th class="text-end text-danger">Despesa</th>
+                            <th class="text-end">Lucro</th>
+                            <th class="text-end text-muted">Pendente</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in (IEnumerable<dynamic>)ViewData["PorMes"]!)
+                        {
+                            decimal lucroMes = (decimal)m.Receita - (decimal)m.Despesa;
+                            <tr>
+                                <td class="fw-600 text-capitalize">@m.NomeMes</td>
+                                <td class="text-end text-success fw-600">@((decimal)m.Receita > 0 ? ((decimal)m.Receita).ToString("C0", cultura) : "—")</td>
+                                <td class="text-end text-danger fw-600">@((decimal)m.Despesa > 0 ? ((decimal)m.Despesa).ToString("C0", cultura) : "—")</td>
+                                <td class="text-end fw-700" style="color:@(lucroMes >= 0 ? "#10b981" : "#ef4444")">
+                                    @(lucroMes != 0 ? lucroMes.ToString("C0", cultura) : "—")
+                                </td>
+                                <td class="text-end text-muted text-sm">@((decimal)m.Pendente > 0 ? ((decimal)m.Pendente).ToString("C0", cultura) : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot style="background:#fafafa;font-weight:700;">
+                        <tr>
+                            <td>Total</td>
+                            <td class="text-end text-success">@receita.ToString("C0", cultura)</td>
+                            <td class="text-end text-danger">@despesa.ToString("C0", cultura)</td>
+                            <td class="text-end" style="color:@(lucro >= 0 ? "#10b981" : "#ef4444")">@lucro.ToString("C0", cultura)</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP CLIENTES + CATEGORIAS -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header"><span class="card-title">Top Clientes (Receita)</span></div>
+            <div class="card-body p-0">
+                @{
+                    var clientesList = ViewData["PorCliente"] as IEnumerable<dynamic> ?? [];
+                    var maxC = clientesList.Any() ? clientesList.Max(c => (decimal)c.Total) : 1m;
+                }
+                @foreach (var c in clientesList)
+                {
+                    var pct = maxC > 0 ? (int)((decimal)c.Total / maxC * 100) : 0;
+                    <div class="px-4 py-3 border-bottom">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-sm fw-600">@c.Cliente</span>
+                            <span class="text-sm fw-700 text-success">@((decimal)c.Total).ToString("C0", cultura)</span>
+                        </div>
+                        <div class="progress" style="height:4px;">
+                            <div class="progress-bar bg-success" style="width:@pct%"></div>
+                        </div>
+                    </div>
+                }
+                @if (!clientesList.Any()) { <div class="p-4 text-muted text-sm text-center">Sem dados</div> }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><span class="card-title">Despesas por Categoria</span></div>
+            <div class="card-body p-0">
+                @{
+                    var catList = (ViewData["PorCategoria"] as IEnumerable<dynamic> ?? []).Where(c => (string)c.Tipo.ToString() == "Saida");
+                    var maxCat = catList.Any() ? catList.Max(c => (decimal)c.Total) : 1m;
+                }
+                @foreach (var c in catList)
+                {
+                    var pct = maxCat > 0 ? (int)((decimal)c.Total / maxCat * 100) : 0;
+                    <div class="px-4 py-3 border-bottom">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-sm fw-600">@c.Categoria</span>
+                            <span class="text-sm fw-700 text-danger">@((decimal)c.Total).ToString("C0", cultura)</span>
+                        </div>
+                        <div class="progress" style="height:4px;">
+                            <div class="progress-bar bg-danger" style="width:@pct%"></div>
+                        </div>
+                    </div>
+                }
+                @if (!catList.Any()) { <div class="p-4 text-muted text-sm text-center">Sem dados</div> }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+<style>
+@@media print {
+    .sidebar, .topbar, .page-header .btn, .filter-bar { display: none !important; }
+    .main-wrapper { margin-left: 0 !important; }
+    .card { break-inside: avoid; }
+}
+</style>
+}

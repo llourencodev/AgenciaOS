@@ -15,6 +15,8 @@ public class Usuario : IdentityUser
     public string NomeCompleto => $"{Nome} {Sobrenome}".Trim();
     public string Iniciais => $"{Nome.FirstOrDefault()}{Sobrenome?.FirstOrDefault()}".ToUpper();
 
+    public string? AbasPermitidas { get; set; }
+
     public ICollection<Tarefa> TarefasAtribuidas { get; set; } = [];
     public ICollection<Notificacao> Notificacoes { get; set; } = [];
 }

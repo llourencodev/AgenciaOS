@@ -2,14 +2,16 @@
 @using AgenciaOS.Models
 @{
     ViewData["Title"] = "Contas a Pagar";
-    var clientes  = ViewData["Clientes"] as IEnumerable<Cliente> ?? [];
-    var mes       = (int)ViewData["Mes"]!;
-    var ano       = (int)ViewData["Ano"]!;
-    var aPagar    = (decimal)ViewData["APagar"]!;
-    var despesa   = (decimal)ViewData["Despesa"]!;
-    var cultura   = new System.Globalization.CultureInfo("pt-BR");
-    var vencidas  = ViewData["Vencidas"] as bool?;
-    var catFiltro = ViewData["Categoria"] as CategoriaFinanceiro?;
+    var clientes   = ViewData["Clientes"] as IEnumerable<Cliente> ?? [];
+    var usuarios   = ViewData["Usuarios"] as IEnumerable<Usuario> ?? [];
+    var mes        = (int)ViewData["Mes"]!;
+    var ano        = (int)ViewData["Ano"]!;
+    var aPagar     = (decimal)ViewData["APagar"]!;
+    var cultura    = new System.Globalization.CultureInfo("pt-BR");
+    var vencidas   = ViewData["Vencidas"] as bool?;
+    var catFiltro  = ViewData["Categoria"] as CategoriaFinanceiro?;
+    var respFiltro = ViewData["ResponsavelId"] as string;
+    var fixasFiltro= ViewData["Fixas"] as bool?;
     string NomeMes(int m) => new DateTime(2000, m, 1).ToString("MMMM", cultura);
 
     var totalPendente = Model.Where(f => !f.Pago).Sum(f => f.Valor);
@@ -34,6 +36,9 @@
         </a>
         <a asp-action="ContasReceber" asp-route-mes="@mes" asp-route-ano="@ano" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-down-circle me-1 text-success"></i> Contas a Receber
+        </a>
+        <a asp-action="Relatorio" class="btn btn-outline-secondary">
+            <i class="bi bi-file-earmark-bar-graph me-1"></i> Relatório
         </a>
         <button class="btn btn-danger px-4" data-bs-toggle="modal" data-bs-target="#novaContaModal">
             <i class="bi bi-plus-lg me-1"></i> Nova Conta
@@ -70,7 +75,6 @@
 </div>
 
 <div class="row g-4">
-    <!-- TABELA -->
     <div class="col-lg-8">
         <!-- FILTROS -->
         <div class="filter-bar justify-content-between mb-3">
@@ -83,22 +87,28 @@
                     <i class="bi bi-chevron-right"></i>
                 </a>
             </div>
-            <form method="get" class="d-flex gap-2">
-                <select name="categoria" class="form-select form-select-sm" style="width:170px;" onchange="this.form.submit()">
-                    <option value="">Todas as categorias</option>
-                    @foreach (var cat in Enum.GetValues<CategoriaFinanceiro>().Where(c => c != CategoriaFinanceiro.Mensalidade && c != CategoriaFinanceiro.Projeto && c != CategoriaFinanceiro.PagamentoExtra))
+            <form method="get" class="d-flex gap-2 flex-wrap">
+                <select name="categoria" class="form-select form-select-sm" style="width:155px;" onchange="this.form.submit()">
+                    <option value="">Todas categorias</option>
+                    @foreach (var cat in Enum.GetValues<CategoriaFinanceiro>())
                     {
                         <option value="@cat" selected="@(catFiltro == cat)">@cat</option>
                     }
-                    <option value="Freelancer"   selected="@(catFiltro == CategoriaFinanceiro.Freelancer)">Freelancer</option>
-                    <option value="Software"     selected="@(catFiltro == CategoriaFinanceiro.Software)">Software</option>
-                    <option value="Anuncio"      selected="@(catFiltro == CategoriaFinanceiro.Anuncio)">Anúncio</option>
-                    <option value="Fornecedor"   selected="@(catFiltro == CategoriaFinanceiro.Fornecedor)">Fornecedor</option>
-                    <option value="Outros"       selected="@(catFiltro == CategoriaFinanceiro.Outros)">Outros</option>
                 </select>
-                <select name="vencidas" class="form-select form-select-sm" style="width:155px;" onchange="this.form.submit()">
+                <select name="responsavelId" class="form-select form-select-sm" style="width:155px;" onchange="this.form.submit()">
+                    <option value="">Todos responsáveis</option>
+                    @foreach (var u in usuarios)
+                    {
+                        <option value="@u.Id" selected="@(respFiltro == u.Id)">@u.Nome</option>
+                    }
+                </select>
+                <select name="vencidas" class="form-select form-select-sm" style="width:130px;" onchange="this.form.submit()">
                     <option value="">Todas</option>
-                    <option value="true" selected="@(vencidas == true)">Somente Vencidas</option>
+                    <option value="true" selected="@(vencidas == true)">Vencidas</option>
+                </select>
+                <select name="fixas" class="form-select form-select-sm" style="width:130px;" onchange="this.form.submit()">
+                    <option value="">Todas</option>
+                    <option value="true" selected="@(fixasFiltro == true)">Contas Fixas</option>
                 </select>
                 <input type="hidden" name="mes" value="@mes" />
                 <input type="hidden" name="ano" value="@ano" />
@@ -114,10 +124,10 @@
                             <tr>
                                 <th>Descrição</th>
                                 <th>Categoria</th>
+                                <th>Responsável</th>
                                 <th>Vencimento</th>
                                 <th>Valor</th>
                                 <th>Status</th>
-                                <th>Pago em</th>
                                 <th class="text-end">Ações</th>
                             </tr>
                         </thead>
@@ -128,12 +138,19 @@
                                 <tr class="@(vencida ? "table-danger" : "")">
                                     <td>
                                         <div class="fw-600">@f.Descricao</div>
-                                        @if (f.Cliente != null)
-                                        {
-                                            <div class="text-xs text-muted"><i class="bi bi-building"></i> @f.Cliente.NomeEmpresa</div>
-                                        }
+                                        <div class="d-flex gap-2 mt-1">
+                                            @if (f.ContaFixa)
+                                            {
+                                                <span class="badge text-xs" style="background:#6366f1;color:white;">Fixa</span>
+                                            }
+                                            @if (f.Parcelado && f.DescricaoParcela != null)
+                                            {
+                                                <span class="badge text-xs bg-secondary">@f.DescricaoParcela</span>
+                                            }
+                                        </div>
                                     </td>
                                     <td><span class="badge badge-pauta">@f.Categoria</span></td>
+                                    <td class="text-sm text-muted">@(f.Responsavel?.Nome ?? "—")</td>
                                     <td>
                                         <span class="text-sm @(vencida ? "text-danger fw-600" : "")">
                                             @f.DataVencimento.ToString("dd/MM/yyyy")
@@ -146,18 +163,9 @@
                                     <td>
                                         <button class="btn btn-sm @(f.Pago ? "btn-success" : "btn-outline-secondary")"
                                                 data-pago-toggle="@f.Id" style="font-size:12px;min-width:90px;">
-                                            @if (f.Pago)
-                                            {
-                                                <i class="bi bi-check-circle-fill me-1"></i><text>Pago</text>
-                                            }
-                                            else
-                                            {
-                                                <i class="bi bi-circle me-1"></i><text>Pendente</text>
-                                            }
+                                            @if (f.Pago) { <i class="bi bi-check-circle-fill me-1"></i><text>Pago</text> }
+                                            else { <i class="bi bi-circle me-1"></i><text>Pendente</text> }
                                         </button>
-                                    </td>
-                                    <td class="text-sm text-muted">
-                                        @(f.DataPagamento.HasValue ? f.DataPagamento.Value.ToString("dd/MM/yyyy") : "—")
                                     </td>
                                     <td class="text-end">
                                         <button class="btn btn-xs btn-outline-danger" onclick="excluir(@f.Id, this)">
@@ -169,9 +177,9 @@
                         </tbody>
                         <tfoot style="background:#fafafa;">
                             <tr>
-                                <td colspan="3" class="fw-700 text-sm">Total do período</td>
+                                <td colspan="4" class="fw-700 text-sm">Total do período</td>
                                 <td class="fw-700 text-danger">-@Model.Sum(f => f.Valor).ToString("C0", cultura)</td>
-                                <td colspan="3"></td>
+                                <td colspan="2"></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -216,18 +224,15 @@
                         </div>
                     }
                 }
-                else
-                {
-                    <div class="p-4 text-center text-muted small">Sem dados</div>
-                }
+                else { <div class="p-4 text-center text-muted small">Sem dados</div> }
             </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL -->
+<!-- MODAL NOVA CONTA -->
 <div class="modal fade" id="novaContaModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <form asp-controller="Financeiro" asp-action="Create" method="post">
                 @Html.AntiForgeryToken()
@@ -239,14 +244,14 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Descrição *</label>
-                        <input type="text" name="Descricao" class="form-control" required placeholder="Ex: Assinatura Adobe, Freelancer João..." />
+                        <input type="text" name="Descricao" class="form-control" required placeholder="Ex: Assinatura Adobe, Freelancer..." />
                     </div>
                     <div class="row g-3">
                         <div class="col-6">
                             <label class="form-label">Valor *</label>
                             <div class="input-group">
                                 <span class="input-group-text">R$</span>
-                                <input type="number" name="Valor" class="form-control" step="0.01" min="0" required placeholder="0,00" />
+                                <input type="number" name="Valor" id="valorInput" class="form-control" step="0.01" min="0" required placeholder="0,00" />
                             </div>
                         </div>
                         <div class="col-6">
@@ -264,6 +269,16 @@
                             </select>
                         </div>
                         <div class="col-6">
+                            <label class="form-label">Responsável</label>
+                            <select name="ResponsavelId" class="form-select">
+                                <option value="">Sem responsável</option>
+                                @foreach (var u in usuarios)
+                                {
+                                    <option value="@u.Id">@u.NomeCompleto</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6">
                             <label class="form-label">Cliente (opcional)</label>
                             <select name="ClienteId" class="form-select">
                                 <option value="">Sem vínculo</option>
@@ -273,6 +288,52 @@
                                 }
                             </select>
                         </div>
+                        <div class="col-6">
+                            <label class="form-label d-block">Tipo de lançamento</label>
+                            <div class="d-flex gap-3 mt-1">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="tipoLanc" id="tipoNormal" value="normal" checked onchange="toggleLanc('normal')" />
+                                    <label class="form-check-label text-sm" for="tipoNormal">Normal</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="tipoLanc" id="tipoParcelado" value="parcelado" onchange="toggleLanc('parcelado')" />
+                                    <label class="form-check-label text-sm" for="tipoParcelado">Parcelado</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="tipoLanc" id="tipoFixo" value="fixo" onchange="toggleLanc('fixo')" />
+                                    <label class="form-check-label text-sm" for="tipoFixo">Conta Fixa</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PARCELAMENTO -->
+                        <div class="col-12 d-none" id="blocoParcelamento">
+                            <div style="background:#f8f9fa;border-radius:8px;padding:14px;">
+                                <div class="fw-600 text-sm mb-2"><i class="bi bi-credit-card me-1 text-primary"></i>Parcelamento</div>
+                                <input type="hidden" name="Parcelado" value="false" id="inputParcelado" />
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label text-sm">Número de parcelas</label>
+                                        <select name="numeroParcelas" class="form-select form-select-sm" id="selParcelas">
+                                            @for (int i = 2; i <= 24; i++) { <option value="@i">@i x</option> }
+                                        </select>
+                                    </div>
+                                    <div class="col-6 d-flex align-items-end">
+                                        <div class="text-xs text-muted" id="infoParcela">Cada parcela: R$ —</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CONTA FIXA -->
+                        <div class="col-12 d-none" id="blocoFixo">
+                            <div style="background:#eef2ff;border-radius:8px;padding:14px;">
+                                <input type="hidden" name="contaFixa" value="false" id="inputFixo" />
+                                <div class="fw-600 text-sm text-primary"><i class="bi bi-pin-fill me-1"></i>Conta Fixa</div>
+                                <div class="text-xs text-muted mt-1">Serão gerados lançamentos mensais até o fim do ano automaticamente.</div>
+                            </div>
+                        </div>
+
                         <div class="col-12">
                             <label class="form-label">Observações</label>
                             <textarea name="Observacoes" class="form-control" rows="2" placeholder="Notas adicionais..."></textarea>
@@ -303,6 +364,23 @@ async function excluir(id, btn) {
     const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
     const res = await fetch(`/Financeiro/Excluir/${id}`, { method: 'POST', headers: { 'RequestVerificationToken': token } });
     if (res.ok) btn.closest('tr').remove();
+}
+
+function toggleLanc(tipo) {
+    document.getElementById('blocoParcelamento').classList.toggle('d-none', tipo !== 'parcelado');
+    document.getElementById('blocoFixo').classList.toggle('d-none', tipo !== 'fixo');
+    document.getElementById('inputParcelado').value = tipo === 'parcelado' ? 'true' : 'false';
+    document.getElementById('inputFixo').value = tipo === 'fixo' ? 'true' : 'false';
+}
+
+document.getElementById('selParcelas')?.addEventListener('change', atualizarParcela);
+document.getElementById('valorInput')?.addEventListener('input', atualizarParcela);
+
+function atualizarParcela() {
+    const valor = parseFloat(document.getElementById('valorInput').value) || 0;
+    const parcelas = parseInt(document.getElementById('selParcelas').value) || 1;
+    const info = document.getElementById('infoParcela');
+    if (info) info.textContent = `Cada parcela: R$ ${(valor / parcelas).toFixed(2).replace('.', ',')}`;
 }
 </script>
 }

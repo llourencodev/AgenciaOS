@@ -1,0 +1,194 @@
+@model IEnumerable<AgenciaOS.Models.DataComemorativa>
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Datas Comemorativas";
+    var mesFiltro = (int)(ViewData["MesFiltro"] ?? DateTime.Now.Month);
+    var cultura   = new System.Globalization.CultureInfo("pt-BR");
+    string NomeMes(int m) => new DateTime(2000, m, 1).ToString("MMMM", cultura);
+    var proximas  = Model.Where(d => d.ProximaOcorrencia.HasValue && d.ProximaOcorrencia.Value >= DateTime.Today)
+                        .OrderBy(d => d.ProximaOcorrencia).Take(5).ToList();
+}
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-calendar-heart-fill text-danger me-2"></i>Datas Comemorativas</h1>
+        <p>Planeje conteúdo nas datas certas</p>
+    </div>
+    @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+    {
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novaDataModal">
+            <i class="bi bi-plus-lg me-1"></i> Adicionar Data
+        </button>
+    }
+</div>
+
+<!-- PRÓXIMAS DATAS -->
+@if (proximas.Any())
+{
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="fw-600 text-sm text-muted mb-2">PRÓXIMAS DATAS</div>
+        </div>
+        @foreach (var d in proximas)
+        {
+            var dias = (int)(d.ProximaOcorrencia!.Value - DateTime.Today).TotalDays;
+            <div class="col-md-4 col-lg-3">
+                <div class="card p-3" style="border-left:4px solid @d.Cor;">
+                    <div class="fw-700">@d.Nome</div>
+                    <div class="text-sm text-muted">@d.Dia/@d.Mes — @d.Tipo</div>
+                    <div class="text-xs mt-1 fw-600" style="color:@d.Cor;">
+                        @(dias == 0 ? "Hoje!" : dias == 1 ? "Amanhã!" : $"em {dias} dias")
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- FILTRO POR MÊS -->
+<div class="filter-bar mb-4">
+    <div class="d-flex gap-1 flex-wrap">
+        @for (int m = 1; m <= 12; m++)
+        {
+            <a asp-action="Index" asp-route-mes="@m"
+               class="btn btn-sm @(mesFiltro == m ? "btn-primary" : "btn-outline-secondary")">
+                @NomeMes(m)
+            </a>
+        }
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Todas</a>
+    </div>
+</div>
+
+<!-- LISTA POR MÊS -->
+@{
+    var grupos = Model.GroupBy(d => d.Mes).OrderBy(g => g.Key).ToList();
+    if (mesFiltro > 0) grupos = grupos.Where(g => g.Key == mesFiltro).ToList();
+}
+
+@if (grupos.Any())
+{
+    @foreach (var grupo in grupos)
+    {
+        <div class="mb-4">
+            <div class="fw-700 text-capitalize mb-3" style="font-size:16px;">
+                <i class="bi bi-calendar3 me-2 text-primary"></i>@NomeMes(grupo.Key)
+            </div>
+            <div class="row g-3">
+                @foreach (var d in grupo.OrderBy(d => d.Dia))
+                {
+                    <div class="col-md-4 col-lg-3">
+                        <div class="card p-3 h-100" style="border-top:3px solid @d.Cor;">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-700">@d.Nome</div>
+                                    <div class="text-sm text-muted mt-1">
+                                        <i class="bi bi-calendar3 me-1"></i>@d.Dia de @NomeMes(d.Mes)
+                                        @if (!d.Anual && d.Ano.HasValue) { <span>(@d.Ano)</span> }
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(d.Descricao))
+                                    {
+                                        <div class="text-xs text-muted mt-2">@d.Descricao</div>
+                                    }
+                                </div>
+                                <div>
+                                    <span class="badge text-xs" style="background:@d.Cor;color:white;">@d.Tipo</span>
+                                    @if (d.Anual) { <div class="text-xs text-muted mt-1"><i class="bi bi-arrow-repeat"></i> Anual</div> }
+                                </div>
+                            </div>
+                            @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+                            {
+                                <button class="btn btn-xs btn-outline-danger mt-2 align-self-end" onclick="excluir(@d.Id, this)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="card">
+        <div class="empty-state">
+            <i class="bi bi-calendar-heart empty-state-icon text-danger"></i>
+            <h5>Nenhuma data cadastrada</h5>
+            <p>Adicione datas comemorativas para planejar o conteúdo.</p>
+        </div>
+    </div>
+}
+
+<!-- MODAL -->
+<div class="modal fade" id="novaDataModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-calendar-plus me-2 text-primary"></i>Nova Data Comemorativa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Nome *</label>
+                            <input type="text" name="Nome" class="form-control" required placeholder="Ex: Dia das Mães" />
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">Dia *</label>
+                            <input type="number" name="Dia" class="form-control" min="1" max="31" required />
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">Mês *</label>
+                            <select name="Mes" class="form-select">
+                                @for (int m = 1; m <= 12; m++)
+                                {
+                                    <option value="@m">@NomeMes(m)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">Tipo</label>
+                            <select name="Tipo" class="form-select">
+                                @foreach (var t in Enum.GetValues<TipoDataComemorativa>())
+                                {
+                                    <option value="@t">@t</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-8">
+                            <label class="form-label">Cor</label>
+                            <input type="color" name="Cor" value="#6366f1" class="form-control form-control-color" style="height:38px;" />
+                        </div>
+                        <div class="col-4 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="Anual" value="true" id="anual" checked />
+                                <label class="form-check-label" for="anual">Anual</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descrição</label>
+                            <textarea name="Descricao" class="form-control" rows="2" placeholder="Sugestão de conteúdo, referências..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">Adicionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+async function excluir(id, btn) {
+    if (!confirm('Excluir esta data?')) return;
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+    const res = await fetch(`/DatasComemorativas/Excluir/${id}`, { method: 'POST', headers: { 'RequestVerificationToken': token } });
+    if (res.ok) btn.closest('.col-md-4, .col-lg-3').remove();
+}
+</script>
+}

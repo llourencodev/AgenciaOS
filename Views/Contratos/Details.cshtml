@@ -1,0 +1,121 @@
+@model AgenciaOS.Models.Contrato
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Contrato — " + Model.Titulo;
+    var cultura = new System.Globalization.CultureInfo("pt-BR");
+    var corStatus = Model.Status switch
+    {
+        StatusContrato.Rascunho  => "#6b7280",
+        StatusContrato.Enviado   => "#f59e0b",
+        StatusContrato.Assinado  => "#10b981",
+        StatusContrato.Cancelado => "#ef4444",
+        _ => "#6b7280"
+    };
+}
+
+<div class="page-header">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge" style="background:@corStatus;color:white;font-size:13px;">@Model.Status</span>
+        </div>
+        <h1>@Model.Titulo</h1>
+        <p><i class="bi bi-building me-1"></i>@Model.Cliente.NomeEmpresa · Criado em @Model.CriadoEm.ToString("dd/MM/yyyy")</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Voltar</a>
+        <button onclick="window.print()" class="btn btn-outline-secondary"><i class="bi bi-printer me-1"></i> Imprimir</button>
+        @if (Model.Status != StatusContrato.Cancelado)
+        {
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                    Alterar Status
+                </button>
+                <ul class="dropdown-menu">
+                    @foreach (var s in Enum.GetValues<StatusContrato>().Where(s => s != Model.Status))
+                    {
+                        <li>
+                            <form asp-action="AlterarStatus" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="status" value="@s" />
+                                <button type="submit" class="dropdown-item">@s</button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <!-- DOCUMENTO -->
+        <div class="card" id="documentoContrato">
+            <div class="card-body" style="padding:40px;">
+                <div style="white-space:pre-wrap;font-family:Georgia,serif;line-height:1.9;font-size:14px;color:#1a1a1a;">@Model.Conteudo</div>
+                @if (Model.Status == StatusContrato.Assinado && Model.DataAssinatura.HasValue)
+                {
+                    <div class="mt-5 pt-4 border-top text-center">
+                        <div class="text-muted small">Documento assinado digitalmente em</div>
+                        <div class="fw-700">@Model.DataAssinatura.Value.ToString("dd 'de' MMMM 'de' yyyy", cultura)</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><span class="card-title">Informações</span></div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="text-xs text-muted fw-600">CLIENTE</div>
+                    <div class="fw-600">@Model.Cliente.NomeEmpresa</div>
+                </div>
+                @if (Model.Valor.HasValue)
+                {
+                    <div class="mb-3">
+                        <div class="text-xs text-muted fw-600">VALOR</div>
+                        <div class="fw-700 text-success fs-5">@Model.Valor.Value.ToString("C0", cultura)</div>
+                    </div>
+                }
+                @if (Model.DataVigencia.HasValue)
+                {
+                    <div class="mb-3">
+                        <div class="text-xs text-muted fw-600">VIGÊNCIA</div>
+                        <div>@Model.DataVigencia.Value.ToString("dd/MM/yyyy")</div>
+                    </div>
+                }
+                @if (Model.DataAssinatura.HasValue)
+                {
+                    <div class="mb-3">
+                        <div class="text-xs text-muted fw-600">ASSINADO EM</div>
+                        <div class="text-success fw-600">@Model.DataAssinatura.Value.ToString("dd/MM/yyyy")</div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Observacoes))
+                {
+                    <div class="mb-3">
+                        <div class="text-xs text-muted fw-600">OBSERVAÇÕES</div>
+                        <div class="text-sm">@Model.Observacoes</div>
+                    </div>
+                }
+                <div>
+                    <div class="text-xs text-muted fw-600">CRIADO POR</div>
+                    <div class="text-sm">@(Model.CriadoPor?.NomeCompleto ?? "—")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+<style>
+@@media print {
+    .sidebar, .topbar, .page-header .btn, .page-header .dropdown, .col-lg-4 { display: none !important; }
+    .main-wrapper { margin-left: 0 !important; }
+    .col-lg-8 { width: 100% !important; }
+    #documentoContrato { box-shadow: none !important; border: none !important; }
+}
+</style>
+}

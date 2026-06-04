@@ -10,7 +10,7 @@ namespace AgenciaOS.Controllers;
 [Authorize]
 public class ArquivosController(ApplicationDbContext db, UserManager<Usuario> userManager, IWebHostEnvironment env) : Controller
 {
-    public async Task<IActionResult> Index(int? clienteId, CategoriaArquivo? categoria, string? mes)
+    public async Task<IActionResult> Index(int? clienteId, CategoriaArquivo? categoria, string? mes, string? dia)
     {
         var usuario = await userManager.GetUserAsync(User);
         var query = db.Arquivos.Include(a => a.Cliente).Include(a => a.UploadPor).AsQueryable();
@@ -25,6 +25,8 @@ public class ArquivosController(ApplicationDbContext db, UserManager<Usuario> us
 
         if (categoria.HasValue) query = query.Where(a => a.Categoria == categoria);
         if (!string.IsNullOrEmpty(mes)) query = query.Where(a => a.MesReferencia == mes);
+        if (!string.IsNullOrEmpty(dia) && DateTime.TryParse(dia, out var diaDate))
+            query = query.Where(a => a.CriadoEm.Date == diaDate.Date);
 
         var arquivos = await query.OrderByDescending(a => a.CriadoEm).ToListAsync();
 
@@ -32,6 +34,7 @@ public class ArquivosController(ApplicationDbContext db, UserManager<Usuario> us
         ViewData["Clientes"] = await db.Clientes.Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
         ViewData["Categoria"] = categoria;
         ViewData["Mes"] = mes;
+        ViewData["Dia"] = dia;
 
         return View(arquivos);
     }

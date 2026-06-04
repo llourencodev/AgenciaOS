@@ -1,0 +1,100 @@
+@model IEnumerable<AgenciaOS.Models.Contrato>
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Contratos";
+    var clientes     = ViewData["Clientes"] as IEnumerable<Cliente> ?? [];
+    var clienteId    = ViewData["ClienteId"];
+    var statusFiltro = ViewData["StatusFiltro"] as StatusContrato?;
+    var cultura      = new System.Globalization.CultureInfo("pt-BR");
+}
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-file-earmark-text-fill me-2 text-primary"></i>Contratos</h1>
+        <p>@Model.Count() contratos</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary px-4">
+        <i class="bi bi-plus-lg me-1"></i> Novo Contrato
+    </a>
+</div>
+
+<!-- FILTROS -->
+<div class="filter-bar mb-4">
+    <form method="get" class="d-flex gap-2 flex-wrap">
+        <select name="clienteId" class="form-select form-select-sm" style="width:210px;" onchange="this.form.submit()">
+            <option value="">Todos os clientes</option>
+            @foreach (var c in clientes)
+            {
+                <option value="@c.Id" selected="@(clienteId?.ToString() == c.Id.ToString())">@c.NomeEmpresa</option>
+            }
+        </select>
+        <select name="status" class="form-select form-select-sm" style="width:160px;" onchange="this.form.submit()">
+            <option value="">Todos os status</option>
+            @foreach (var s in Enum.GetValues<StatusContrato>())
+            {
+                <option value="@s" selected="@(statusFiltro == s)">@s</option>
+            }
+        </select>
+    </form>
+</div>
+
+@if (Model.Any())
+{
+    <div class="row g-3">
+        @foreach (var c in Model)
+        {
+            var corStatus = c.Status switch
+            {
+                StatusContrato.Rascunho  => "#6b7280",
+                StatusContrato.Enviado   => "#f59e0b",
+                StatusContrato.Assinado  => "#10b981",
+                StatusContrato.Cancelado => "#ef4444",
+                _ => "#6b7280"
+            };
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100" style="border-top:3px solid @corStatus;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge" style="background:@corStatus;color:white;">@c.Status</span>
+                            @if (c.Valor.HasValue)
+                            {
+                                <span class="fw-700 text-success">@c.Valor.Value.ToString("C0", cultura)</span>
+                            }
+                        </div>
+                        <div class="fw-700 mb-1">@c.Titulo</div>
+                        <div class="text-sm text-muted mb-2">
+                            <i class="bi bi-building me-1"></i>@c.Cliente.NomeEmpresa
+                        </div>
+                        <div class="text-xs text-muted">
+                            <i class="bi bi-calendar3 me-1"></i>Criado em @c.CriadoEm.ToString("dd/MM/yyyy")
+                            @if (c.DataAssinatura.HasValue)
+                            {
+                                <span><br /><i class="bi bi-pen me-1 text-success"></i>Assinado em @c.DataAssinatura.Value.ToString("dd/MM/yyyy")</span>
+                            }
+                            @if (c.DataVigencia.HasValue)
+                            {
+                                <span><br /><i class="bi bi-hourglass me-1"></i>Vigência: @c.DataVigencia.Value.ToString("dd/MM/yyyy")</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex gap-2">
+                        <a asp-action="Details" asp-route-id="@c.Id" class="btn btn-sm btn-outline-primary flex-fill">
+                            <i class="bi bi-eye me-1"></i>Visualizar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="empty-state">
+            <i class="bi bi-file-earmark-text empty-state-icon text-primary"></i>
+            <h5>Nenhum contrato</h5>
+            <p>Crie contratos para seus clientes de forma profissional.</p>
+            <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Novo Contrato</a>
+        </div>
+    </div>
+}

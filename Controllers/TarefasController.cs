@@ -10,7 +10,7 @@ namespace AgenciaOS.Controllers;
 [Authorize]
 public class TarefasController(ApplicationDbContext db, UserManager<Usuario> userManager) : Controller
 {
-    public async Task<IActionResult> Index(string? status, int? clienteId)
+    public async Task<IActionResult> Index(string? status, int? clienteId, string? responsavelId, TipoTarefa? tipo)
     {
         var usuario = await userManager.GetUserAsync(User);
         var query = db.Tarefas.Include(t => t.Cliente).Include(t => t.Responsavel).AsQueryable();
@@ -24,12 +24,20 @@ public class TarefasController(ApplicationDbContext db, UserManager<Usuario> use
         if (clienteId.HasValue)
             query = query.Where(t => t.ClienteId == clienteId);
 
+        if (!string.IsNullOrEmpty(responsavelId))
+            query = query.Where(t => t.ResponsavelId == responsavelId);
+
+        if (tipo.HasValue)
+            query = query.Where(t => t.Tipo == tipo);
+
         var tarefas = await query.OrderBy(t => t.Prazo).ToListAsync();
 
-        ViewData["StatusFiltro"] = status;
-        ViewData["ClienteId"] = clienteId;
-        ViewData["Clientes"] = await db.Clientes.Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
-        ViewData["Usuarios"] = await userManager.Users.Where(u => u.Ativo).ToListAsync();
+        ViewData["StatusFiltro"]  = status;
+        ViewData["ClienteId"]     = clienteId;
+        ViewData["ResponsavelId"] = responsavelId;
+        ViewData["TipoFiltro"]    = tipo;
+        ViewData["Clientes"]      = await db.Clientes.Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
+        ViewData["Usuarios"]      = await userManager.Users.Where(u => u.Ativo).ToListAsync();
 
         return View(tarefas);
     }
@@ -52,6 +60,45 @@ public class TarefasController(ApplicationDbContext db, UserManager<Usuario> use
         model.CriadoEm = DateTime.UtcNow;
         db.Tarefas.Add(model);
         await db.SaveChangesAsync();
+
+        if (model.Recorrente && model.FrequenciaRecorrencia.HasValue && model.Prazo.HasValue)
+        {
+            var fim = model.DataFimRecorrencia ?? model.Prazo.Value.AddYears(1);
+            var dataAtual = model.Prazo.Value;
+
+            while (true)
+            {
+                dataAtual = model.FrequenciaRecorrencia switch
+                {
+                    Models.FrequenciaRecorrencia.Diaria     => dataAtual.AddDays(1),
+                    Models.FrequenciaRecorrencia.Semanal    => dataAtual.AddDays(7),
+                    Models.FrequenciaRecorrencia.Quinzenal  => dataAtual.AddDays(15),
+                    Models.FrequenciaRecorrencia.Mensal     => dataAtual.AddMonths(1),
+                    _ => fim.AddDays(1)
+                };
+
+                if (dataAtual > fim) break;
+
+                db.Tarefas.Add(new Tarefa
+                {
+                    Titulo            = model.Titulo,
+                    Descricao         = model.Descricao,
+                    Tipo              = model.Tipo,
+                    Prioridade        = model.Prioridade,
+                    Status            = StatusTarefa.Pendente,
+                    Prazo             = dataAtual,
+                    ClienteId         = model.ClienteId,
+                    ResponsavelId     = model.ResponsavelId,
+                    CriadoPorId       = model.CriadoPorId,
+                    Recorrente        = true,
+                    FrequenciaRecorrencia = model.FrequenciaRecorrencia,
+                    DataFimRecorrencia = model.DataFimRecorrencia,
+                    CriadoEm          = DateTime.UtcNow
+                });
+            }
+            await db.SaveChangesAsync();
+        }
+
         TempData["Sucesso"] = "Tarefa criada!";
         return RedirectToAction(nameof(Index));
     }

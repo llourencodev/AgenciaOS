@@ -2,6 +2,32 @@
 @using AgenciaOS.Models
 @{ ViewData["Title"] = "Dashboard"; }
 
+@{
+    var hora = DateTime.Now.Hour;
+    var saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+    string[] frases = [
+        "Cada tarefa concluída é um passo mais perto dos seus objetivos.",
+        "A consistência é a chave do sucesso na gestão de conteúdo.",
+        "Organização hoje significa resultados amanhã.",
+        "Grandes resultados começam com um bom planejamento.",
+        "Foque no que importa, delegue o resto.",
+        "Um cliente satisfeito é a melhor estratégia de marketing.",
+        "Criatividade com estratégia: essa é a fórmula.",
+        "Seu trabalho de hoje impacta o crescimento de amanhã."
+    ];
+    var frase = frases[DateTime.Now.DayOfYear % frases.Length];
+}
+
+<!-- SAUDAÇÃO -->
+<div class="mb-4" style="padding: 20px 24px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 16px; color: white;">
+    <div class="fw-700 fs-5">@saudacao, @(User.Identity?.Name?.Split('@')[0]) 👋</div>
+    <div class="mt-1" style="opacity:.85; font-size:14px;">@frase</div>
+    <div class="mt-2" style="opacity:.7; font-size:12px;">
+        <i class="bi bi-calendar3 me-1"></i>
+        @DateTime.Now.ToString("dddd, dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("pt-BR"))
+    </div>
+</div>
+
 <!-- STAT CARDS -->
 <div class="stat-grid">
     <div class="stat-card purple">
@@ -123,8 +149,13 @@
                             {
                                 <tr>
                                     <td>
-                                        <div class="fw-600">@t.Titulo</div>
-                                        <span class="text-xs text-muted">@t.Cliente?.NomeEmpresa</span>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span style="width:8px;height:8px;border-radius:50%;background:@t.CorTipo;flex-shrink:0;"></span>
+                                            <div>
+                                                <div class="fw-600">@t.Titulo</div>
+                                                <span class="text-xs text-muted">@t.Cliente?.NomeEmpresa</span>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
                                         @if (t.Responsavel != null)

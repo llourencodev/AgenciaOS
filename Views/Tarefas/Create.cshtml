@@ -11,6 +11,32 @@
     <a asp-action="Index" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Voltar</a>
 </div>
 
+<!-- TAREFAS PRÉ-DEFINIDAS -->
+<div class="mb-4">
+    <div class="text-sm fw-600 mb-2 text-muted">Atalhos rápidos:</div>
+    <div class="d-flex flex-wrap gap-2" id="predefinidas">
+        @{
+            var templates = new[] {
+                new { titulo="Criar artes para Stories",    tipo="Design",      desc="Criar artes e layouts para os Stories da semana." },
+                new { titulo="Editar vídeo Reels",          tipo="Edicao",      desc="Editar e finalizar vídeo para publicação no Reels." },
+                new { titulo="Redigir legenda dos posts",   tipo="Redacao",     desc="Escrever legendas criativas e hashtags para os posts." },
+                new { titulo="Reunião de alinhamento",      tipo="Reuniao",     desc="Reunião para alinhar estratégia e pautas do mês." },
+                new { titulo="Publicar conteúdo aprovado",  tipo="Publicacao",  desc="Publicar conteúdos já aprovados nas redes sociais." },
+                new { titulo="Planejamento mensal",         tipo="Planejamento",desc="Montar o planejamento de conteúdo do próximo mês." },
+                new { titulo="Criar artes Feed",            tipo="Design",      desc="Desenvolver artes para publicações no feed." },
+                new { titulo="Revisão de conteúdo",         tipo="Redacao",     desc="Revisar textos, legendas e artes antes da aprovação." },
+            };
+        }
+        @foreach (var t in templates)
+        {
+            <button type="button" class="btn btn-outline-secondary btn-sm"
+                    onclick="preencherTemplate('@t.titulo', '@t.tipo', '@t.desc')">
+                <i class="bi bi-bolt-fill me-1 text-warning"></i>@t.titulo
+            </button>
+        }
+    </div>
+</div>
+
 <div style="max-width: 700px;">
     <div class="card">
         <div class="card-header"><span class="card-title">Detalhes da Tarefa</span></div>
@@ -19,13 +45,31 @@
                 @Html.AntiForgeryToken()
                 <div class="form-group">
                     <label class="form-label">Título *</label>
-                    <input asp-for="Titulo" class="form-control" required placeholder="Ex: Criar artes para o Stories" />
+                    <input asp-for="Titulo" id="inputTitulo" class="form-control" required placeholder="Ex: Criar artes para o Stories" />
                 </div>
                 <div class="form-group">
                     <label class="form-label">Descrição</label>
-                    <textarea asp-for="Descricao" class="form-control" placeholder="Detalhes da tarefa..."></textarea>
+                    <textarea asp-for="Descricao" id="inputDescricao" class="form-control" rows="3" placeholder="Detalhes da tarefa..."></textarea>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Tipo</label>
+                        <select asp-for="Tipo" id="inputTipo" class="form-select">
+                            @foreach (var tipo in Enum.GetValues<TipoTarefa>())
+                            {
+                                <option value="@tipo">@tipo</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Prioridade</label>
+                        <select asp-for="Prioridade" class="form-select">
+                            <option value="Baixa">Baixa</option>
+                            <option value="Media" selected>Média</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Urgente">Urgente</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label class="form-label">Cliente</label>
                         <select asp-for="ClienteId" class="form-select">
@@ -47,23 +91,64 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Prioridade</label>
-                        <select asp-for="Prioridade" class="form-select">
-                            <option value="Baixa">Baixa</option>
-                            <option value="Media" selected>Média</option>
-                            <option value="Alta">Alta</option>
-                            <option value="Urgente">Urgente</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
                         <label class="form-label">Prazo</label>
                         <input asp-for="Prazo" type="date" class="form-control" />
                     </div>
+                    <div class="form-group">
+                        <label class="form-label d-block">Recorrência</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" id="recorrente" asp-for="Recorrente" onchange="toggleRecorrencia(this)" />
+                            <label class="form-check-label" for="recorrente">Tarefa recorrente</label>
+                        </div>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary w-100" style="justify-content:center;padding:12px;">
+
+                <!-- RECORRÊNCIA -->
+                <div id="blocoRecorrencia" class="d-none mt-2" style="background:#f8f9fa;border-radius:10px;padding:16px;">
+                    <div class="fw-600 text-sm mb-3"><i class="bi bi-arrow-repeat me-1 text-primary"></i>Configurar Recorrência</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div>
+                            <label class="form-label text-sm">Frequência</label>
+                            <select asp-for="FrequenciaRecorrencia" class="form-select form-select-sm">
+                                <option value="">Selecione...</option>
+                                @foreach (var freq in Enum.GetValues<FrequenciaRecorrencia>())
+                                {
+                                    <option value="@freq">@freq</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label text-sm">Repetir até</label>
+                            <input asp-for="DataFimRecorrencia" type="date" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="text-xs text-muted mt-2">
+                        <i class="bi bi-info-circle me-1"></i>As tarefas recorrentes serão geradas automaticamente até a data final.
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 mt-4" style="justify-content:center;padding:12px;">
                     <i class="bi bi-check-lg"></i> Criar Tarefa
                 </button>
             </form>
         </div>
     </div>
 </div>
+
+@section Scripts {
+<script>
+function preencherTemplate(titulo, tipo, desc) {
+    document.getElementById('inputTitulo').value = titulo;
+    document.getElementById('inputDescricao').value = desc;
+    const sel = document.getElementById('inputTipo');
+    if (sel) {
+        const opt = [...sel.options].find(o => o.value === tipo);
+        if (opt) sel.value = opt.value;
+    }
+}
+
+function toggleRecorrencia(cb) {
+    document.getElementById('blocoRecorrencia').classList.toggle('d-none', !cb.checked);
+}
+</script>
+}

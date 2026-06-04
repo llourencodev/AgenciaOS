@@ -1,0 +1,210 @@
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Usuários";
+    var lista = ViewData["Lista"] as IEnumerable<(Usuario u, IList<string> roles)> ?? [];
+    string[] todasAbas = ["Dashboard", "Clientes", "Calendario", "Arquivos", "Tarefas", "Financeiro", "Contratos", "DatasComemorativas"];
+}
+
+<div class="page-header">
+    <div>
+        <h1>Usuários</h1>
+        <p>Gerencie o acesso e permissões da equipe</p>
+    </div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoUsuarioModal">
+        <i class="bi bi-person-plus-fill me-1"></i> Novo Usuário
+    </button>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Usuário</th>
+                    <th>E-mail</th>
+                    <th>Tipo</th>
+                    <th>Abas Permitidas</th>
+                    <th>Status</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var (u, roles) in lista)
+                {
+                    var abas = u.AbasPermitidas?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? [];
+                    <tr class="@(!u.Ativo ? "opacity-50" : "")">
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="avatar-xs">@u.Iniciais</div>
+                                <div>
+                                    <div class="fw-600">@u.NomeCompleto</div>
+                                    <div class="text-xs text-muted">@u.CriadoEm.ToString("dd/MM/yyyy")</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-sm text-muted">@u.Email</td>
+                        <td>
+                            <span class="badge @(u.Tipo == TipoUsuario.Admin ? "text-bg-danger" : u.Tipo == TipoUsuario.Equipe ? "text-bg-primary" : u.Tipo == TipoUsuario.Cliente ? "text-bg-success" : "text-bg-secondary")">
+                                @u.Tipo
+                            </span>
+                        </td>
+                        <td>
+                            @if (u.Tipo == TipoUsuario.Admin)
+                            {
+                                <span class="text-xs text-muted">Acesso total</span>
+                            }
+                            else if (!abas.Any())
+                            {
+                                <span class="text-xs text-muted">Todas as abas</span>
+                            }
+                            else
+                            {
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var aba in abas)
+                                    {
+                                        <span class="badge text-bg-light border text-xs">@aba</span>
+                                    }
+                                </div>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge @(u.Ativo ? "text-bg-success" : "text-bg-secondary")">
+                                @(u.Ativo ? "Ativo" : "Inativo")
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-1">
+                                @if (u.Tipo != TipoUsuario.Admin)
+                                {
+                                    <button class="btn btn-xs btn-outline-secondary"
+                                            data-bs-toggle="modal" data-bs-target="#permModal_@u.Id">
+                                        <i class="bi bi-shield-check"></i>
+                                    </button>
+                                    <button class="btn btn-xs @(u.Ativo ? "btn-outline-warning" : "btn-outline-success")"
+                                            onclick="ativar('@u.Id', this)">
+                                        <i class="bi bi-@(u.Ativo ? "pause-circle" : "play-circle")"></i>
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- MODAL PERMISSÕES -->
+                    @if (u.Tipo != TipoUsuario.Admin)
+                    {
+                        <div class="modal fade" id="permModal_@u.Id" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <form asp-action="AlterarAbas" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@u.Id" />
+                                        <div class="modal-header">
+                                            <h5 class="modal-title"><i class="bi bi-shield-check me-2 text-primary"></i>Permissões — @u.Nome</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p class="text-sm text-muted mb-3">Selecione as abas que este usuário pode acessar. Sem seleção = acesso a todas.</p>
+                                            <div class="row g-2">
+                                                @foreach (var aba in todasAbas)
+                                                {
+                                                    <div class="col-6">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                   name="abasPermitidas" value="@aba" id="aba_@(u.Id)_@aba"
+                                                                   checked="@(abas.Contains(aba))" />
+                                                            <label class="form-check-label text-sm" for="aba_@(u.Id)_@aba">@aba</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary">Salvar Permissões</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL NOVO USUÁRIO -->
+<div class="modal fade" id="novoUsuarioModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-plus-fill me-2 text-primary"></i>Novo Usuário</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">Nome *</label>
+                            <input type="text" name="nome" class="form-control" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Sobrenome</label>
+                            <input type="text" name="sobrenome" class="form-control" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">E-mail *</label>
+                            <input type="email" name="email" class="form-control" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Senha *</label>
+                            <input type="password" name="senha" class="form-control" required minlength="6" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Tipo</label>
+                            <select name="tipo" class="form-select">
+                                <option value="Equipe">Equipe</option>
+                                <option value="ColaboradorExterno">Colaborador Externo</option>
+                                <option value="Cliente">Cliente</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Abas permitidas (vazio = todas)</label>
+                            <div class="row g-1">
+                                @foreach (var aba in todasAbas)
+                                {
+                                    <div class="col-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="abasPermitidas" value="@aba" id="new_@aba" />
+                                            <label class="form-check-label text-sm" for="new_@aba">@aba</label>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">Criar Usuário</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+async function ativar(id, btn) {
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+    const res = await fetch(`/Usuarios/Ativar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+        body: `id=${id}&__RequestVerificationToken=${token}`
+    });
+    if (res.ok) location.reload();
+}
+</script>
+}
