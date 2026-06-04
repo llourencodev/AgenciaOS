@@ -83,6 +83,25 @@ using (var scope = app.Services.CreateScope())
         await userMgr.CreateAsync(admin, "Admin@123");
         await userMgr.AddToRoleAsync(admin, "Admin");
     }
+
+    // Seed configuração inicial da agência
+    if (!db.Configuracoes.Any())
+    {
+        db.Configuracoes.Add(new Configuracao
+        {
+            NomeAgencia          = "Social Unânime",
+            Tagline              = "Marketing Estratégico",
+            CorPrimaria          = "#7d1e2e",
+            CorPrimariaDark      = "#5e1622",
+            CorSecundaria        = "#9e2438",
+            CorTextoSobrePrimaria = "#e8d5c4",
+            CorSidebar           = "#1a0a0e",
+            GradienteIcone       = "linear-gradient(135deg,#7d1e2e 0%,#9e2438 100%)",
+            GradienteSaudacao    = "linear-gradient(135deg,#6d1826 0%,#9e2438 100%)",
+            LogoUrl              = "/brand/logo.png"
+        });
+        await db.SaveChangesAsync();
+    }
 }
 
 app.Run();

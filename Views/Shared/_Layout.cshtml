@@ -10,6 +10,39 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
+    @{
+        @inject AgenciaOS.Data.ApplicationDbContext _cfgDb
+        var _cfg = await _cfgDb.Configuracoes.OrderBy(c => c.Id).FirstOrDefaultAsync() ?? new AgenciaOS.Models.Configuracao();
+    }
+    <style>
+        :root {
+            --primary:       @_cfg.CorPrimaria;
+            --primary-dark:  @_cfg.CorPrimariaDark;
+            --primary-light: @(_cfg.CorPrimaria)18;
+            --primary-rgb:   @(HexToRgb(_cfg.CorPrimaria));
+            --grad-primary:  @_cfg.GradienteIcone;
+            --grad-saudacao: @_cfg.GradienteSaudacao;
+            --sb-bg:         @_cfg.CorSidebar;
+            --cor-texto-primaria: @_cfg.CorTextoSobrePrimaria;
+        }
+        .brand-logo, .topbar-avatar, .sidebar-user-avatar, .stat-card.indigo .stat-icon,
+        .badge.text-bg-primary, .btn-primary { background: @_cfg.GradienteIcone !important; }
+        .btn-primary { box-shadow: 0 4px 14px rgba(0,0,0,.25) !important; }
+        .nav-link-item.active { background: linear-gradient(90deg, @(_cfg.CorPrimaria)33 0%, @(_cfg.CorPrimaria)0d 100%) !important; }
+        .nav-link-item.active::before { background: @_cfg.GradienteIcone !important; }
+    </style>
+    @functions {
+        static string HexToRgb(string hex) {
+            hex = hex.TrimStart('#');
+            if (hex.Length == 6) {
+                int r = Convert.ToInt32(hex[..2], 16);
+                int g = Convert.ToInt32(hex[2..4], 16);
+                int b = Convert.ToInt32(hex[4..6], 16);
+                return $"{r},{g},{b}";
+            }
+            return "99,102,241";
+        }
+    }
 </head>
 <body>
 
@@ -22,18 +55,26 @@
     var _abas = _currentUser?.AbasPermitidas?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? [];
     bool TemAcesso(string aba) => !_abas.Any() || User.IsInRole("Admin") || _abas.Contains(aba);
     string ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var _cfgLayout = await _layoutDb.Configuracoes.OrderBy(c => c.Id).FirstOrDefaultAsync() ?? new AgenciaOS.Models.Configuracao();
 
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
     <aside class="sidebar" id="sidebar">
         <!-- BRAND -->
         <div class="sidebar-brand">
-            <div class="brand-logo">
-                <i class="bi bi-lightning-charge-fill"></i>
-            </div>
+            @if (!string.IsNullOrEmpty(_cfgLayout.LogoUrl))
+            {
+                <img src="@_cfgLayout.LogoUrl" alt="@_cfgLayout.NomeAgencia" class="brand-logo-img" />
+            }
+            else
+            {
+                <div class="brand-logo">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                </div>
+            }
             <div class="brand-text">
-                <span class="brand-name">AgenciaOS</span>
-                <span class="brand-tagline">Gestão de Agência</span>
+                <span class="brand-name">@_cfgLayout.NomeAgencia</span>
+                <span class="brand-tagline">@_cfgLayout.Tagline</span>
             </div>
         </div>
 
@@ -131,6 +172,11 @@
                        class="nav-link-item @(ctrl=="Usuarios"?"active":"")">
                         <span class="nav-icon ni-red"><i class="bi bi-person-gear"></i></span>
                         <span class="nav-label">Usuários</span>
+                    </a>
+                    <a asp-controller="Configuracao" asp-action="Index"
+                       class="nav-link-item @(ctrl=="Configuracao"?"active":"")">
+                        <span class="nav-icon ni-slate"><i class="bi bi-palette-fill"></i></span>
+                        <span class="nav-label">Personalização</span>
                     </a>
                 </div>
             }

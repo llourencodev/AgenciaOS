@@ -108,6 +108,11 @@ a{text-decoration:none;color:inherit;}
 }
 .brand-name { font-weight:800; font-size:15.5px; color:white; line-height:1.1; letter-spacing:-.3px; }
 .brand-tagline { font-size:10px; color:rgba(255,255,255,.3); margin-top:2px; font-weight:400; letter-spacing:.02em; }
+.brand-logo-img {
+    height:44px; width:auto; max-width:44px; object-fit:contain;
+    border-radius:10px; flex-shrink:0;
+    filter:brightness(0) invert(1);
+}
 
 /* ── NAV ───────────────────────────────────────────────────── */
 .sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; scrollbar-width:none; position:relative; z-index:1; }

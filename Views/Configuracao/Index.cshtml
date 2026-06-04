@@ -1,0 +1,258 @@
+@model AgenciaOS.Models.Configuracao
+@{
+    ViewData["Title"] = "Personalização";
+}
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-palette-fill me-2 text-primary"></i>Personalização da Marca</h1>
+        <p>Configure a identidade visual do sistema para sua agência</p>
+    </div>
+</div>
+
+<form asp-action="Salvar" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+
+    <div class="row g-4">
+        <!-- IDENTIDADE -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header"><span class="card-title"><i class="bi bi-building me-2"></i>Identidade da Agência</span></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">Nome da Agência</label>
+                            <input asp-for="NomeAgencia" class="form-control" placeholder="Ex: Social Unânime" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Slogan / Tagline</label>
+                            <input asp-for="Tagline" class="form-control" placeholder="Ex: Marketing Estratégico" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Logo principal <span class="text-muted small">(sidebar)</span></label>
+                            @if (!string.IsNullOrEmpty(Model.LogoUrl))
+                            {
+                                <div class="mb-2 p-3 rounded" style="background:#1a0a0e;">
+                                    <img src="@Model.LogoUrl" style="height:40px;filter:brightness(0) invert(1);" />
+                                </div>
+                            }
+                            <input type="file" name="logoFile" class="form-control" accept="image/*" />
+                            <div class="form-text">PNG transparente recomendado</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Ícone / Logo marca <span class="text-muted small">(favicon)</span></label>
+                            @if (!string.IsNullOrEmpty(Model.LogoMarcaUrl))
+                            {
+                                <div class="mb-2"><img src="@Model.LogoMarcaUrl" style="height:40px;" /></div>
+                            }
+                            <input type="file" name="logoMarcaFile" class="form-control" accept="image/*" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CORES -->
+            <div class="card">
+                <div class="card-header"><span class="card-title"><i class="bi bi-droplet-fill me-2"></i>Paleta de Cores</span></div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Cor Primária</label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <input type="color" asp-for="CorPrimaria" class="form-control form-control-color" style="height:42px;width:56px;" />
+                                <input type="text" asp-for="CorPrimaria" class="form-control form-control-sm" style="font-family:monospace;" />
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Cor Primária Dark</label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <input type="color" asp-for="CorPrimariaDark" class="form-control form-control-color" style="height:42px;width:56px;" />
+                                <input type="text" asp-for="CorPrimariaDark" class="form-control form-control-sm" style="font-family:monospace;" />
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Cor Secundária</label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <input type="color" asp-for="CorSecundaria" class="form-control form-control-color" style="height:42px;width:56px;" />
+                                <input type="text" asp-for="CorSecundaria" class="form-control form-control-sm" style="font-family:monospace;" />
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Texto sobre a cor primária</label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <input type="color" asp-for="CorTextoSobrePrimaria" class="form-control form-control-color" style="height:42px;width:56px;" />
+                                <input type="text" asp-for="CorTextoSobrePrimaria" class="form-control form-control-sm" style="font-family:monospace;" />
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Fundo do Sidebar</label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <input type="color" asp-for="CorSidebar" class="form-control form-control-color" style="height:42px;width:56px;" />
+                                <input type="text" asp-for="CorSidebar" class="form-control form-control-sm" style="font-family:monospace;" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Gradiente dos ícones ativos</label>
+                            <input asp-for="GradienteIcone" class="form-control" style="font-family:monospace;" placeholder="linear-gradient(135deg,#cor1 0%,#cor2 100%)" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Gradiente do banner de saudação</label>
+                            <input asp-for="GradienteSaudacao" class="form-control" style="font-family:monospace;" placeholder="linear-gradient(135deg,#cor1 0%,#cor2 100%)" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PREVIEW -->
+        <div class="col-lg-4">
+            <div class="card mb-4" style="position:sticky;top:88px;">
+                <div class="card-header"><span class="card-title">Preview em tempo real</span></div>
+                <div class="card-body p-0">
+                    <!-- Mini sidebar preview -->
+                    <div id="previewSidebar" style="background:#1a0a0e;border-radius:0 0 0 0;padding:16px 12px;min-height:320px;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.08);">
+                            <div id="pvLogo" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#7d1e2e,#9e2438);display:flex;align-items:center;justify-content:center;color:white;font-size:16px;box-shadow:0 6px 18px rgba(125,30,46,.5);">
+                                <i class="bi bi-lightning-charge-fill"></i>
+                            </div>
+                            <div>
+                                <div id="pvNome" style="font-size:13px;font-weight:800;color:white;line-height:1;">Social Unânime</div>
+                                <div id="pvTag" style="font-size:9px;color:rgba(255,255,255,.3);margin-top:2px;">Marketing Estratégico</div>
+                            </div>
+                        </div>
+                        @{
+                            var items = new[]{ ("bi-grid-1x2-fill","Dashboard",true), ("bi-kanban-fill","Tarefas",false), ("bi-bar-chart-line-fill","Financeiro",false) };
+                        }
+                        @foreach (var (icon, label, active) in items)
+                        {
+                            <div style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:10px;margin-bottom:4px;background:@(active ? "rgba(125,30,46,.25)" : "transparent");">
+                                <div id="@(active?"pvIcon":"")" style="width:36px;height:36px;border-radius:10px;background:@(active ? "linear-gradient(135deg,#7d1e2e,#9e2438)" : "rgba(255,255,255,.07)");display:flex;align-items:center;justify-content:center;color:@(active?"white":"rgba(255,255,255,.4)");font-size:15px;@(active?"box-shadow:0 4px 14px rgba(125,30,46,.55);":"")">
+                                    <i class="bi @icon"></i>
+                                </div>
+                                <span style="font-size:12.5px;color:@(active?"white":"rgba(255,255,255,.5)");font-weight:@(active?"600":"400");">@label</span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Banner preview -->
+                    <div id="pvBanner" style="margin:0;padding:18px 20px;background:linear-gradient(135deg,#6d1826,#9e2438);">
+                        <div style="font-weight:700;font-size:14px;color:#e8d5c4;">Boa tarde, Admin 👋</div>
+                        <div style="font-size:11px;color:rgba(232,213,196,.7);margin-top:3px;">Grandes resultados começam com um bom planejamento.</div>
+                    </div>
+
+                    <!-- Button preview -->
+                    <div style="padding:16px;display:flex;gap:8px;">
+                        <div id="pvBtn" style="padding:8px 16px;border-radius:8px;background:linear-gradient(135deg,#7d1e2e,#9e2438);color:#e8d5c4;font-size:12px;font-weight:600;cursor:default;">
+                            Botão Primário
+                        </div>
+                        <div style="padding:8px 16px;border-radius:8px;background:#f3f4f8;color:#64748b;font-size:12px;font-weight:500;cursor:default;">
+                            Secundário
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TEMPLATES -->
+            <div class="card">
+                <div class="card-header"><span class="card-title">Templates prontos</span></div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="aplicarTemplate('unanime')">
+                            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#7d1e2e;margin-right:6px;vertical-align:middle;"></span>Social Unânime (Vinho)
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="aplicarTemplate('indigo')">
+                            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#6366f1;margin-right:6px;vertical-align:middle;"></span>Indigo (Padrão)
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="aplicarTemplate('emerald')">
+                            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#059669;margin-right:6px;vertical-align:middle;"></span>Emerald (Verde)
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="aplicarTemplate('slate')">
+                            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#334155;margin-right:6px;vertical-align:middle;"></span>Slate (Escuro)
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="aplicarTemplate('rose')">
+                            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#e11d48;margin-right:6px;vertical-align:middle;"></span>Rose (Rosa)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary px-5" style="padding:12px 32px;font-size:15px;">
+            <i class="bi bi-check-lg me-2"></i> Salvar e Aplicar
+        </button>
+        <span class="text-muted small ms-3">As mudanças são aplicadas imediatamente para todos os usuários.</span>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+const templates = {
+    unanime: {
+        primaria:'#7d1e2e', primariaDark:'#5e1622', secundaria:'#9e2438',
+        texto:'#e8d5c4', sidebar:'#1a0a0e',
+        gradIcone:'linear-gradient(135deg,#7d1e2e 0%,#9e2438 100%)',
+        gradBanner:'linear-gradient(135deg,#6d1826 0%,#9e2438 100%)'
+    },
+    indigo: {
+        primaria:'#6366f1', primariaDark:'#4f46e5', secundaria:'#8b5cf6',
+        texto:'#ffffff', sidebar:'#0f0d22',
+        gradIcone:'linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)',
+        gradBanner:'linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)'
+    },
+    emerald: {
+        primaria:'#059669', primariaDark:'#047857', secundaria:'#10b981',
+        texto:'#ffffff', sidebar:'#052e16',
+        gradIcone:'linear-gradient(135deg,#059669 0%,#10b981 100%)',
+        gradBanner:'linear-gradient(135deg,#064e3b 0%,#059669 100%)'
+    },
+    slate: {
+        primaria:'#334155', primariaDark:'#1e293b', secundaria:'#475569',
+        texto:'#f1f5f9', sidebar:'#0f172a',
+        gradIcone:'linear-gradient(135deg,#334155 0%,#475569 100%)',
+        gradBanner:'linear-gradient(135deg,#0f172a 0%,#334155 100%)'
+    },
+    rose: {
+        primaria:'#e11d48', primariaDark:'#be123c', secundaria:'#f43f5e',
+        texto:'#ffffff', sidebar:'#1a0510',
+        gradIcone:'linear-gradient(135deg,#e11d48 0%,#f43f5e 100%)',
+        gradBanner:'linear-gradient(135deg,#9f1239 0%,#e11d48 100%)'
+    }
+};
+
+function aplicarTemplate(nome) {
+    const t = templates[nome];
+    if (!t) return;
+    document.querySelector('[name="CorPrimaria"]').value = t.primaria;
+    document.querySelectorAll('[name="CorPrimaria"]').forEach(el => el.value = t.primaria);
+    document.querySelectorAll('[name="CorPrimariaDark"]').forEach(el => el.value = t.primariaDark);
+    document.querySelectorAll('[name="CorSecundaria"]').forEach(el => el.value = t.secundaria);
+    document.querySelectorAll('[name="CorTextoSobrePrimaria"]').forEach(el => el.value = t.texto);
+    document.querySelectorAll('[name="CorSidebar"]').forEach(el => el.value = t.sidebar);
+    document.querySelector('[name="GradienteIcone"]').value = t.gradIcone;
+    document.querySelector('[name="GradienteSaudacao"]').value = t.gradBanner;
+    atualizarPreview(t);
+}
+
+function atualizarPreview(t) {
+    document.getElementById('pvLogo').style.background = t.gradIcone;
+    document.getElementById('pvLogo').style.boxShadow = `0 6px 18px rgba(0,0,0,.4)`;
+    document.getElementById('pvIcon').style.background = t.gradIcone;
+    document.getElementById('pvBanner').style.background = t.gradBanner;
+    document.getElementById('pvBtn').style.background = t.gradIcone;
+    document.getElementById('pvBtn').style.color = t.texto;
+    document.getElementById('previewSidebar').style.background = t.sidebar;
+    document.getElementById('pvNome').textContent = document.querySelector('[name="NomeAgencia"]').value || 'Agência';
+    document.getElementById('pvTag').textContent = document.querySelector('[name="Tagline"]').value || 'Sistema';
+}
+
+document.querySelector('[name="NomeAgencia"]')?.addEventListener('input', e => document.getElementById('pvNome').textContent = e.target.value);
+document.querySelector('[name="Tagline"]')?.addEventListener('input', e => document.getElementById('pvTag').textContent = e.target.value);
+</script>
+}

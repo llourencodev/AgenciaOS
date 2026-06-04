@@ -18,6 +18,7 @@ public class ApplicationDbContext : IdentityDbContext<Usuario>
     public DbSet<Notificacao> Notificacoes => Set<Notificacao>();
     public DbSet<DataComemorativa> DatasComemorativas => Set<DataComemorativa>();
     public DbSet<Contrato> Contratos => Set<Contrato>();
+    public DbSet<Configuracao> Configuracoes => Set<Configuracao>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
