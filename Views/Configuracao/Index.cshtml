@@ -1,292 +1,295 @@
 @model AgenciaOS.Models.Configuracao
-@{
-    ViewData["Title"] = "Personalização";
-}
+@{ ViewData["Title"] = "Personalização"; }
 
 <div class="page-header">
     <div>
-        <h1><i class="bi bi-palette-fill me-2 text-primary"></i>Personalização da Marca</h1>
+        <h1><i class="bi bi-palette-fill me-2" style="color:var(--primary)"></i>Personalização da Marca</h1>
         <p>Configure a identidade visual do sistema para sua agência</p>
     </div>
 </div>
 
 <form asp-action="Salvar" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
-
     <div class="row g-4">
-        <!-- IDENTIDADE -->
-        <div class="col-lg-8">
+
+        <!-- ── COLUNA PRINCIPAL ─────────────────── -->
+        <div class="col-lg-7">
+
+            <!-- IDENTIDADE -->
             <div class="card mb-4">
                 <div class="card-header"><span class="card-title"><i class="bi bi-building me-2"></i>Identidade da Agência</span></div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-6">
+                        <div class="col-sm-6">
                             <label class="form-label">Nome da Agência</label>
-                            <input asp-for="NomeAgencia" class="form-control" placeholder="Ex: Social Unânime" />
+                            <input asp-for="NomeAgencia" class="form-control" id="inpNome" />
                         </div>
-                        <div class="col-6">
+                        <div class="col-sm-6">
                             <label class="form-label">Slogan / Tagline</label>
-                            <input asp-for="Tagline" class="form-control" placeholder="Ex: Marketing Estratégico" />
+                            <input asp-for="Tagline" class="form-control" id="inpTag" />
                         </div>
-                        <div class="col-6">
-                            <label class="form-label">Logo principal <span class="text-muted small">(sidebar)</span></label>
+                        <div class="col-sm-6">
+                            <label class="form-label">Logo <span class="text-muted small">(PNG transparente)</span></label>
                             @if (!string.IsNullOrEmpty(Model.LogoUrl))
                             {
-                                <div class="mb-2 p-3 rounded" style="background:#1a0a0e;">
-                                    <img src="@Model.LogoUrl" style="height:40px;filter:brightness(0) invert(1);" />
+                                <div class="mb-2 p-3 rounded d-flex align-items-center justify-content-center" style="background:#1a0a0e;min-height:60px;">
+                                    <img src="@Model.LogoUrl" style="max-height:50px;max-width:100%;filter:brightness(0) invert(1);" />
                                 </div>
                             }
                             <input type="file" name="logoFile" class="form-control" accept="image/*" />
-                            <div class="form-text">PNG transparente recomendado</div>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label">Ícone / Logo marca <span class="text-muted small">(favicon)</span></label>
-                            @if (!string.IsNullOrEmpty(Model.LogoMarcaUrl))
-                            {
-                                <div class="mb-2"><img src="@Model.LogoMarcaUrl" style="height:40px;" /></div>
-                            }
-                            <input type="file" name="logoMarcaFile" class="form-control" accept="image/*" />
+                        <div class="col-sm-6">
+                            <label class="form-label">Tamanho da Logo</label>
+                            <div class="d-flex gap-2 mt-1 flex-wrap">
+                                @foreach (var (val, label) in new[]{ ("sm","Pequena"), ("md","Média"), ("lg","Grande"), ("xl","Extra Grande") })
+                                {
+                                    <label class="d-flex align-items-center gap-2 cursor-pointer px-3 py-2 rounded border @(Model.TamanhoLogo == val ? "border-primary bg-primary-light" : "border-light")" style="cursor:pointer;flex:1;min-width:80px;">
+                                        <input type="radio" asp-for="TamanhoLogo" value="@val" class="form-check-input m-0" />
+                                        <span class="small fw-600">@label</span>
+                                    </label>
+                                }
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- CORES -->
-            <div class="card">
+            <!-- ESTILO DO SIDEBAR -->
+            <div class="card mb-4">
+                <div class="card-header"><span class="card-title"><i class="bi bi-layout-sidebar me-2"></i>Estilo do Menu Lateral</span></div>
+                <div class="card-body">
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <label class="form-label mb-2">Tema do Sidebar</label>
+                            <div class="d-flex gap-3">
+                                <label class="flex-fill cursor-pointer" style="cursor:pointer;">
+                                    <input type="radio" asp-for="SidebarClara" value="false" class="d-none" id="temaDark" />
+                                    <div class="p-3 rounded border @(!Model.SidebarClara ? "border-primary" : "border-light")" style="transition:.2s;" onclick="document.getElementById('temaDark').checked=true;selecionarTema('dark')">
+                                        <div style="height:80px;border-radius:10px;background:linear-gradient(180deg,#0f0d22,#1a0a0e);display:flex;flex-direction:column;gap:6px;padding:10px;">
+                                            <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.15);width:70%;"></div>
+                                            <div style="height:8px;border-radius:4px;background:rgba(99,102,241,.6);width:55%;"></div>
+                                            <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.07);width:65%;"></div>
+                                        </div>
+                                        <div class="text-center mt-2 small fw-600 @(!Model.SidebarClara ? "text-primary" : "text-muted")">🌙 Escuro</div>
+                                    </div>
+                                </label>
+                                <label class="flex-fill cursor-pointer" style="cursor:pointer;">
+                                    <input type="radio" asp-for="SidebarClara" value="true" class="d-none" id="temaLight" />
+                                    <div class="p-3 rounded border @(Model.SidebarClara ? "border-primary" : "border-light")" style="transition:.2s;" onclick="document.getElementById('temaLight').checked=true;selecionarTema('light')">
+                                        <div style="height:80px;border-radius:10px;background:#ffffff;border:1px solid #e8eaf2;display:flex;flex-direction:column;gap:6px;padding:10px;">
+                                            <div style="height:8px;border-radius:4px;background:#e2e8f0;width:70%;"></div>
+                                            <div style="height:8px;border-radius:4px;background:var(--primary);width:55%;opacity:.7;"></div>
+                                            <div style="height:8px;border-radius:4px;background:#e2e8f0;width:65%;"></div>
+                                        </div>
+                                        <div class="text-center mt-2 small fw-600 @(Model.SidebarClara ? "text-primary" : "text-muted")">☀️ Claro</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label">Cor de Fundo do Sidebar</label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <input type="color" asp-for="CorSidebar" class="form-control form-control-color flex-shrink-0" style="height:44px;width:60px;border-radius:10px;padding:4px;" oninput="sync(this,'CorSidebar')" />
+                                <input type="text" asp-for="CorSidebar" id="txt-CorSidebar" class="form-control" style="font-family:monospace;" oninput="sync(this,'CorSidebar')" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PALETA DE CORES -->
+            <div class="card mb-4">
                 <div class="card-header"><span class="card-title"><i class="bi bi-droplet-fill me-2"></i>Paleta de Cores</span></div>
                 <div class="card-body">
                     <div class="row g-3">
-
                         @{
                             var cores = new[] {
-                                new { Label="Cor Primária",             For="CorPrimaria",            Desc="Links, bordas de foco, badges" },
-                                new { Label="Cor Primária Escura",      For="CorPrimariaDark",         Desc="Hover nos botões" },
-                                new { Label="Cor Secundária",           For="CorSecundaria",           Desc="Orb decorativo do sidebar" },
-                                new { Label="Texto sobre cor primária", For="CorTextoSobrePrimaria",   Desc="Texto dentro de botões e ícones" },
-                                new { Label="Fundo do Sidebar ★",       For="CorSidebar",              Desc="Cor de fundo do menu lateral" },
+                                new { Label="Cor Primária",             Prop="CorPrimaria",           Desc="Links, bordas de foco, badges", Val=Model.CorPrimaria },
+                                new { Label="Cor Primária Escura",      Prop="CorPrimariaDark",        Desc="Hover dos botões", Val=Model.CorPrimariaDark },
+                                new { Label="Cor Secundária",           Prop="CorSecundaria",          Desc="Orb decorativo do sidebar", Val=Model.CorSecundaria },
+                                new { Label="Texto sobre cor primária", Prop="CorTextoSobrePrimaria",  Desc="Texto em cima de botões coloridos", Val=Model.CorTextoSobrePrimaria },
                             };
                         }
-
                         @foreach (var cor in cores)
                         {
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label">
-                                    @cor.Label
-                                    <span class="text-muted small fw-400 ms-1">— @cor.Desc</span>
-                                </label>
+                            <div class="col-sm-6">
+                                <label class="form-label">@cor.Label <span class="text-muted small fw-400">— @cor.Desc</span></label>
                                 <div class="d-flex gap-2 align-items-center">
-                                    <input type="color" name="@cor.For" class="form-control form-control-color flex-shrink-0"
-                                           style="height:44px;width:60px;border-radius:10px;padding:4px;"
-                                           value="@(Model.GetType().GetProperty(cor.For)?.GetValue(Model)?.ToString())" />
-                                    <input type="text" name="@cor.For"
-                                           value="@(Model.GetType().GetProperty(cor.For)?.GetValue(Model)?.ToString())"
-                                           class="form-control" style="font-family:monospace;font-size:13px;"
-                                           oninput="this.previousElementSibling.value=this.value" />
+                                    <input type="color" name="@cor.Prop" value="@cor.Val"
+                                           class="form-control form-control-color flex-shrink-0" style="height:44px;width:60px;border-radius:10px;padding:4px;"
+                                           oninput="sync(this,'@cor.Prop')" />
+                                    <input type="text" name="@cor.Prop" value="@cor.Val" id="txt-@cor.Prop"
+                                           class="form-control" style="font-family:monospace;"
+                                           oninput="sync(this,'@cor.Prop')" />
                                 </div>
                             </div>
                         }
-                    </div>
 
-                    <hr class="my-4" />
-
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label">
-                                <i class="bi bi-paint-bucket me-1 text-primary"></i>
-                                Gradiente dos ícones ativos e botões
-                                <span class="text-muted small fw-400 ms-1">— controla Dashboard ativo, botões, avatares</span>
-                            </label>
+                        <div class="col-12 mt-1">
+                            <label class="form-label">Gradiente — Ícone ativo e Botões <span class="text-muted small fw-400">— controla Dashboard, avatares, btn primário</span></label>
                             <div class="d-flex gap-2 align-items-center">
-                                <input asp-for="GradienteIcone" class="form-control" id="gradIconeInput" style="font-family:monospace;" placeholder="linear-gradient(135deg,#7d1e2e 0%,#9e2438 100%)" />
-                                <div id="gradIconePreview" style="width:50px;height:40px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,#7d1e2e,#9e2438);"></div>
+                                <div id="pvGradIcone" style="width:60px;height:44px;border-radius:10px;flex-shrink:0;background:@Model.GradienteIcone;"></div>
+                                <input asp-for="GradienteIcone" class="form-control" id="inpGradIcone" style="font-family:monospace;" oninput="document.getElementById('pvGradIcone').style.background=this.value" />
                             </div>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">
-                                <i class="bi bi-sun-fill me-1 text-warning"></i>
-                                Gradiente do banner de saudação
-                                <span class="text-muted small fw-400 ms-1">— banner "Boa tarde" no Dashboard</span>
-                            </label>
+                            <label class="form-label">Gradiente — Banner de Saudação <span class="text-muted small fw-400">— "Boa tarde" no Dashboard</span></label>
                             <div class="d-flex gap-2 align-items-center">
-                                <input asp-for="GradienteSaudacao" class="form-control" id="gradBannerInput" style="font-family:monospace;" placeholder="linear-gradient(135deg,#6d1826 0%,#9e2438 100%)" />
-                                <div id="gradBannerPreview" style="width:50px;height:40px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,#6d1826,#9e2438);"></div>
+                                <div id="pvGradBanner" style="width:60px;height:44px;border-radius:10px;flex-shrink:0;background:@Model.GradienteSaudacao;"></div>
+                                <input asp-for="GradienteSaudacao" class="form-control" id="inpGradBanner" style="font-family:monospace;" oninput="document.getElementById('pvGradBanner').style.background=this.value" />
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="alert alert-info mt-4 mb-0 d-flex gap-3 align-items-start" style="border-radius:12px;">
-                        <i class="bi bi-info-circle-fill text-info fs-5 mt-1"></i>
-                        <div>
-                            <div class="fw-600 text-sm mb-1">O que cada configuração controla:</div>
-                            <ul class="text-sm mb-0 ps-3" style="line-height:1.9;">
-                                <li><strong>Cor Primária</strong> — bordas de foco, links, badges, hover em botões</li>
-                                <li><strong>Gradiente dos ícones</strong> — ícone ativo no menu, botão primário, avatares</li>
-                                <li><strong>Gradiente saudação</strong> — banner "Boa tarde" na tela inicial</li>
-                                <li><strong>Cor Sidebar</strong> — fundo do menu lateral</li>
-                                <li><strong>Texto sobre primária</strong> — cor do texto em cima de botões e ícones coloridos</li>
-                            </ul>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- PREVIEW -->
-        <div class="col-lg-4">
-            <div class="card mb-4" style="position:sticky;top:88px;">
-                <div class="card-header"><span class="card-title">Preview em tempo real</span></div>
+        <!-- ── COLUNA LATERAL: PREVIEW + PRESETS ─ -->
+        <div class="col-lg-5">
+            <!-- PREVIEW -->
+            <div class="card mb-4" style="position:sticky;top:80px;">
+                <div class="card-header"><span class="card-title">Preview</span></div>
                 <div class="card-body p-0">
-                    <!-- Mini sidebar preview -->
-                    <div id="previewSidebar" style="background:#1a0a0e;border-radius:0 0 0 0;padding:16px 12px;min-height:320px;">
-                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.08);">
-                            <div id="pvLogo" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#7d1e2e,#9e2438);display:flex;align-items:center;justify-content:center;color:white;font-size:16px;box-shadow:0 6px 18px rgba(125,30,46,.5);">
+                    <div id="pvSidebar" style="background:@Model.CorSidebar;padding:16px 12px;min-height:280px;transition:.3s;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.07);">
+                            <div id="pvLogo" style="width:40px;height:40px;border-radius:10px;background:@Model.GradienteIcone;display:flex;align-items:center;justify-content:center;color:white;font-size:16px;box-shadow:0 4px 14px rgba(0,0,0,.35);">
                                 <i class="bi bi-lightning-charge-fill"></i>
                             </div>
                             <div>
-                                <div id="pvNome" style="font-size:13px;font-weight:800;color:white;line-height:1;">Social Unânime</div>
-                                <div id="pvTag" style="font-size:9px;color:rgba(255,255,255,.3);margin-top:2px;">Marketing Estratégico</div>
+                                <div id="pvNome" style="font-size:13px;font-weight:800;color:white;">@Model.NomeAgencia</div>
+                                <div id="pvTag" style="font-size:9px;color:rgba(255,255,255,.35);margin-top:1px;">@Model.Tagline</div>
                             </div>
                         </div>
-                        @{
-                            var items = new[]{ ("bi-grid-1x2-fill","Dashboard",true), ("bi-kanban-fill","Tarefas",false), ("bi-bar-chart-line-fill","Financeiro",false) };
-                        }
-                        @foreach (var (icon, label, active) in items)
+                        @{ var navItems = new[]{ ("bi-grid-1x2-fill","Dashboard",true), ("bi-kanban-fill","Tarefas",false), ("bi-calendar3-week-fill","Calendário",false) }; }
+                        @foreach (var (ico, lbl, ativo) in navItems)
                         {
-                            <div style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:10px;margin-bottom:4px;background:@(active ? "rgba(125,30,46,.25)" : "transparent");">
-                                <div id="@(active?"pvIcon":"")" style="width:36px;height:36px;border-radius:10px;background:@(active ? "linear-gradient(135deg,#7d1e2e,#9e2438)" : "rgba(255,255,255,.07)");display:flex;align-items:center;justify-content:center;color:@(active?"white":"rgba(255,255,255,.4)");font-size:15px;@(active?"box-shadow:0 4px 14px rgba(125,30,46,.55);":"")">
-                                    <i class="bi @icon"></i>
+                            <div style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:10px;margin-bottom:3px;@(ativo?"background:rgba(255,255,255,.1);":"")">
+                                <div id="@(ativo?"pvIconAtivo":"")" style="width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;background:@(ativo?Model.GradienteIcone:"rgba(255,255,255,.08)");color:@(ativo?"white":"rgba(255,255,255,.4)");@(ativo?"box-shadow:0 4px 12px rgba(0,0,0,.3);":"")">
+                                    <i class="bi @ico"></i>
                                 </div>
-                                <span style="font-size:12.5px;color:@(active?"white":"rgba(255,255,255,.5)");font-weight:@(active?"600":"400");">@label</span>
+                                <span style="font-size:12px;color:@(ativo?"white":"rgba(255,255,255,.5)");font-weight:@(ativo?600:400);">@lbl</span>
                             </div>
                         }
                     </div>
-
-                    <!-- Banner preview -->
-                    <div id="pvBanner" style="margin:0;padding:18px 20px;background:linear-gradient(135deg,#6d1826,#9e2438);">
-                        <div style="font-weight:700;font-size:14px;color:#e8d5c4;">Boa tarde, Admin 👋</div>
-                        <div style="font-size:11px;color:rgba(232,213,196,.7);margin-top:3px;">Grandes resultados começam com um bom planejamento.</div>
+                    <div id="pvBanner" style="padding:16px 20px;background:@Model.GradienteSaudacao;transition:.3s;">
+                        <div id="pvBannerTxt" style="font-weight:700;font-size:13px;color:#fff;">Boa tarde, Admin 👋</div>
+                        <div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:2px;">Grandes resultados começam com um bom planejamento.</div>
                     </div>
-
-                    <!-- Button preview -->
-                    <div style="padding:16px;display:flex;gap:8px;">
-                        <div id="pvBtn" style="padding:8px 16px;border-radius:8px;background:linear-gradient(135deg,#7d1e2e,#9e2438);color:#e8d5c4;font-size:12px;font-weight:600;cursor:default;">
-                            Botão Primário
-                        </div>
-                        <div style="padding:8px 16px;border-radius:8px;background:#f3f4f8;color:#64748b;font-size:12px;font-weight:500;cursor:default;">
-                            Secundário
-                        </div>
+                    <div style="padding:14px 16px;display:flex;gap:8px;align-items:center;">
+                        <div id="pvBtn" style="padding:8px 18px;border-radius:8px;background:@Model.GradienteIcone;color:@Model.CorTextoSobrePrimaria;font-size:12px;font-weight:600;">Botão Primário</div>
+                        <div style="padding:8px 14px;border-radius:8px;background:#f3f4f8;color:#64748b;font-size:12px;">Secundário</div>
                     </div>
                 </div>
             </div>
 
             <!-- TEMPLATES -->
             <div class="card">
-                <div class="card-header"><span class="card-title">Templates prontos</span></div>
+                <div class="card-header"><span class="card-title">🎨 Templates prontos</span></div>
                 <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="aplicarTemplate('unanime')">
-                            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#7d1e2e;margin-right:6px;vertical-align:middle;"></span>Social Unânime (Vinho)
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="aplicarTemplate('indigo')">
-                            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#6366f1;margin-right:6px;vertical-align:middle;"></span>Indigo (Padrão)
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="aplicarTemplate('emerald')">
-                            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#059669;margin-right:6px;vertical-align:middle;"></span>Emerald (Verde)
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="aplicarTemplate('slate')">
-                            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#334155;margin-right:6px;vertical-align:middle;"></span>Slate (Escuro)
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="aplicarTemplate('rose')">
-                            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#e11d48;margin-right:6px;vertical-align:middle;"></span>Rose (Rosa)
-                        </button>
+                    <div class="row g-2">
+                        @{
+                            var templates = new[] {
+                                new { id="unanime",   label="Social Unânime",    cor="#7d1e2e", sidebar="#1a0a0e",  grad="linear-gradient(135deg,#7d1e2e 0%,#9e2438 100%)",  banner="linear-gradient(135deg,#6d1826 0%,#9e2438 100%)",  txt="#e8d5c4", clara=false },
+                                new { id="indigo",    label="Indigo",            cor="#6366f1", sidebar="#0f0d22",  grad="linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)",  banner="linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%)",  txt="#ffffff", clara=false },
+                                new { id="ocean",     label="Ocean",             cor="#0ea5e9", sidebar="#0c1a2e",  grad="linear-gradient(135deg,#0284c7 0%,#0ea5e9 100%)",  banner="linear-gradient(135deg,#075985 0%,#0ea5e9 100%)",  txt="#ffffff", clara=false },
+                                new { id="emerald",   label="Emerald",           cor="#059669", sidebar="#052e16",  grad="linear-gradient(135deg,#059669 0%,#10b981 100%)",  banner="linear-gradient(135deg,#064e3b 0%,#059669 100%)",  txt="#ffffff", clara=false },
+                                new { id="rose",      label="Rose",              cor="#e11d48", sidebar="#1a0510",  grad="linear-gradient(135deg,#e11d48 0%,#f43f5e 100%)",  banner="linear-gradient(135deg,#9f1239 0%,#e11d48 100%)",  txt="#ffffff", clara=false },
+                                new { id="amber",     label="Amber",             cor="#d97706", sidebar="#1c0f00",  grad="linear-gradient(135deg,#b45309 0%,#f59e0b 100%)",  banner="linear-gradient(135deg,#78350f 0%,#d97706 100%)",  txt="#fff7ed", clara=false },
+                                new { id="violet",    label="Violet",            cor="#7c3aed", sidebar="#120a2e",  grad="linear-gradient(135deg,#7c3aed 0%,#a855f7 100%)",  banner="linear-gradient(135deg,#4c1d95 0%,#7c3aed 100%)",  txt="#ffffff", clara=false },
+                                new { id="light-ind", label="Claro — Indigo",    cor="#6366f1", sidebar="#ffffff",  grad="linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)",  banner="linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%)",  txt="#ffffff", clara=true  },
+                                new { id="light-ros", label="Claro — Rose",      cor="#e11d48", sidebar="#ffffff",  grad="linear-gradient(135deg,#e11d48 0%,#f43f5e 100%)",  banner="linear-gradient(135deg,#9f1239 0%,#e11d48 100%)",  txt="#ffffff", clara=true  },
+                                new { id="light-eme", label="Claro — Emerald",   cor="#059669", sidebar="#ffffff",  grad="linear-gradient(135deg,#059669 0%,#10b981 100%)",  banner="linear-gradient(135deg,#064e3b 0%,#059669 100%)",  txt="#ffffff", clara=true  },
+                            };
+                        }
+                        @foreach (var t in templates)
+                        {
+                            <div class="col-6">
+                                <button type="button" class="w-100 btn btn-outline-secondary btn-sm text-start py-2 px-3"
+                                        onclick="aplicarTemplate(@(t.clara.ToString().ToLower()),'@t.cor','@t.sidebar','@t.grad','@t.banner','@t.txt')"
+                                        style="border-radius:10px;display:flex;align-items:center;gap:8px;">
+                                    <span style="width:28px;height:28px;border-radius:7px;flex-shrink:0;background:@t.grad;display:inline-block;box-shadow:0 2px 8px rgba(0,0,0,.2);"></span>
+                                    <span class="fw-600" style="font-size:11.5px;">@t.label</span>
+                                </button>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="mt-4">
-        <button type="submit" class="btn btn-primary px-5" style="padding:12px 32px;font-size:15px;">
+    <!-- SALVAR -->
+    <div class="mt-4 d-flex align-items-center gap-3">
+        <button type="submit" class="btn btn-primary px-5" style="padding:13px 36px;font-size:15px;">
             <i class="bi bi-check-lg me-2"></i> Salvar e Aplicar
         </button>
-        <span class="text-muted small ms-3">As mudanças são aplicadas imediatamente para todos os usuários.</span>
+        <span class="text-muted small">Mudanças aplicadas imediatamente para todos os usuários.</span>
     </div>
 </form>
 
 @section Scripts {
 <script>
-const templates = {
-    unanime: {
-        primaria:'#7d1e2e', primariaDark:'#5e1622', secundaria:'#9e2438',
-        texto:'#e8d5c4', sidebar:'#1a0a0e',
-        gradIcone:'linear-gradient(135deg,#7d1e2e 0%,#9e2438 100%)',
-        gradBanner:'linear-gradient(135deg,#6d1826 0%,#9e2438 100%)'
-    },
-    indigo: {
-        primaria:'#6366f1', primariaDark:'#4f46e5', secundaria:'#8b5cf6',
-        texto:'#ffffff', sidebar:'#0f0d22',
-        gradIcone:'linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)',
-        gradBanner:'linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)'
-    },
-    emerald: {
-        primaria:'#059669', primariaDark:'#047857', secundaria:'#10b981',
-        texto:'#ffffff', sidebar:'#052e16',
-        gradIcone:'linear-gradient(135deg,#059669 0%,#10b981 100%)',
-        gradBanner:'linear-gradient(135deg,#064e3b 0%,#059669 100%)'
-    },
-    slate: {
-        primaria:'#334155', primariaDark:'#1e293b', secundaria:'#475569',
-        texto:'#f1f5f9', sidebar:'#0f172a',
-        gradIcone:'linear-gradient(135deg,#334155 0%,#475569 100%)',
-        gradBanner:'linear-gradient(135deg,#0f172a 0%,#334155 100%)'
-    },
-    rose: {
-        primaria:'#e11d48', primariaDark:'#be123c', secundaria:'#f43f5e',
-        texto:'#ffffff', sidebar:'#1a0510',
-        gradIcone:'linear-gradient(135deg,#e11d48 0%,#f43f5e 100%)',
-        gradBanner:'linear-gradient(135deg,#9f1239 0%,#e11d48 100%)'
-    }
-};
-
-function aplicarTemplate(nome) {
-    const t = templates[nome];
-    if (!t) return;
-    document.querySelector('[name="CorPrimaria"]').value = t.primaria;
-    document.querySelectorAll('[name="CorPrimaria"]').forEach(el => el.value = t.primaria);
-    document.querySelectorAll('[name="CorPrimariaDark"]').forEach(el => el.value = t.primariaDark);
-    document.querySelectorAll('[name="CorSecundaria"]').forEach(el => el.value = t.secundaria);
-    document.querySelectorAll('[name="CorTextoSobrePrimaria"]').forEach(el => el.value = t.texto);
-    document.querySelectorAll('[name="CorSidebar"]').forEach(el => el.value = t.sidebar);
-    document.querySelector('[name="GradienteIcone"]').value = t.gradIcone;
-    document.querySelector('[name="GradienteSaudacao"]').value = t.gradBanner;
-    atualizarPreview(t);
+// Sincroniza color picker ↔ input de texto
+function sync(el, campo) {
+    document.querySelectorAll(`[name="${campo}"]`).forEach(x => x.value = el.value);
 }
 
-function atualizarPreview(t) {
-    document.getElementById('pvLogo').style.background = t.gradIcone;
-    document.getElementById('pvLogo').style.boxShadow = `0 6px 18px rgba(0,0,0,.4)`;
-    document.getElementById('pvIcon').style.background = t.gradIcone;
-    document.getElementById('pvBanner').style.background = t.gradBanner;
-    document.getElementById('pvBtn').style.background = t.gradIcone;
-    document.getElementById('pvBtn').style.color = t.texto;
-    document.getElementById('previewSidebar').style.background = t.sidebar;
-    document.getElementById('pvNome').textContent = document.querySelector('[name="NomeAgencia"]').value || 'Agência';
-    document.getElementById('pvTag').textContent = document.querySelector('[name="Tagline"]').value || 'Sistema';
+// Selecionar tema claro/escuro visualmente
+function selecionarTema(tema) {
+    const isDark = tema === 'dark';
+    document.querySelectorAll('[name="SidebarClara"]').forEach(r => {
+        r.checked = (r.value === 'false' && isDark) || (r.value === 'true' && !isDark);
+    });
+    atualizarPvSidebar();
 }
 
-document.querySelector('[name="NomeAgencia"]')?.addEventListener('input', e => document.getElementById('pvNome').textContent = e.target.value);
-document.querySelector('[name="Tagline"]')?.addEventListener('input', e => document.getElementById('pvTag').textContent = e.target.value);
+// Aplicar template completo
+function aplicarTemplate(clara, primaria, sidebar, gradIcone, gradBanner, texto) {
+    // Atualizar campos
+    document.querySelectorAll('[name="CorPrimaria"]').forEach(e => e.value = primaria);
+    document.querySelectorAll('[name="CorPrimariaDark"]').forEach(e => e.value = primaria + 'cc');
+    document.querySelectorAll('[name="CorSidebar"]').forEach(e => e.value = sidebar);
+    document.querySelectorAll('[name="CorTextoSobrePrimaria"]').forEach(e => e.value = texto);
+    document.getElementById('inpGradIcone').value = gradIcone;
+    document.getElementById('inpGradBanner').value = gradBanner;
+    document.querySelectorAll('[name="SidebarClara"]').forEach(r => {
+        r.checked = (clara && r.value==='true') || (!clara && r.value==='false');
+    });
 
-// Preview em tempo real dos gradientes
-document.getElementById('gradIconeInput')?.addEventListener('input', e => {
-    const v = e.target.value;
-    document.getElementById('gradIconePreview').style.background = v;
-    document.getElementById('pvLogo').style.background = v;
-    document.getElementById('pvIcon').style.background = v;
-    document.getElementById('pvBtn').style.background = v;
+    // Atualizar preview
+    document.getElementById('pvSidebar').style.background = sidebar;
+    document.getElementById('pvBanner').style.background = gradBanner;
+    document.getElementById('pvLogo').style.background = gradIcone;
+    document.getElementById('pvIconAtivo').style.background = gradIcone;
+    document.getElementById('pvBtn').style.background = gradIcone;
+    document.getElementById('pvBtn').style.color = texto;
+    document.getElementById('pvGradIcone').style.background = gradIcone;
+    document.getElementById('pvGradBanner').style.background = gradBanner;
+
+    // Cor do texto do preview
+    const isLight = clara || sidebar === '#ffffff';
+    document.getElementById('pvNome').style.color = isLight ? '#0f172a' : 'white';
+    document.getElementById('pvTag').style.color = isLight ? '#94a3b8' : 'rgba(255,255,255,.35)';
+}
+
+// Sincronizar inputs de texto com color pickers
+document.querySelectorAll('input[type="text"][style*="monospace"]').forEach(input => {
+    input.addEventListener('input', function() {
+        const col = document.querySelector(`input[type="color"][name="${this.name}"]`);
+        if (col && this.value.match(/^#[0-9a-fA-F]{6}$/)) col.value = this.value;
+    });
 });
-document.getElementById('gradBannerInput')?.addEventListener('input', e => {
-    document.getElementById('gradBannerPreview').style.background = e.target.value;
+
+document.getElementById('inpNome')?.addEventListener('input', e => document.getElementById('pvNome').textContent = e.target.value);
+document.getElementById('inpTag')?.addEventListener('input',  e => document.getElementById('pvTag').textContent  = e.target.value);
+document.getElementById('inpGradIcone')?.addEventListener('input', e => {
+    document.getElementById('pvGradIcone').style.background = e.target.value;
+    document.getElementById('pvLogo').style.background = e.target.value;
+    document.getElementById('pvIconAtivo').style.background = e.target.value;
+    document.getElementById('pvBtn').style.background = e.target.value;
+});
+document.getElementById('inpGradBanner')?.addEventListener('input', e => {
+    document.getElementById('pvGradBanner').style.background = e.target.value;
     document.getElementById('pvBanner').style.background = e.target.value;
 });
 </script>

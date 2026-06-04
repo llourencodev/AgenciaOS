@@ -27,8 +27,35 @@
         }
         /* ── SIDEBAR BACKGROUND ── */
         .sidebar { background: @_cfg.CorSidebar !important; }
-        .sidebar::before { background: radial-gradient(circle, @(_cfg.CorPrimaria)30 0%, transparent 70%) !important; }
-        .sidebar::after  { background: radial-gradient(circle, @(_cfg.CorSecundaria)18 0%, transparent 70%) !important; }
+        .sidebar::before { background: radial-gradient(circle, @(_cfg.CorPrimaria)28 0%, transparent 70%) !important; }
+        .sidebar::after  { background: radial-gradient(circle, @(_cfg.CorSecundaria)15 0%, transparent 70%) !important; }
+
+        @if (_cfg.SidebarClara)
+        {
+            <text>
+        /* ── SIDEBAR CLARA ── */
+        .sidebar { background: #ffffff !important; border-right: 1.5px solid #e8eaf2 !important; box-shadow: 4px 0 20px rgba(0,0,0,.06) !important; }
+        .nav-group-label { color: #94a3b8 !important; }
+        .nav-link-item { color: #475569 !important; }
+        .nav-link-item:hover { background: @(_cfg.CorPrimaria)12 !important; color: @_cfg.CorPrimaria !important; }
+        .nav-link-item:hover .nav-icon { filter: none !important; }
+        .nav-link-item.active { background: @(_cfg.CorPrimaria)15 !important; color: @_cfg.CorPrimaria !important; }
+        .brand-name { color: #0f172a !important; }
+        .brand-tagline { color: #94a3b8 !important; }
+        .sidebar-user-name { color: #0f172a !important; }
+        .sidebar-user-role { color: #64748b !important; }
+        .sb-logout-btn { background: #f1f5f9 !important; color: #64748b !important; }
+        .sb-logout-btn:hover { background: #fee2e2 !important; color: #ef4444 !important; }
+        .ni-indigo, .ni-blue, .ni-green, .ni-amber, .ni-cyan, .ni-rose, .ni-violet, .ni-slate, .ni-red
+            { filter: none !important; }
+            </text>
+        }
+
+        /* ── LOGO SIZE ── */
+        @{ var logoH = _cfg.TamanhoLogo switch { "sm" => "36px", "lg" => "72px", "xl" => "96px", _ => "52px" }; }
+        .brand-logo-img { height: @logoH !important; max-width: 160px !important; width: auto !important; object-fit: contain !important; }
+        .brand-logo { width: @(int.Parse(logoH.Replace("px","")) > 50 ? "52" : "44")px !important; height: @(int.Parse(logoH.Replace("px","")) > 50 ? "52" : "44")px !important; }
+
 
         /* ── BRAND COLORS ── */
         .brand-logo, .topbar-avatar, .sidebar-user-avatar { background: @_cfg.GradienteIcone !important; }

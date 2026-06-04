@@ -20,6 +20,8 @@ public class Configuracao
     public string GradienteSaudacao { get; set; } = "linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)";
     public bool IconesMonocromados { get; set; } = false;
     public string CorIconesInativos { get; set; } = "#818cf8";
+    public bool SidebarClara { get; set; } = false;
+    public string TamanhoLogo { get; set; } = "md"; // sm | md | lg | xl
 
     public DateTime AtualizadoEm { get; set; } = DateTime.UtcNow;
 }

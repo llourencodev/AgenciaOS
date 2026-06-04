@@ -44,6 +44,8 @@ public class ConfiguracaoController(ApplicationDbContext db, IWebHostEnvironment
         config.GradienteSaudacao = model.GradienteSaudacao;
         config.IconesMonocromados = model.IconesMonocromados;
         config.CorIconesInativos  = model.CorIconesInativos;
+        config.SidebarClara      = model.SidebarClara;
+        config.TamanhoLogo       = model.TamanhoLogo;
         config.AtualizadoEm      = DateTime.UtcNow;
 
         // Upload logo principal
