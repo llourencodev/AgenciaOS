@@ -190,7 +190,8 @@
                         @{
                             var templates = new[] {
                                 new { id="unanime",   label="Social Unânime",    cor="#732734", sidebar="#1c0a0f",  grad="linear-gradient(135deg,#722835 0%,#9e2d45 100%)",  banner="linear-gradient(135deg,#4a1620 0%,#732734 60%,#9e2d45 100%)",  txt="#e6dace", clara=false },
-                                new { id="indigo",    label="Indigo",            cor="#6366f1", sidebar="#0f0d22",  grad="linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)",  banner="linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%)",  txt="#ffffff", clara=false },
+                                new { id="cleanwhite",label="✨ Clean White",      cor="#6366f1", sidebar="#ffffff",  grad="linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)",  banner="linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%)",  txt="#ffffff", clara=true  },
+                                new { id="indigo",    label="Indigo Escuro",      cor="#6366f1", sidebar="#0f0d22",  grad="linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)",  banner="linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%)",  txt="#ffffff", clara=false },
                                 new { id="ocean",     label="Ocean",             cor="#0ea5e9", sidebar="#0c1a2e",  grad="linear-gradient(135deg,#0284c7 0%,#0ea5e9 100%)",  banner="linear-gradient(135deg,#075985 0%,#0ea5e9 100%)",  txt="#ffffff", clara=false },
                                 new { id="emerald",   label="Emerald",           cor="#059669", sidebar="#052e16",  grad="linear-gradient(135deg,#059669 0%,#10b981 100%)",  banner="linear-gradient(135deg,#064e3b 0%,#059669 100%)",  txt="#ffffff", clara=false },
                                 new { id="rose",      label="Rose",              cor="#e11d48", sidebar="#1a0510",  grad="linear-gradient(135deg,#e11d48 0%,#f43f5e 100%)",  banner="linear-gradient(135deg,#9f1239 0%,#e11d48 100%)",  txt="#ffffff", clara=false },
@@ -267,10 +268,18 @@ function aplicarTemplate(clara, primaria, sidebar, gradIcone, gradBanner, texto)
     document.getElementById('pvGradIcone').style.background = gradIcone;
     document.getElementById('pvGradBanner').style.background = gradBanner;
 
-    // Cor do texto do preview
-    const isLight = clara || sidebar === '#ffffff';
+    // Cor do texto do preview baseado no brilho da cor de fundo
+    function isClaroColor(hex) {
+        hex = hex.replace('#','');
+        const r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+        return (r*299 + g*587 + b*114) / 1000 > 128;
+    }
+    const isLight = clara || isClaroColor(sidebar);
     document.getElementById('pvNome').style.color = isLight ? '#0f172a' : 'white';
-    document.getElementById('pvTag').style.color = isLight ? '#94a3b8' : 'rgba(255,255,255,.35)';
+    document.getElementById('pvTag').style.color  = isLight ? '#94a3b8' : 'rgba(255,255,255,.35)';
+
+    // Atualizar borda do sidebar no preview
+    document.getElementById('pvSidebar').style.borderRight = isLight ? '1.5px solid #e8eaf2' : 'none';
 }
 
 // Sincronizar inputs de texto com color pickers
