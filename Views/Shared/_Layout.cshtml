@@ -111,7 +111,7 @@
 
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar @(_cfgLayout.SidebarClara ? "sidebar-light" : "")" id="sidebar">
         <!-- BRAND -->
         <div class="sidebar-brand">
             @if (!string.IsNullOrEmpty(_cfgLayout.LogoUrl))

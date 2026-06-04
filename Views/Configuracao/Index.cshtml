@@ -61,31 +61,17 @@
                     <div class="row g-3 mb-4">
                         <div class="col-12">
                             <label class="form-label">Tema do Sidebar</label>
-                            <div class="d-flex gap-3 mt-1">
-                                <!-- ESCURO -->
-                                <label style="cursor:pointer;flex:1;" for="temaDark">
-                                    <div id="cardDark" class="p-3 rounded-3 border @(!Model.SidebarClara ? "border-2" : "") text-center" style="border-color:@(!Model.SidebarClara ? Model.CorPrimaria : "#dee2e6") !important;transition:.2s;">
-                                        <div style="height:70px;border-radius:8px;background:linear-gradient(180deg,#0f0d22,#1a0a0e);margin-bottom:8px;display:flex;flex-direction:column;gap:5px;padding:8px;">
-                                            <div style="height:7px;border-radius:3px;background:rgba(255,255,255,.12);width:65%;"></div>
-                                            <div style="height:7px;border-radius:3px;background:rgba(99,102,241,.55);width:50%;"></div>
-                                            <div style="height:7px;border-radius:3px;background:rgba(255,255,255,.06);width:70%;"></div>
-                                        </div>
-                                        <input type="radio" name="SidebarClara" value="false" id="temaDark" class="form-check-input me-1" @(!Model.SidebarClara ? "checked" : "") />
-                                        <span class="small fw-600">🌙 Escuro</span>
-                                    </div>
-                                </label>
-                                <!-- CLARO -->
-                                <label style="cursor:pointer;flex:1;" for="temaLight">
-                                    <div id="cardLight" class="p-3 rounded-3 border @(Model.SidebarClara ? "border-2" : "") text-center" style="border-color:@(Model.SidebarClara ? Model.CorPrimaria : "#dee2e6") !important;transition:.2s;">
-                                        <div style="height:70px;border-radius:8px;background:#fff;border:1px solid #e2e8f0;margin-bottom:8px;display:flex;flex-direction:column;gap:5px;padding:8px;">
-                                            <div style="height:7px;border-radius:3px;background:#e2e8f0;width:65%;"></div>
-                                            <div style="height:7px;border-radius:3px;background:@Model.CorPrimaria;width:50%;opacity:.6;"></div>
-                                            <div style="height:7px;border-radius:3px;background:#e2e8f0;width:70%;"></div>
-                                        </div>
-                                        <input type="radio" name="SidebarClara" value="true" id="temaLight" class="form-check-input me-1" @(Model.SidebarClara ? "checked" : "") />
-                                        <span class="small fw-600">☀️ Claro</span>
-                                    </div>
-                                </label>
+                            <div class="d-flex align-items-center gap-3 mt-2 p-3 rounded-3 border">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox"
+                                           id="chkClara" name="chkClara"
+                                           style="width:3rem;height:1.6rem;"
+                                           @(Model.SidebarClara ? "checked" : "") />
+                                    <label class="form-check-label fw-600 ms-2" for="chkClara" style="font-size:15px;">
+                                        ☀️ Sidebar Clara
+                                    </label>
+                                </div>
+                                <span class="text-muted small">— fundo branco, textos escuros</span>
                             </div>
                         </div>
                         <div class="col-sm-6">

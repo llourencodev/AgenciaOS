@@ -44,7 +44,7 @@ public class ConfiguracaoController(ApplicationDbContext db, IWebHostEnvironment
         config.GradienteSaudacao = model.GradienteSaudacao;
         config.IconesMonocromados = model.IconesMonocromados;
         config.CorIconesInativos  = model.CorIconesInativos;
-        config.SidebarClara      = Request.Form["SidebarClara"] == "true";
+        config.SidebarClara      = Request.Form.ContainsKey("chkClara");
         config.TamanhoLogo       = model.TamanhoLogo;
         config.AtualizadoEm      = DateTime.UtcNow;
 

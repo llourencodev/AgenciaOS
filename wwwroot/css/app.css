@@ -114,6 +114,25 @@ a{text-decoration:none;color:inherit;}
     filter:brightness(0) invert(1);
 }
 
+/* ── SIDEBAR LIGHT THEME ───────────────────────────────────── */
+.sidebar-light {
+    background: #ffffff !important;
+    border-right: 1.5px solid #e8eaf2 !important;
+    box-shadow: 4px 0 20px rgba(0,0,0,.06) !important;
+}
+.sidebar-light .nav-group-label   { color: #94a3b8 !important; }
+.sidebar-light .nav-link-item     { color: #475569 !important; }
+.sidebar-light .nav-link-item:hover { background: rgba(99,102,241,.08) !important; color: var(--primary) !important; }
+.sidebar-light .nav-link-item.active { background: rgba(99,102,241,.1) !important; color: var(--primary) !important; }
+.sidebar-light .brand-name        { color: #0f172a !important; }
+.sidebar-light .brand-tagline     { color: #94a3b8 !important; }
+.sidebar-light .sidebar-user-name { color: #0f172a !important; }
+.sidebar-light .sidebar-user-role { color: #64748b !important; }
+.sidebar-light .sb-logout-btn     { background: #f1f5f9 !important; color: #64748b !important; }
+.sidebar-light .sb-logout-btn:hover { background: #fee2e2 !important; color: #ef4444 !important; }
+.sidebar-light .brand-logo-img    { filter: none !important; }
+.sidebar-light::before, .sidebar-light::after { display: none !important; }
+
 /* ── NAV ───────────────────────────────────────────────────── */
 .sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; scrollbar-width:none; position:relative; z-index:1; }
 .sidebar-nav::-webkit-scrollbar { display:none; }
