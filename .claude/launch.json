@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "agenciaos",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--launch-profile", "http", "--project", "C:\\Users\\Workstation\\AgenciaOS\\AgenciaOS.csproj"],
+      "port": 5159
+    }
+  ]
+}
