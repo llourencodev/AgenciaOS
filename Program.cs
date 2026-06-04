@@ -8,8 +8,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 
-var conn = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseSqlServer(conn));
+var conn = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? throw new InvalidOperationException("Connection string not found.");
+
+// Auto-detecta PostgreSQL (Railway) ou SQL Server (local)
+if (conn.StartsWith("postgres", StringComparison.OrdinalIgnoreCase) || conn.StartsWith("Host=", StringComparison.OrdinalIgnoreCase))
+    builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseNpgsql(conn));
+else
+    builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseSqlServer(conn));
 
 builder.Services.AddIdentity<Usuario, IdentityRole>(o =>
 {
