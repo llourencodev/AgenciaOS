@@ -11,13 +11,40 @@ builder.Services.AddControllersWithViews();
 
 var conn = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("DATABASE_URL")
-    ?? throw new InvalidOperationException("Connection string not found.");
+    ?? "MISSING";
 
-// Auto-detecta PostgreSQL (Railway) ou SQL Server (local)
-if (conn.StartsWith("postgres", StringComparison.OrdinalIgnoreCase) || conn.StartsWith("Host=", StringComparison.OrdinalIgnoreCase))
+// Converte URL postgresql:// para formato chave-valor que o Npgsql aceita
+static string ConverterUrlPostgres(string url)
+{
+    try
+    {
+        var uri = new Uri(url);
+        var partes = uri.UserInfo.Split(':', 2);
+        var user = Uri.UnescapeDataString(partes[0]);
+        var pass = partes.Length > 1 ? Uri.UnescapeDataString(partes[1]) : "";
+        var db   = uri.AbsolutePath.TrimStart('/');
+        var port = uri.Port > 0 ? uri.Port : 5432;
+        return $"Host={uri.Host};Port={port};Database={db};Username={user};Password={pass};SSL Mode=Require;Trust Server Certificate=true";
+    }
+    catch { return url; }
+}
+
+bool ehPostgres = conn.StartsWith("postgres", StringComparison.OrdinalIgnoreCase)
+               || conn.StartsWith("Host=",    StringComparison.OrdinalIgnoreCase);
+
+if (ehPostgres)
+{
+    // Se for URL (postgresql://...), converte para key=value
+    if (conn.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
+        conn.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+        conn = ConverterUrlPostgres(conn);
+
     builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseNpgsql(conn));
+}
 else
+{
     builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseSqlServer(conn));
+}
 
 builder.Services.AddIdentity<Usuario, IdentityRole>(o =>
 {
