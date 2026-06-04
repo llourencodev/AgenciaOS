@@ -89,16 +89,16 @@ using (var scope = app.Services.CreateScope())
     {
         db.Configuracoes.Add(new Configuracao
         {
-            NomeAgencia          = "Social Unânime",
-            Tagline              = "Marketing Estratégico",
-            CorPrimaria          = "#7d1e2e",
-            CorPrimariaDark      = "#5e1622",
-            CorSecundaria        = "#9e2438",
-            CorTextoSobrePrimaria = "#e8d5c4",
-            CorSidebar           = "#1a0a0e",
-            GradienteIcone       = "linear-gradient(135deg,#7d1e2e 0%,#9e2438 100%)",
-            GradienteSaudacao    = "linear-gradient(135deg,#6d1826 0%,#9e2438 100%)",
-            LogoUrl              = "/brand/logo.png"
+            NomeAgencia           = "Social Unânime",
+            Tagline               = "Marketing Estratégico",
+            CorPrimaria           = "#732734",
+            CorPrimariaDark       = "#5a1e28",
+            CorSecundaria         = "#d99ec8",
+            CorTextoSobrePrimaria = "#e6dace",
+            CorSidebar            = "#1c0a0f",
+            GradienteIcone        = "linear-gradient(135deg,#722835 0%,#9e2d45 100%)",
+            GradienteSaudacao     = "linear-gradient(135deg,#4a1620 0%,#732734 60%,#9e2d45 100%)",
+            LogoUrl               = "/brand/logo.png"
         });
         await db.SaveChangesAsync();
     }

@@ -189,16 +189,17 @@
                     <div class="row g-2">
                         @{
                             var templates = new[] {
-                                new { id="unanime",   label="Social Unânime",    cor="#7d1e2e", sidebar="#1a0a0e",  grad="linear-gradient(135deg,#7d1e2e 0%,#9e2438 100%)",  banner="linear-gradient(135deg,#6d1826 0%,#9e2438 100%)",  txt="#e8d5c4", clara=false },
+                                new { id="unanime",   label="Social Unânime",    cor="#732734", sidebar="#1c0a0f",  grad="linear-gradient(135deg,#722835 0%,#9e2d45 100%)",  banner="linear-gradient(135deg,#4a1620 0%,#732734 60%,#9e2d45 100%)",  txt="#e6dace", clara=false },
                                 new { id="indigo",    label="Indigo",            cor="#6366f1", sidebar="#0f0d22",  grad="linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)",  banner="linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%)",  txt="#ffffff", clara=false },
                                 new { id="ocean",     label="Ocean",             cor="#0ea5e9", sidebar="#0c1a2e",  grad="linear-gradient(135deg,#0284c7 0%,#0ea5e9 100%)",  banner="linear-gradient(135deg,#075985 0%,#0ea5e9 100%)",  txt="#ffffff", clara=false },
                                 new { id="emerald",   label="Emerald",           cor="#059669", sidebar="#052e16",  grad="linear-gradient(135deg,#059669 0%,#10b981 100%)",  banner="linear-gradient(135deg,#064e3b 0%,#059669 100%)",  txt="#ffffff", clara=false },
                                 new { id="rose",      label="Rose",              cor="#e11d48", sidebar="#1a0510",  grad="linear-gradient(135deg,#e11d48 0%,#f43f5e 100%)",  banner="linear-gradient(135deg,#9f1239 0%,#e11d48 100%)",  txt="#ffffff", clara=false },
                                 new { id="amber",     label="Amber",             cor="#d97706", sidebar="#1c0f00",  grad="linear-gradient(135deg,#b45309 0%,#f59e0b 100%)",  banner="linear-gradient(135deg,#78350f 0%,#d97706 100%)",  txt="#fff7ed", clara=false },
                                 new { id="violet",    label="Violet",            cor="#7c3aed", sidebar="#120a2e",  grad="linear-gradient(135deg,#7c3aed 0%,#a855f7 100%)",  banner="linear-gradient(135deg,#4c1d95 0%,#7c3aed 100%)",  txt="#ffffff", clara=false },
+                                new { id="unanime-c", label="Unânime Claro",     cor="#732734", sidebar="#e6dace",  grad="linear-gradient(135deg,#722835 0%,#9e2d45 100%)",  banner="linear-gradient(135deg,#4a1620 0%,#732734 100%)",  txt="#e6dace", clara=true  },
+                                new { id="unanime-s", label="Unânime Sálvia",    cor="#607151", sidebar="#1a2318",  grad="linear-gradient(135deg,#607151 0%,#7a9068 100%)",  banner="linear-gradient(135deg,#2d3a26 0%,#607151 100%)",  txt="#e6dace", clara=false },
                                 new { id="light-ind", label="Claro — Indigo",    cor="#6366f1", sidebar="#ffffff",  grad="linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)",  banner="linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%)",  txt="#ffffff", clara=true  },
                                 new { id="light-ros", label="Claro — Rose",      cor="#e11d48", sidebar="#ffffff",  grad="linear-gradient(135deg,#e11d48 0%,#f43f5e 100%)",  banner="linear-gradient(135deg,#9f1239 0%,#e11d48 100%)",  txt="#ffffff", clara=true  },
-                                new { id="light-eme", label="Claro — Emerald",   cor="#059669", sidebar="#ffffff",  grad="linear-gradient(135deg,#059669 0%,#10b981 100%)",  banner="linear-gradient(135deg,#064e3b 0%,#059669 100%)",  txt="#ffffff", clara=true  },
                             };
                         }
                         @foreach (var t in templates)
