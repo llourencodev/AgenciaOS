@@ -18,6 +18,8 @@ public class Configuracao
     // Gradiente do sidebar (pode ser cor sólida ou gradiente)
     public string GradienteIcone { get; set; } = "linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)";
     public string GradienteSaudacao { get; set; } = "linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)";
+    public bool IconesMonocromados { get; set; } = false;
+    public string CorIconesInativos { get; set; } = "#818cf8";
 
     public DateTime AtualizadoEm { get; set; } = DateTime.UtcNow;
 }

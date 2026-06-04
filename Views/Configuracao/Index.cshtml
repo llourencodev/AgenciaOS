@@ -55,42 +55,36 @@
             <div class="card">
                 <div class="card-header"><span class="card-title"><i class="bi bi-droplet-fill me-2"></i>Paleta de Cores</span></div>
                 <div class="card-body">
-                    <div class="row g-4">
-                        <div class="col-6 col-md-4">
-                            <label class="form-label">Cor Primária</label>
-                            <div class="d-flex gap-2 align-items-center">
-                                <input type="color" asp-for="CorPrimaria" class="form-control form-control-color" style="height:42px;width:56px;" />
-                                <input type="text" asp-for="CorPrimaria" class="form-control form-control-sm" style="font-family:monospace;" />
+                    <div class="row g-3">
+
+                        @{
+                            var cores = new[] {
+                                new { Label="Cor Primária",             For="CorPrimaria",            Desc="Links, bordas de foco, badges" },
+                                new { Label="Cor Primária Escura",      For="CorPrimariaDark",         Desc="Hover nos botões" },
+                                new { Label="Cor Secundária",           For="CorSecundaria",           Desc="Orb decorativo do sidebar" },
+                                new { Label="Texto sobre cor primária", For="CorTextoSobrePrimaria",   Desc="Texto dentro de botões e ícones" },
+                                new { Label="Fundo do Sidebar ★",       For="CorSidebar",              Desc="Cor de fundo do menu lateral" },
+                            };
+                        }
+
+                        @foreach (var cor in cores)
+                        {
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label">
+                                    @cor.Label
+                                    <span class="text-muted small fw-400 ms-1">— @cor.Desc</span>
+                                </label>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <input type="color" name="@cor.For" class="form-control form-control-color flex-shrink-0"
+                                           style="height:44px;width:60px;border-radius:10px;padding:4px;"
+                                           value="@(Model.GetType().GetProperty(cor.For)?.GetValue(Model)?.ToString())" />
+                                    <input type="text" name="@cor.For"
+                                           value="@(Model.GetType().GetProperty(cor.For)?.GetValue(Model)?.ToString())"
+                                           class="form-control" style="font-family:monospace;font-size:13px;"
+                                           oninput="this.previousElementSibling.value=this.value" />
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <label class="form-label">Cor Primária Dark</label>
-                            <div class="d-flex gap-2 align-items-center">
-                                <input type="color" asp-for="CorPrimariaDark" class="form-control form-control-color" style="height:42px;width:56px;" />
-                                <input type="text" asp-for="CorPrimariaDark" class="form-control form-control-sm" style="font-family:monospace;" />
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <label class="form-label">Cor Secundária</label>
-                            <div class="d-flex gap-2 align-items-center">
-                                <input type="color" asp-for="CorSecundaria" class="form-control form-control-color" style="height:42px;width:56px;" />
-                                <input type="text" asp-for="CorSecundaria" class="form-control form-control-sm" style="font-family:monospace;" />
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <label class="form-label">Texto sobre a cor primária</label>
-                            <div class="d-flex gap-2 align-items-center">
-                                <input type="color" asp-for="CorTextoSobrePrimaria" class="form-control form-control-color" style="height:42px;width:56px;" />
-                                <input type="text" asp-for="CorTextoSobrePrimaria" class="form-control form-control-sm" style="font-family:monospace;" />
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <label class="form-label">Fundo do Sidebar</label>
-                            <div class="d-flex gap-2 align-items-center">
-                                <input type="color" asp-for="CorSidebar" class="form-control form-control-color" style="height:42px;width:56px;" />
-                                <input type="text" asp-for="CorSidebar" class="form-control form-control-sm" style="font-family:monospace;" />
-                            </div>
-                        </div>
+                        }
                     </div>
 
                     <hr class="my-4" />

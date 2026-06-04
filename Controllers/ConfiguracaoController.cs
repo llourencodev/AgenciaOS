@@ -40,9 +40,11 @@ public class ConfiguracaoController(ApplicationDbContext db, IWebHostEnvironment
         config.CorSecundaria = model.CorSecundaria;
         config.CorTextoSobrePrimaria = model.CorTextoSobrePrimaria;
         config.CorSidebar    = model.CorSidebar;
-        config.GradienteIcone = model.GradienteIcone;
+        config.GradienteIcone    = model.GradienteIcone;
         config.GradienteSaudacao = model.GradienteSaudacao;
-        config.AtualizadoEm  = DateTime.UtcNow;
+        config.IconesMonocromados = model.IconesMonocromados;
+        config.CorIconesInativos  = model.CorIconesInativos;
+        config.AtualizadoEm      = DateTime.UtcNow;
 
         // Upload logo principal
         if (logoFile != null && logoFile.Length > 0)
