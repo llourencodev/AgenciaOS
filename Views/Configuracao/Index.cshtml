@@ -97,12 +97,40 @@
 
                     <div class="row g-3">
                         <div class="col-12">
-                            <label class="form-label">Gradiente dos ícones ativos</label>
-                            <input asp-for="GradienteIcone" class="form-control" style="font-family:monospace;" placeholder="linear-gradient(135deg,#cor1 0%,#cor2 100%)" />
+                            <label class="form-label">
+                                <i class="bi bi-paint-bucket me-1 text-primary"></i>
+                                Gradiente dos ícones ativos e botões
+                                <span class="text-muted small fw-400 ms-1">— controla Dashboard ativo, botões, avatares</span>
+                            </label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <input asp-for="GradienteIcone" class="form-control" id="gradIconeInput" style="font-family:monospace;" placeholder="linear-gradient(135deg,#7d1e2e 0%,#9e2438 100%)" />
+                                <div id="gradIconePreview" style="width:50px;height:40px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,#7d1e2e,#9e2438);"></div>
+                            </div>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Gradiente do banner de saudação</label>
-                            <input asp-for="GradienteSaudacao" class="form-control" style="font-family:monospace;" placeholder="linear-gradient(135deg,#cor1 0%,#cor2 100%)" />
+                            <label class="form-label">
+                                <i class="bi bi-sun-fill me-1 text-warning"></i>
+                                Gradiente do banner de saudação
+                                <span class="text-muted small fw-400 ms-1">— banner "Boa tarde" no Dashboard</span>
+                            </label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <input asp-for="GradienteSaudacao" class="form-control" id="gradBannerInput" style="font-family:monospace;" placeholder="linear-gradient(135deg,#6d1826 0%,#9e2438 100%)" />
+                                <div id="gradBannerPreview" style="width:50px;height:40px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,#6d1826,#9e2438);"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-4 mb-0 d-flex gap-3 align-items-start" style="border-radius:12px;">
+                        <i class="bi bi-info-circle-fill text-info fs-5 mt-1"></i>
+                        <div>
+                            <div class="fw-600 text-sm mb-1">O que cada configuração controla:</div>
+                            <ul class="text-sm mb-0 ps-3" style="line-height:1.9;">
+                                <li><strong>Cor Primária</strong> — bordas de foco, links, badges, hover em botões</li>
+                                <li><strong>Gradiente dos ícones</strong> — ícone ativo no menu, botão primário, avatares</li>
+                                <li><strong>Gradiente saudação</strong> — banner "Boa tarde" na tela inicial</li>
+                                <li><strong>Cor Sidebar</strong> — fundo do menu lateral</li>
+                                <li><strong>Texto sobre primária</strong> — cor do texto em cima de botões e ícones coloridos</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -254,5 +282,18 @@ function atualizarPreview(t) {
 
 document.querySelector('[name="NomeAgencia"]')?.addEventListener('input', e => document.getElementById('pvNome').textContent = e.target.value);
 document.querySelector('[name="Tagline"]')?.addEventListener('input', e => document.getElementById('pvTag').textContent = e.target.value);
+
+// Preview em tempo real dos gradientes
+document.getElementById('gradIconeInput')?.addEventListener('input', e => {
+    const v = e.target.value;
+    document.getElementById('gradIconePreview').style.background = v;
+    document.getElementById('pvLogo').style.background = v;
+    document.getElementById('pvIcon').style.background = v;
+    document.getElementById('pvBtn').style.background = v;
+});
+document.getElementById('gradBannerInput')?.addEventListener('input', e => {
+    document.getElementById('gradBannerPreview').style.background = e.target.value;
+    document.getElementById('pvBanner').style.background = e.target.value;
+});
 </script>
 }

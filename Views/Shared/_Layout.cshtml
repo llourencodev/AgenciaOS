@@ -25,11 +25,38 @@
             --sb-bg:         @_cfg.CorSidebar;
             --cor-texto-primaria: @_cfg.CorTextoSobrePrimaria;
         }
-        .brand-logo, .topbar-avatar, .sidebar-user-avatar, .stat-card.indigo .stat-icon,
-        .badge.text-bg-primary, .btn-primary { background: @_cfg.GradienteIcone !important; }
-        .btn-primary { box-shadow: 0 4px 14px rgba(0,0,0,.25) !important; }
+        /* ── BRAND COLORS ── */
+        .brand-logo, .topbar-avatar, .sidebar-user-avatar { background: @_cfg.GradienteIcone !important; }
+
+        /* ── BOTÕES ── */
+        .btn-primary { background: @_cfg.GradienteIcone !important; border-color: transparent !important; color: @_cfg.CorTextoSobrePrimaria !important; box-shadow: 0 4px 14px rgba(0,0,0,.25) !important; }
+        .btn-primary:hover { filter: brightness(1.08) !important; box-shadow: 0 6px 20px rgba(0,0,0,.35) !important; }
+
+        /* ── NAV ATIVO — sobrescreve QUALQUER cor de ícone ── */
         .nav-link-item.active { background: linear-gradient(90deg, @(_cfg.CorPrimaria)33 0%, @(_cfg.CorPrimaria)0d 100%) !important; }
+        .nav-link-item.active .nav-icon { background: @_cfg.GradienteIcone !important; color: @_cfg.CorTextoSobrePrimaria !important; box-shadow: 0 6px 20px rgba(0,0,0,.3) !important; }
         .nav-link-item.active::before { background: @_cfg.GradienteIcone !important; }
+
+        /* ── BANNER SAUDAÇÃO ── */
+        .saudacao-banner { background: @_cfg.GradienteSaudacao !important; }
+
+        /* ── FOCO, BORDAS, CHECKS ── */
+        .form-control:focus, .form-select:focus { border-color: @_cfg.CorPrimaria !important; box-shadow: 0 0 0 3px @(_cfg.CorPrimaria)22 !important; }
+        .form-check-input:checked { background-color: @_cfg.CorPrimaria !important; border-color: @_cfg.CorPrimaria !important; }
+
+        /* ── TOPBAR BOTÃO HOVER ── */
+        .topbar-btn:hover { background: @(_cfg.CorPrimaria)18 !important; color: @_cfg.CorPrimaria !important; }
+
+        /* ── TABELA HOVER ── */
+        .table-hover tbody tr:hover { background: @(_cfg.CorPrimaria)08 !important; }
+
+        /* ── BOARD COUNT BADGE ── */
+        .board-col-count { background: @(_cfg.CorPrimaria)18 !important; color: @_cfg.CorPrimaria !important; }
+
+        /* ── PRIMARY LIGHT ── */
+        .text-primary { color: @_cfg.CorPrimaria !important; }
+        .btn-link { color: @_cfg.CorPrimaria !important; }
+        .primary-light { background: @(_cfg.CorPrimaria)18 !important; }
     </style>
     @functions {
         static string HexToRgb(string hex) {
