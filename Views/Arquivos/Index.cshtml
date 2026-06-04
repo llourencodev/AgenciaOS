@@ -1,0 +1,223 @@
+@model IEnumerable<AgenciaOS.Models.Arquivo>
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Arquivos";
+    var clientes = ViewData["Clientes"] as IEnumerable<Cliente> ?? [];
+    var clienteId = ViewData["ClienteId"];
+}
+
+<div class="page-header">
+    <div>
+        <h1>Arquivos</h1>
+        <p>@Model.Count() arquivos · @((Model.Sum(a => a.TamanhoBytes) / 1048576.0).ToString("F1")) MB no total</p>
+    </div>
+    <button class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#uploadModal">
+        <i class="bi bi-cloud-upload me-1"></i> Enviar Arquivo
+    </button>
+</div>
+
+<!-- FILTROS -->
+<div class="filter-bar">
+    <form method="get" class="d-flex gap-2 flex-wrap w-100">
+        <select name="clienteId" class="form-select form-select-sm" style="width:210px;">
+            <option value="">Todos os clientes</option>
+            @foreach (var c in clientes)
+            {
+                <option value="@c.Id" selected="@(clienteId?.ToString() == c.Id.ToString())">@c.NomeEmpresa</option>
+            }
+        </select>
+        <select name="categoria" class="form-select form-select-sm" style="width:160px;">
+            <option value="">Todas as categorias</option>
+            @foreach (var cat in Enum.GetValues<CategoriaArquivo>())
+            {
+                <option value="@cat" selected="@(ViewData["Categoria"]?.ToString() == cat.ToString())">@cat</option>
+            }
+        </select>
+        <input type="month" name="mes" value="@ViewData["Mes"]" class="form-control form-control-sm" style="width:180px;" />
+        <button type="submit" class="btn btn-outline-secondary btn-sm px-3">
+            <i class="bi bi-funnel me-1"></i> Filtrar
+        </button>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Limpar</a>
+    </form>
+
+    <!-- Toggle visualização -->
+    <div class="ms-auto d-flex gap-1">
+        <button class="btn btn-sm btn-outline-secondary active" id="btnGrid" onclick="setView('grid')"><i class="bi bi-grid"></i></button>
+        <button class="btn btn-sm btn-outline-secondary" id="btnList" onclick="setView('list')"><i class="bi bi-list-ul"></i></button>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <!-- GRID VIEW -->
+    <div id="viewGrid" class="files-grid">
+        @foreach (var a in Model)
+        {
+            <div class="file-card">
+                <div class="file-thumb">
+                    @if (a.EImagem)
+                    {
+                        <img src="@a.Url" alt="@a.NomeOriginal" loading="lazy" />
+                    }
+                    else if (a.EVideo)
+                    {
+                        <video src="@a.Url" muted preload="none"></video>
+                        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);">
+                            <i class="bi bi-play-circle-fill text-white" style="font-size:36px;"></i>
+                        </div>
+                    }
+                    else
+                    {
+                        <i class="bi bi-file-earmark-fill file-thumb-icon"></i>
+                    }
+                    <div class="file-overlay">
+                        <div class="d-flex gap-2">
+                            <a href="@a.Url" download="@a.NomeOriginal" class="btn btn-sm btn-light" title="Download">
+                                <i class="bi bi-download"></i>
+                            </a>
+                            @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+                            {
+                                <button class="btn btn-sm btn-danger" onclick="excluirArquivo(@a.Id, this)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="file-meta-box">
+                    <div class="file-name" title="@a.NomeOriginal">@a.NomeOriginal</div>
+                    <div class="d-flex align-items-center justify-content-between mt-1">
+                        <span class="badge badge-pauta text-xs">@a.Categoria</span>
+                        <span class="file-size">@a.TamanhoFormatado</span>
+                    </div>
+                    <div class="text-xs text-muted mt-1">@a.CriadoEm.ToString("dd/MM/yyyy")</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- LIST VIEW (hidden by default) -->
+    <div id="viewList" class="card d-none">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Arquivo</th><th>Categoria</th><th>Tamanho</th><th>Enviado em</th><th>Enviado por</th><th class="text-end">Ações</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div style="width:36px;height:36px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                                        <i class="bi bi-@(a.EImagem ? "image" : a.EVideo ? "camera-video" : "file-earmark") text-muted"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-600 text-sm">@a.NomeOriginal</div>
+                                        <div class="text-xs text-muted">@a.TipoMime</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-pauta">@a.Categoria</span></td>
+                            <td class="text-sm text-muted">@a.TamanhoFormatado</td>
+                            <td class="text-sm">@a.CriadoEm.ToString("dd/MM/yyyy")</td>
+                            <td class="text-sm">@(a.UploadPor?.Nome ?? "—")</td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <a href="@a.Url" download="@a.NomeOriginal" class="btn btn-xs btn-outline-secondary"><i class="bi bi-download"></i></a>
+                                    @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+                                    {
+                                        <button class="btn btn-xs btn-outline-danger" onclick="excluirArquivo(@a.Id, this)"><i class="bi bi-trash"></i></button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="empty-state">
+            <i class="bi bi-folder2-open empty-state-icon"></i>
+            <h5>Nenhum arquivo encontrado</h5>
+            <p>Faça o upload de vídeos, imagens e documentos para seus clientes.</p>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                <i class="bi bi-cloud-upload me-1"></i> Enviar primeiro arquivo
+            </button>
+        </div>
+    </div>
+}
+
+<!-- MODAL UPLOAD -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-cloud-upload me-2 text-primary"></i>Enviar Arquivo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Arquivo *</label>
+                        <input type="file" name="arquivo" class="form-control" required accept="image/*,video/*,.pdf,.doc,.docx,.zip" />
+                        <div class="form-text">Imagens, vídeos, PDF, Word — máx. 500MB</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cliente *</label>
+                        <select name="clienteId" class="form-select" required>
+                            <option value="">Selecione o cliente...</option>
+                            @foreach (var c in clientes)
+                            {
+                                <option value="@c.Id" selected="@(clienteId?.ToString() == c.Id.ToString())">@c.NomeEmpresa</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">Categoria</label>
+                            <select name="categoria" class="form-select">
+                                @foreach (var cat in Enum.GetValues<CategoriaArquivo>())
+                                {
+                                    <option value="@cat">@cat</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Mês de Referência</label>
+                            <input type="month" name="mesReferencia" class="form-control" value="@DateTime.Now.ToString("yyyy-MM")" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-cloud-upload me-1"></i> Enviar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function setView(v) {
+    const grid = document.getElementById('viewGrid');
+    const list = document.getElementById('viewList');
+    document.getElementById('btnGrid').classList.toggle('active', v === 'grid');
+    document.getElementById('btnList').classList.toggle('active', v === 'list');
+    grid?.classList.toggle('d-none', v !== 'grid');
+    list?.classList.toggle('d-none', v !== 'list');
+}
+async function excluirArquivo(id, btn) {
+    if (!confirm('Excluir este arquivo permanentemente?')) return;
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+    const res = await fetch(`/Arquivos/Excluir/${id}`, { method: 'POST', headers: { 'RequestVerificationToken': token } });
+    if (res.ok) btn.closest('.file-card, tr')?.remove();
+}
+</script>
+}

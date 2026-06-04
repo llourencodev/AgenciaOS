@@ -1,0 +1,164 @@
+@model AgenciaOS.ViewModels.DashboardViewModel
+@using AgenciaOS.Models
+@{ ViewData["Title"] = "Dashboard"; }
+
+<!-- STAT CARDS -->
+<div class="stat-grid">
+    <div class="stat-card purple">
+        <div class="stat-icon purple"><i class="bi bi-people-fill"></i></div>
+        <div>
+            <div class="stat-value">@Model.TotalClientes</div>
+            <div class="stat-label">Clientes Ativos</div>
+        </div>
+    </div>
+    <div class="stat-card blue">
+        <div class="stat-icon blue"><i class="bi bi-kanban-fill"></i></div>
+        <div>
+            <div class="stat-value">@Model.TarefasPendentes</div>
+            <div class="stat-label">Tarefas em Aberto</div>
+            @if (Model.TarefasAtrasadas > 0)
+            {
+                <div class="stat-sub"><i class="bi bi-exclamation-circle-fill me-1"></i>@Model.TarefasAtrasadas atrasadas</div>
+            }
+        </div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-icon orange"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+            <div class="stat-value">@Model.AprovacoesPendentes</div>
+            <div class="stat-label">Aguardando Aprovação</div>
+        </div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <div>
+            <div class="stat-value">@Model.ConteudosAtrasados</div>
+            <div class="stat-label">Conteúdos Atrasados</div>
+        </div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon green"><i class="bi bi-graph-up-arrow"></i></div>
+        <div>
+            <div class="stat-value">@Model.ReceitaMes.ToString("C0")</div>
+            <div class="stat-label">Receita do Mês</div>
+        </div>
+    </div>
+    <div class="stat-card @(Model.LucroMes >= 0 ? "indigo" : "red")">
+        <div class="stat-icon @(Model.LucroMes >= 0 ? "indigo" : "red")"><i class="bi bi-currency-dollar"></i></div>
+        <div>
+            <div class="stat-value" style="color:@(Model.LucroMes >= 0 ? "var(--primary)" : "var(--danger)")">@Model.LucroMes.ToString("C0")</div>
+            <div class="stat-label">Lucro do Mês</div>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="row g-4">
+    <!-- Aprovações Pendentes -->
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:8px;height:8px;border-radius:50%;background:var(--warning);"></div>
+                    <span class="card-title">Aguardando Aprovação</span>
+                    @if (Model.AprovacoesPendentes > 0)
+                    {
+                        <span class="badge rounded-pill text-bg-warning ms-1">@Model.AprovacoesPendentes</span>
+                    }
+                </div>
+                <a asp-controller="Calendario" asp-action="Index" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+            </div>
+            @if (Model.UltimosConteudos.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead><tr><th>Conteúdo</th><th>Cliente</th><th>Data</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var c in Model.UltimosConteudos)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-600">@c.Titulo</div>
+                                        <span class="badge badge-@c.Tipo.ToString().ToLower() text-xs">@c.Tipo</span>
+                                    </td>
+                                    <td class="text-sm text-muted">@c.Cliente?.NomeEmpresa</td>
+                                    <td class="text-sm">@c.DataPrevista.ToString("dd/MM")</td>
+                                    <td>
+                                        <a asp-controller="Calendario" asp-action="Details" asp-route-id="@c.Id" class="btn btn-xs btn-primary">Ver</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="bi bi-check-circle empty-state-icon"></i>
+                    <h5>Tudo aprovado!</h5>
+                    <p>Nenhum conteúdo aguardando aprovação.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Tarefas -->
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:8px;height:8px;border-radius:50%;background:var(--danger);"></div>
+                    <span class="card-title">Tarefas Próximas</span>
+                </div>
+                <a asp-controller="Tarefas" asp-action="Index" class="btn btn-sm btn-outline-secondary">Ver todas</a>
+            </div>
+            @if (Model.UltimasTarefas.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead><tr><th>Tarefa</th><th>Responsável</th><th>Prazo</th><th>Prioridade</th></tr></thead>
+                        <tbody>
+                            @foreach (var t in Model.UltimasTarefas)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-600">@t.Titulo</div>
+                                        <span class="text-xs text-muted">@t.Cliente?.NomeEmpresa</span>
+                                    </td>
+                                    <td>
+                                        @if (t.Responsavel != null)
+                                        {
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="avatar-xs">@t.Responsavel.Iniciais</div>
+                                                <span class="text-sm">@t.Responsavel.Nome</span>
+                                            </div>
+                                        }
+                                        else { <span class="text-muted text-sm">—</span> }
+                                    </td>
+                                    <td>
+                                        @if (t.Prazo.HasValue)
+                                        {
+                                            <span class="task-due @(t.Atrasada ? "overdue" : "ok")">
+                                                <i class="bi bi-calendar3"></i> @t.Prazo.Value.ToString("dd/MM/yy")
+                                            </span>
+                                        }
+                                    </td>
+                                    <td><span class="badge badge-@t.Prioridade.ToString().ToLower()">@t.Prioridade</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="bi bi-check2-all empty-state-icon"></i>
+                    <h5>Sem tarefas pendentes</h5>
+                    <p>Nenhuma tarefa urgente no momento.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

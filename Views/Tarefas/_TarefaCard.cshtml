@@ -1,0 +1,42 @@
+@model AgenciaOS.Models.Tarefa
+<div class="task-card">
+    <div class="d-flex justify-content-between align-items-start mb-2">
+        <span class="badge badge-@Model.Prioridade.ToString().ToLower()">@Model.Prioridade</span>
+        @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+        {
+            <a asp-controller="Tarefas" asp-action="Edit" asp-route-id="@Model.Id"
+               class="btn btn-xs btn-outline-secondary" title="Editar">
+                <i class="bi bi-pencil"></i>
+            </a>
+        }
+    </div>
+
+    <div class="task-card-title">@Model.Titulo</div>
+
+    @if (!string.IsNullOrEmpty(Model.Descricao))
+    {
+        <div class="task-card-desc">
+            @(Model.Descricao!.Length > 90 ? Model.Descricao.Substring(0, 90) + "…" : Model.Descricao)
+        </div>
+    }
+
+    <div class="task-card-footer">
+        <div class="d-flex align-items-center gap-2">
+            @if (Model.Prazo.HasValue)
+            {
+                <span class="task-due @(Model.Atrasada ? "overdue" : Model.Prazo < DateTime.Now.AddDays(3) ? "soon" : "ok")">
+                    <i class="bi bi-calendar3"></i> @Model.Prazo.Value.ToString("dd/MM")
+                    @if (Model.Atrasada) { <i class="bi bi-exclamation-triangle-fill ms-1"></i> }
+                </span>
+            }
+            @if (Model.Cliente != null)
+            {
+                <span class="text-xs text-muted"><i class="bi bi-building"></i> @Model.Cliente.NomeEmpresa</span>
+            }
+        </div>
+        @if (Model.Responsavel != null)
+        {
+            <div class="task-avatar" title="@Model.Responsavel.NomeCompleto">@Model.Responsavel.Iniciais</div>
+        }
+    </div>
+</div>

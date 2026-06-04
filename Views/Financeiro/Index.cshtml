@@ -1,0 +1,138 @@
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Financeiro";
+    var mes      = (int)ViewData["Mes"]!;
+    var ano      = (int)ViewData["Ano"]!;
+    var receita  = (decimal)ViewData["Receita"]!;
+    var despesa  = (decimal)ViewData["Despesa"]!;
+    var lucro    = (decimal)ViewData["Lucro"]!;
+    var aReceber = (decimal)ViewData["AReceber"]!;
+    var aPagar   = (decimal)ViewData["APagar"]!;
+    var cultura  = new System.Globalization.CultureInfo("pt-BR");
+    string NomeMes(int m) => new DateTime(2000, m, 1).ToString("MMMM", cultura);
+}
+
+<div class="page-header">
+    <div>
+        <h1>Financeiro</h1>
+        <p style="text-transform:capitalize;">Visão geral · @NomeMes(mes) de @ano</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="ContasReceber" class="btn btn-outline-secondary px-3">
+            <i class="bi bi-arrow-down-circle me-1 text-success"></i> Contas a Receber
+        </a>
+        <a asp-action="ContasPagar" class="btn btn-outline-secondary px-3">
+            <i class="bi bi-arrow-up-circle me-1 text-danger"></i> Contas a Pagar
+        </a>
+    </div>
+</div>
+
+<!-- NAVEGAÇÃO DE MÊS -->
+<div class="filter-bar justify-content-between mb-4">
+    <div class="d-flex align-items-center gap-2">
+        <a asp-action="Index" asp-route-mes="@(mes==1?12:mes-1)" asp-route-ano="@(mes==1?ano-1:ano)" class="btn btn-outline-secondary btn-sm px-3">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        <span class="fw-700" style="min-width:160px;text-align:center;text-transform:capitalize;">@NomeMes(mes) @ano</span>
+        <a asp-action="Index" asp-route-mes="@(mes==12?1:mes+1)" asp-route-ano="@(mes==12?ano+1:ano)" class="btn btn-outline-secondary btn-sm px-3">
+            <i class="bi bi-chevron-right"></i>
+        </a>
+    </div>
+</div>
+
+<!-- CARDS DE RESUMO -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg">
+        <div class="fin-card receita">
+            <i class="bi bi-arrow-down-circle-fill fin-icon" style="color:var(--success);"></i>
+            <div class="fin-value">@receita.ToString("C0", cultura)</div>
+            <div class="fin-label">Receita Recebida</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="fin-card despesa">
+            <i class="bi bi-arrow-up-circle-fill fin-icon" style="color:var(--danger);"></i>
+            <div class="fin-value">@despesa.ToString("C0", cultura)</div>
+            <div class="fin-label">Despesas Pagas</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="fin-card lucro">
+            <i class="bi bi-graph-up-arrow fin-icon" style="color:var(--primary);"></i>
+            <div class="fin-value">@lucro.ToString("C0", cultura)</div>
+            <div class="fin-label">Lucro do Mês</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="fin-card a-receber" style="cursor:pointer;" onclick="location.href='@Url.Action("ContasReceber")'">
+            <i class="bi bi-clock-history fin-icon" style="color:var(--info);"></i>
+            <div class="fin-value">@aReceber.ToString("C0", cultura)</div>
+            <div class="fin-label">A Receber <i class="bi bi-arrow-right ms-1 small"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="fin-card a-pagar" style="cursor:pointer;" onclick="location.href='@Url.Action("ContasPagar")'">
+            <i class="bi bi-exclamation-circle-fill fin-icon" style="color:var(--warning);"></i>
+            <div class="fin-value">@aPagar.ToString("C0", cultura)</div>
+            <div class="fin-label">A Pagar <i class="bi bi-arrow-right ms-1 small"></i></div>
+        </div>
+    </div>
+</div>
+
+<!-- ATALHOS RÁPIDOS -->
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card h-100" style="border-left: 4px solid var(--success);">
+            <div class="card-header">
+                <span class="card-title text-success"><i class="bi bi-arrow-down-circle me-2"></i>Contas a Receber</span>
+                <a asp-action="ContasReceber" asp-route-mes="@mes" asp-route-ano="@ano" class="btn btn-sm btn-outline-secondary">Ver todas</a>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <div class="text-muted small">Total pendente</div>
+                        <div class="fw-700 fs-4 text-success">@aReceber.ToString("C0", cultura)</div>
+                    </div>
+                    <a asp-action="ContasReceber" asp-route-mes="@mes" asp-route-ano="@ano" asp-route-vencidas="true" class="btn btn-sm btn-danger">
+                        <i class="bi bi-exclamation-triangle me-1"></i>Ver Vencidas
+                    </a>
+                </div>
+                <div class="progress" style="height:6px;border-radius:99px;">
+                    @{ var percReceber = (receita + aReceber) > 0 ? (int)(receita / (receita + aReceber) * 100) : 0; }
+                    <div class="progress-bar bg-success" style="width:@percReceber%"></div>
+                </div>
+                <div class="d-flex justify-content-between text-xs text-muted mt-1">
+                    <span>Recebido: @receita.ToString("C0", cultura)</span>
+                    <span>@percReceber% recebido</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100" style="border-left: 4px solid var(--danger);">
+            <div class="card-header">
+                <span class="card-title text-danger"><i class="bi bi-arrow-up-circle me-2"></i>Contas a Pagar</span>
+                <a asp-action="ContasPagar" asp-route-mes="@mes" asp-route-ano="@ano" class="btn btn-sm btn-outline-secondary">Ver todas</a>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <div class="text-muted small">Total pendente</div>
+                        <div class="fw-700 fs-4 text-danger">@aPagar.ToString("C0", cultura)</div>
+                    </div>
+                    <a asp-action="ContasPagar" asp-route-mes="@mes" asp-route-ano="@ano" asp-route-vencidas="true" class="btn btn-sm btn-danger">
+                        <i class="bi bi-exclamation-triangle me-1"></i>Ver Vencidas
+                    </a>
+                </div>
+                <div class="progress" style="height:6px;border-radius:99px;">
+                    @{ var percPagar = (despesa + aPagar) > 0 ? (int)(despesa / (despesa + aPagar) * 100) : 0; }
+                    <div class="progress-bar bg-danger" style="width:@percPagar%"></div>
+                </div>
+                <div class="d-flex justify-content-between text-xs text-muted mt-1">
+                    <span>Pago: @despesa.ToString("C0", cultura)</span>
+                    <span>@percPagar% pago</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

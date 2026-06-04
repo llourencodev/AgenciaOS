@@ -1,0 +1,74 @@
+@model AgenciaOS.Models.Conteudo
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Nova Pauta";
+    var clientes = ViewData["Clientes"] as IEnumerable<Cliente> ?? [];
+}
+
+<div class="page-header">
+    <div class="page-header-left"><h1>Nova Pauta</h1></div>
+    <a asp-action="Index" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Voltar</a>
+</div>
+
+<div style="max-width:700px;">
+    <div class="card">
+        <div class="card-body">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="form-group">
+                    <label class="form-label">Título *</label>
+                    <input asp-for="Titulo" class="form-control" required placeholder="Ex: Reels Produto X — Lançamento" />
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label">Cliente *</label>
+                        <select asp-for="ClienteId" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            @foreach (var c in clientes)
+                            {
+                                <option value="@c.Id">@c.NomeEmpresa</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tipo de Conteúdo *</label>
+                        <select asp-for="Tipo" class="form-select">
+                            @foreach (var t in Enum.GetValues<TipoConteudo>())
+                            {
+                                <option value="@t">@t</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Data Prevista *</label>
+                        <input asp-for="DataPrevista" type="date" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select asp-for="Status" class="form-select">
+                            @foreach (var s in Enum.GetValues<StatusConteudo>())
+                            {
+                                <option value="@s">@s.ToString()</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descrição / Briefing</label>
+                    <textarea asp-for="Descricao" class="form-control" style="min-height:100px;" placeholder="Detalhes do conteúdo, objetivo, referências..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Legenda</label>
+                    <textarea asp-for="Legenda" class="form-control" placeholder="Legenda do post..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hashtags</label>
+                    <input asp-for="Hashtags" class="form-control" placeholder="#agencia #marketing #socialmedia" />
+                </div>
+                <button type="submit" class="btn btn-primary w-100" style="justify-content:center;padding:12px;">
+                    <i class="bi bi-check-lg"></i> Salvar Pauta
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

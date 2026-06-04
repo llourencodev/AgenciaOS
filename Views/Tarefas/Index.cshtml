@@ -1,0 +1,107 @@
+@model IEnumerable<AgenciaOS.Models.Tarefa>
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Tarefas";
+    var clientes = ViewData["Clientes"] as IEnumerable<Cliente> ?? [];
+    var pendentes = Model.Where(t => t.Status == StatusTarefa.Pendente).ToList();
+    var andamento = Model.Where(t => t.Status == StatusTarefa.EmAndamento).ToList();
+    var revisao   = Model.Where(t => t.Status == StatusTarefa.AguardandoRevisao).ToList();
+    var concluidas = Model.Where(t => t.Status == StatusTarefa.Concluido).ToList();
+}
+
+<div class="page-header">
+    <div>
+        <h1>Tarefas</h1>
+        <p>@Model.Count() tarefas · @Model.Count(t => t.Atrasada) atrasadas</p>
+    </div>
+    @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+    {
+        <a asp-action="Create" class="btn btn-primary px-4">
+            <i class="bi bi-plus-lg me-1"></i> Nova Tarefa
+        </a>
+    }
+</div>
+
+<!-- FILTROS -->
+<div class="filter-bar">
+    <form method="get" class="d-flex gap-2 flex-wrap">
+        <select name="clienteId" class="form-select form-select-sm" style="width:210px;" onchange="this.form.submit()">
+            <option value="">Todos os clientes</option>
+            @foreach (var c in clientes)
+            {
+                <option value="@c.Id" selected="@(ViewData["ClienteId"]?.ToString() == c.Id.ToString())">@c.NomeEmpresa</option>
+            }
+        </select>
+    </form>
+    <!-- Contadores rápidos -->
+    <div class="ms-auto d-flex gap-2">
+        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2">
+            <i class="bi bi-circle me-1"></i> @pendentes.Count Pendentes
+        </span>
+        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle px-3 py-2">
+            <i class="bi bi-arrow-clockwise me-1"></i> @andamento.Count Em andamento
+        </span>
+        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-3 py-2">
+            <i class="bi bi-check me-1"></i> @concluidas.Count Concluídas
+        </span>
+    </div>
+</div>
+
+<!-- KANBAN BOARD -->
+<div class="board">
+    <!-- PENDENTE -->
+    <div class="board-col">
+        <div class="board-col-header">
+            <div class="board-col-title">
+                <span class="board-col-dot" style="background:#f59e0b;"></span> Pendente
+            </div>
+            <span class="board-col-count">@pendentes.Count</span>
+        </div>
+        <div class="board-col-body">
+            @foreach (var t in pendentes) { <partial name="_TarefaCard" model="t" /> }
+            @if (!pendentes.Any()) { <div class="task-empty"><i class="bi bi-inbox me-1"></i>Vazio</div> }
+        </div>
+    </div>
+
+    <!-- EM ANDAMENTO -->
+    <div class="board-col">
+        <div class="board-col-header">
+            <div class="board-col-title">
+                <span class="board-col-dot" style="background:#3b82f6;"></span> Em Andamento
+            </div>
+            <span class="board-col-count">@andamento.Count</span>
+        </div>
+        <div class="board-col-body">
+            @foreach (var t in andamento) { <partial name="_TarefaCard" model="t" /> }
+            @if (!andamento.Any()) { <div class="task-empty"><i class="bi bi-inbox me-1"></i>Vazio</div> }
+        </div>
+    </div>
+
+    <!-- REVISÃO -->
+    <div class="board-col">
+        <div class="board-col-header">
+            <div class="board-col-title">
+                <span class="board-col-dot" style="background:#8b5cf6;"></span> Aguard. Revisão
+            </div>
+            <span class="board-col-count">@revisao.Count</span>
+        </div>
+        <div class="board-col-body">
+            @foreach (var t in revisao) { <partial name="_TarefaCard" model="t" /> }
+            @if (!revisao.Any()) { <div class="task-empty"><i class="bi bi-inbox me-1"></i>Vazio</div> }
+        </div>
+    </div>
+
+    <!-- CONCLUÍDO -->
+    <div class="board-col">
+        <div class="board-col-header">
+            <div class="board-col-title">
+                <span class="board-col-dot" style="background:#10b981;"></span> Concluído
+            </div>
+            <span class="board-col-count">@concluidas.Count</span>
+        </div>
+        <div class="board-col-body" style="opacity:.85;">
+            @foreach (var t in concluidas.Take(10)) { <partial name="_TarefaCard" model="t" /> }
+            @if (!concluidas.Any()) { <div class="task-empty"><i class="bi bi-inbox me-1"></i>Vazio</div> }
+        </div>
+    </div>
+</div>

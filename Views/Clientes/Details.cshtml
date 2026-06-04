@@ -1,0 +1,111 @@
+@model AgenciaOS.Models.Cliente
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = Model.NomeEmpresa;
+}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center gap-3">
+        <div style="width:48px;height:48px;background:@(Model.CorPrimaria ?? "#6366f1");border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px;">
+            @Model.NomeEmpresa.FirstOrDefault()
+        </div>
+        <div>
+            <h1>@Model.NomeEmpresa</h1>
+            <p>@Model.Responsavel · @Model.Email @(!string.IsNullOrEmpty(Model.Instagram) ? "· @" + Model.Instagram : "")</p>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Calendario" asp-action="Index" asp-route-clienteId="@Model.Id" class="btn btn-outline"><i class="bi bi-calendar3"></i> Calendário</a>
+        @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="bi bi-pencil"></i> Editar</a>
+        }
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+    <!-- Stats rápidos -->
+    <div class="card">
+        <div class="card-header"><span class="card-title">Resumo</span></div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center;">
+                <div>
+                    <div class="fin-value" style="font-size:20px;">@Model.Conteudos.Count</div>
+                    <div class="fin-label">Conteúdos</div>
+                </div>
+                <div>
+                    <div class="fin-value" style="font-size:20px; color:var(--warning);">@Model.Conteudos.Count(c => c.Status == StatusConteudo.AguardandoAprovacao)</div>
+                    <div class="fin-label">Aguardando</div>
+                </div>
+                <div>
+                    <div class="fin-value" style="font-size:20px; color:var(--success);">@Model.Conteudos.Count(c => c.Status == StatusConteudo.Publicado)</div>
+                    <div class="fin-label">Publicados</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Info -->
+    <div class="card">
+        <div class="card-header"><span class="card-title">Informações</span></div>
+        <div class="card-body">
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+                @if (!string.IsNullOrEmpty(Model.PlanoContratado))
+                {
+                    <div><span class="text-muted">Plano:</span> <strong>@Model.PlanoContratado</strong></div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Objetivos))
+                {
+                    <div><span class="text-muted">Objetivos:</span> @Model.Objetivos</div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Estrategia))
+                {
+                    <div><span class="text-muted">Estratégia:</span> @Model.Estrategia</div>
+                }
+                <div><span class="text-muted">Cadastrado em:</span> @Model.CriadoEm.ToString("dd/MM/yyyy")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tarefas do Cliente -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Tarefas</span>
+        @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+        {
+            <a asp-controller="Tarefas" asp-action="Create" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> Nova Tarefa</a>
+        }
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Tarefas.Any())
+        {
+            <table>
+                <thead>
+                    <tr><th>Tarefa</th><th>Responsável</th><th>Prazo</th><th>Status</th><th>Prioridade</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model.Tarefas.OrderBy(t => t.Prazo))
+                    {
+                        <tr>
+                            <td class="fw-600">@t.Titulo</td>
+                            <td>@(t.Responsavel?.Nome ?? "—")</td>
+                            <td style="font-size:12px;">@(t.Prazo?.ToString("dd/MM/yy") ?? "—")</td>
+                            <td>
+                                <span class="badge-status @(t.Status == StatusTarefa.Concluido ? "badge-concluido" : t.Status == StatusTarefa.EmAndamento ? "badge-andamento" : "badge-pendente")">
+                                    @t.Status.ToString()
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge-status badge-@t.Prioridade.ToString().ToLower()">@t.Prioridade</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="empty-state"><i class="bi bi-check2-square"></i><h3>Nenhuma tarefa</h3></div>
+        }
+    </div>
+</div>

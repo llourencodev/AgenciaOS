@@ -1,0 +1,117 @@
+@model IEnumerable<AgenciaOS.Models.Cliente>
+@{ ViewData["Title"] = "Clientes"; }
+
+<div class="page-header">
+    <div>
+        <h1>Clientes</h1>
+        <p>@Model.Count() clientes cadastrados · @Model.Count(c => c.Ativo) ativos</p>
+    </div>
+    @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+    {
+        <a asp-action="Create" class="btn btn-primary px-4">
+            <i class="bi bi-plus-lg me-1"></i> Novo Cliente
+        </a>
+    }
+</div>
+
+<div class="filter-bar">
+    <form method="get" class="d-flex gap-2 flex-wrap w-100">
+        <div class="input-group" style="max-width:320px;">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" name="busca" value="@ViewData["Busca"]" class="form-control" placeholder="Buscar por nome ou responsável..." />
+        </div>
+        <button type="submit" class="btn btn-primary px-3">Buscar</button>
+        @if (!string.IsNullOrEmpty(ViewData["Busca"]?.ToString()))
+        {
+            <a asp-action="Index" class="btn btn-outline-secondary">Limpar</a>
+        }
+    </form>
+</div>
+
+<div class="card">
+    @if (Model.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Responsável</th>
+                        <th>Telefone</th>
+                        <th>Plano</th>
+                        <th>Instagram</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div style="width:40px;height:40px;border-radius:10px;background:@(c.CorPrimaria ?? "#6366f1");display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:16px;flex-shrink:0;">
+                                        @c.NomeEmpresa.FirstOrDefault()
+                                    </div>
+                                    <div>
+                                        <div class="fw-600">@c.NomeEmpresa</div>
+                                        <div class="text-xs text-muted">@c.Email</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-sm">@c.Responsavel</td>
+                            <td class="text-sm text-muted">@(c.Telefone ?? "—")</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(c.PlanoContratado))
+                                {
+                                    <span class="badge badge-aprovado">@c.PlanoContratado</span>
+                                }
+                                else { <span class="text-muted text-sm">—</span> }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(c.Instagram))
+                                {
+                                    <span class="text-sm" style="color:var(--primary);">&#64;@c.Instagram</span>
+                                }
+                                else { <span class="text-muted text-sm">—</span> }
+                            </td>
+                            <td>
+                                <span class="badge @(c.Ativo ? "badge-aprovado" : "badge-ajuste")">
+                                    <i class="bi bi-@(c.Ativo ? "circle-fill" : "circle") me-1" style="font-size:7px;"></i>
+                                    @(c.Ativo ? "Ativo" : "Inativo")
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <a asp-action="Details" asp-route-id="@c.Id" class="btn btn-xs btn-outline-secondary" title="Ver detalhes">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@c.Id" class="btn btn-xs btn-outline-secondary" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a asp-controller="Calendario" asp-action="Index" asp-route-clienteId="@c.Id" class="btn btn-xs btn-outline-secondary" title="Calendário">
+                                            <i class="bi bi-calendar3"></i>
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="bi bi-people empty-state-icon"></i>
+            <h5>Nenhum cliente encontrado</h5>
+            <p>Cadastre seu primeiro cliente para começar a operar.</p>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Cadastrar cliente
+            </a>
+        </div>
+    }
+</div>

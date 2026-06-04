@@ -1,0 +1,99 @@
+@model AgenciaOS.ViewModels.DashboardViewModel
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Meu Portal";
+}
+
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Olá! 👋</h1>
+        <p>Bem-vindo ao seu portal — @Model.NomeCliente</p>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon purple"><i class="bi bi-file-earmark-text-fill"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">@Model.ConteudosMes</div>
+            <div class="stat-label">Conteúdos do Mês</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange"><i class="bi bi-clock-history"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">@Model.AprovacoesPendentes</div>
+            <div class="stat-label">Aguardando sua Aprovação</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">@Model.ConteudosAprovados</div>
+            <div class="stat-label">Aprovados</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-rocket-takeoff-fill"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">@Model.ConteudosPublicados</div>
+            <div class="stat-label">Publicados</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Seus Conteúdos Recentes</span>
+        @if (Model.ClienteId.HasValue)
+        {
+            <a asp-controller="Calendario" asp-action="Index" asp-route-clienteId="@Model.ClienteId" class="btn btn-sm btn-outline">Ver Calendário</a>
+        }
+    </div>
+    <div class="card-body p-0">
+        @if (Model.UltimosConteudos.Any())
+        {
+            <table>
+                <thead>
+                    <tr><th>Conteúdo</th><th>Tipo</th><th>Data</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.UltimosConteudos)
+                    {
+                        <tr>
+                            <td class="fw-600">@c.Titulo</td>
+                            <td><span class="badge-status badge-pauta">@c.Tipo</span></td>
+                            <td style="font-size:12px;">@c.DataPrevista.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                @{
+                                    var cls = c.Status switch {
+                                        StatusConteudo.Aprovado => "badge-aprovado",
+                                        StatusConteudo.Publicado => "badge-publicado",
+                                        StatusConteudo.AguardandoAprovacao => "badge-aguardando",
+                                        StatusConteudo.AjusteSolicitado => "badge-ajuste",
+                                        _ => "badge-pauta"
+                                    };
+                                }
+                                <span class="badge-status @cls">@c.Status.ToString()</span>
+                            </td>
+                            <td>
+                                <a asp-controller="Calendario" asp-action="Details" asp-route-id="@c.Id" class="btn btn-sm btn-primary">
+                                    @if (c.Status == StatusConteudo.AguardandoAprovacao) { <text><i class="bi bi-check-circle"></i> Aprovar</text> }
+                                    else { <text><i class="bi bi-eye"></i> Ver</text> }
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="bi bi-file-earmark-text"></i>
+                <h3>Nenhum conteúdo ainda</h3>
+                <p>Seus conteúdos aparecerão aqui em breve.</p>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,308 @@
+@model IEnumerable<AgenciaOS.Models.Financeiro>
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Contas a Pagar";
+    var clientes  = ViewData["Clientes"] as IEnumerable<Cliente> ?? [];
+    var mes       = (int)ViewData["Mes"]!;
+    var ano       = (int)ViewData["Ano"]!;
+    var aPagar    = (decimal)ViewData["APagar"]!;
+    var despesa   = (decimal)ViewData["Despesa"]!;
+    var cultura   = new System.Globalization.CultureInfo("pt-BR");
+    var vencidas  = ViewData["Vencidas"] as bool?;
+    var catFiltro = ViewData["Categoria"] as CategoriaFinanceiro?;
+    string NomeMes(int m) => new DateTime(2000, m, 1).ToString("MMMM", cultura);
+
+    var totalPendente = Model.Where(f => !f.Pago).Sum(f => f.Valor);
+    var totalPago     = Model.Where(f => f.Pago).Sum(f => f.Valor);
+    var totalVencidas = Model.Count(f => !f.Pago && f.DataVencimento < DateTime.Now);
+
+    var porCategoria = Model
+        .GroupBy(f => f.Categoria)
+        .Select(g => new { Categoria = g.Key, Total = g.Sum(f => f.Valor), Count = g.Count() })
+        .OrderByDescending(g => g.Total)
+        .ToList();
+}
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-arrow-up-circle-fill text-danger me-2" style="font-size:22px;"></i>Contas a Pagar</h1>
+        <p style="text-transform:capitalize;">@NomeMes(mes) de @ano · @Model.Count() lançamentos</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" asp-route-mes="@mes" asp-route-ano="@ano" class="btn btn-outline-secondary">
+            <i class="bi bi-grid me-1"></i> Visão Geral
+        </a>
+        <a asp-action="ContasReceber" asp-route-mes="@mes" asp-route-ano="@ano" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-down-circle me-1 text-success"></i> Contas a Receber
+        </a>
+        <button class="btn btn-danger px-4" data-bs-toggle="modal" data-bs-target="#novaContaModal">
+            <i class="bi bi-plus-lg me-1"></i> Nova Conta
+        </button>
+    </div>
+</div>
+
+<!-- RESUMO -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card text-center py-3 px-2" style="border-top:3px solid var(--danger);">
+            <div class="fw-800 fs-4 text-danger">@totalPago.ToString("C0", cultura)</div>
+            <div class="text-muted small">Pago</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center py-3 px-2" style="border-top:3px solid var(--warning);">
+            <div class="fw-800 fs-4 text-warning">@totalPendente.ToString("C0", cultura)</div>
+            <div class="text-muted small">Pendente</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center py-3 px-2" style="border-top:3px solid #ef4444;">
+            <div class="fw-800 fs-4 text-danger">@totalVencidas</div>
+            <div class="text-muted small">Vencidas</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center py-3 px-2" style="border-top:3px solid var(--primary);">
+            <div class="fw-800 fs-4" style="color:var(--primary);">@Model.Count()</div>
+            <div class="text-muted small">Total lançamentos</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- TABELA -->
+    <div class="col-lg-8">
+        <!-- FILTROS -->
+        <div class="filter-bar justify-content-between mb-3">
+            <div class="d-flex align-items-center gap-2">
+                <a asp-action="ContasPagar" asp-route-mes="@(mes==1?12:mes-1)" asp-route-ano="@(mes==1?ano-1:ano)" class="btn btn-outline-secondary btn-sm px-3">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+                <span class="fw-700" style="min-width:155px;text-align:center;text-transform:capitalize;">@NomeMes(mes) @ano</span>
+                <a asp-action="ContasPagar" asp-route-mes="@(mes==12?1:mes+1)" asp-route-ano="@(mes==12?ano+1:ano)" class="btn btn-outline-secondary btn-sm px-3">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+            <form method="get" class="d-flex gap-2">
+                <select name="categoria" class="form-select form-select-sm" style="width:170px;" onchange="this.form.submit()">
+                    <option value="">Todas as categorias</option>
+                    @foreach (var cat in Enum.GetValues<CategoriaFinanceiro>().Where(c => c != CategoriaFinanceiro.Mensalidade && c != CategoriaFinanceiro.Projeto && c != CategoriaFinanceiro.PagamentoExtra))
+                    {
+                        <option value="@cat" selected="@(catFiltro == cat)">@cat</option>
+                    }
+                    <option value="Freelancer"   selected="@(catFiltro == CategoriaFinanceiro.Freelancer)">Freelancer</option>
+                    <option value="Software"     selected="@(catFiltro == CategoriaFinanceiro.Software)">Software</option>
+                    <option value="Anuncio"      selected="@(catFiltro == CategoriaFinanceiro.Anuncio)">Anúncio</option>
+                    <option value="Fornecedor"   selected="@(catFiltro == CategoriaFinanceiro.Fornecedor)">Fornecedor</option>
+                    <option value="Outros"       selected="@(catFiltro == CategoriaFinanceiro.Outros)">Outros</option>
+                </select>
+                <select name="vencidas" class="form-select form-select-sm" style="width:155px;" onchange="this.form.submit()">
+                    <option value="">Todas</option>
+                    <option value="true" selected="@(vencidas == true)">Somente Vencidas</option>
+                </select>
+                <input type="hidden" name="mes" value="@mes" />
+                <input type="hidden" name="ano" value="@ano" />
+            </form>
+        </div>
+
+        <div class="card">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Categoria</th>
+                                <th>Vencimento</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Pago em</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var f in Model)
+                            {
+                                var vencida = !f.Pago && f.DataVencimento < DateTime.Now;
+                                <tr class="@(vencida ? "table-danger" : "")">
+                                    <td>
+                                        <div class="fw-600">@f.Descricao</div>
+                                        @if (f.Cliente != null)
+                                        {
+                                            <div class="text-xs text-muted"><i class="bi bi-building"></i> @f.Cliente.NomeEmpresa</div>
+                                        }
+                                    </td>
+                                    <td><span class="badge badge-pauta">@f.Categoria</span></td>
+                                    <td>
+                                        <span class="text-sm @(vencida ? "text-danger fw-600" : "")">
+                                            @f.DataVencimento.ToString("dd/MM/yyyy")
+                                            @if (vencida) { <i class="bi bi-exclamation-circle-fill ms-1"></i> }
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-700 text-danger">-@f.Valor.ToString("C0", cultura)</span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm @(f.Pago ? "btn-success" : "btn-outline-secondary")"
+                                                data-pago-toggle="@f.Id" style="font-size:12px;min-width:90px;">
+                                            @if (f.Pago)
+                                            {
+                                                <i class="bi bi-check-circle-fill me-1"></i><text>Pago</text>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-circle me-1"></i><text>Pendente</text>
+                                            }
+                                        </button>
+                                    </td>
+                                    <td class="text-sm text-muted">
+                                        @(f.DataPagamento.HasValue ? f.DataPagamento.Value.ToString("dd/MM/yyyy") : "—")
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-xs btn-outline-danger" onclick="excluir(@f.Id, this)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot style="background:#fafafa;">
+                            <tr>
+                                <td colspan="3" class="fw-700 text-sm">Total do período</td>
+                                <td class="fw-700 text-danger">-@Model.Sum(f => f.Valor).ToString("C0", cultura)</td>
+                                <td colspan="3"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="bi bi-arrow-up-circle empty-state-icon text-danger"></i>
+                    <h5>Nenhuma conta a pagar</h5>
+                    <p>Registre suas despesas para manter o controle financeiro.</p>
+                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#novaContaModal">
+                        <i class="bi bi-plus-lg me-1"></i> Adicionar Conta
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- SIDEBAR: DESPESAS POR CATEGORIA -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Despesas por Categoria</span>
+            </div>
+            <div class="card-body p-0">
+                @if (porCategoria.Any())
+                {
+                    var maxVal = porCategoria.Max(g => g.Total);
+                    @foreach (var g in porCategoria)
+                    {
+                        var pct = maxVal > 0 ? (int)(g.Total / maxVal * 100) : 0;
+                        <div class="px-4 py-3 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-sm fw-600">@g.Categoria</span>
+                                <span class="text-sm fw-700 text-danger">@g.Total.ToString("C0", cultura)</span>
+                            </div>
+                            <div class="progress" style="height:5px;border-radius:99px;">
+                                <div class="progress-bar bg-danger" style="width:@pct%"></div>
+                            </div>
+                            <div class="text-xs text-muted mt-1">@g.Count lançamento@(g.Count > 1 ? "s" : "")</div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="p-4 text-center text-muted small">Sem dados</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal fade" id="novaContaModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-controller="Financeiro" asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Tipo" value="Saida" />
+                <div class="modal-header" style="border-left:4px solid var(--danger);">
+                    <h5 class="modal-title"><i class="bi bi-arrow-up-circle-fill text-danger me-2"></i>Nova Conta a Pagar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Descrição *</label>
+                        <input type="text" name="Descricao" class="form-control" required placeholder="Ex: Assinatura Adobe, Freelancer João..." />
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">Valor *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" name="Valor" class="form-control" step="0.01" min="0" required placeholder="0,00" />
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Vencimento *</label>
+                            <input type="date" name="DataVencimento" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Categoria</label>
+                            <select name="Categoria" class="form-select">
+                                <option value="Freelancer">Freelancer</option>
+                                <option value="Software">Software / Assinatura</option>
+                                <option value="Anuncio">Anúncio / Tráfego</option>
+                                <option value="Fornecedor">Fornecedor</option>
+                                <option value="Outros">Outros</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Cliente (opcional)</label>
+                            <select name="ClienteId" class="form-select">
+                                <option value="">Sem vínculo</option>
+                                @foreach (var c in clientes)
+                                {
+                                    <option value="@c.Id">@c.NomeEmpresa</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Observações</label>
+                            <textarea name="Observacoes" class="form-control" rows="2" placeholder="Notas adicionais..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="Pago" value="true" id="jaPago" />
+                                <label class="form-check-label" for="jaPago">Já foi pago</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-check-lg me-1"></i> Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+async function excluir(id, btn) {
+    if (!confirm('Excluir este lançamento?')) return;
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+    const res = await fetch(`/Financeiro/Excluir/${id}`, { method: 'POST', headers: { 'RequestVerificationToken': token } });
+    if (res.ok) btn.closest('tr').remove();
+}
+</script>
+}

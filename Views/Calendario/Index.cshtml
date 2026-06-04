@@ -1,0 +1,138 @@
+@model IEnumerable<AgenciaOS.Models.Conteudo>
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Calendário de Conteúdo";
+    var mes = (int)ViewData["Mes"]!;
+    var ano = (int)ViewData["Ano"]!;
+    var clienteId = ViewData["ClienteId"];
+    var clientes = ViewData["Clientes"] as IEnumerable<Cliente> ?? [];
+
+    var primeiroDia = new DateTime(ano, mes, 1);
+    var ultimoDia = primeiroDia.AddMonths(1).AddDays(-1);
+    var inicioGrade = primeiroDia.AddDays(-(int)primeiroDia.DayOfWeek);
+    var fimGrade = ultimoDia.AddDays(6 - (int)ultimoDia.DayOfWeek);
+
+    var conteudosPorDia = Model.GroupBy(c => c.DataPrevista.Date).ToDictionary(g => g.Key, g => g.ToList());
+
+    string NomeMes(int m) => new DateTime(2000, m, 1).ToString("MMMM", new System.Globalization.CultureInfo("pt-BR"));
+    string BadgeClass(StatusConteudo s) => s switch {
+        StatusConteudo.Aprovado => "event-approved",
+        StatusConteudo.Publicado => "event-published",
+        StatusConteudo.AguardandoAprovacao => "event-waiting",
+        StatusConteudo.AjusteSolicitado => "event-adjust",
+        _ => "event-default"
+    };
+}
+
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Calendário de Conteúdo</h1>
+        <p style="text-transform:capitalize;">@NomeMes(mes) de @ano</p>
+    </div>
+    <div class="d-flex gap-2">
+        @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+        {
+            <a asp-action="Create" asp-route-clienteId="@clienteId" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nova Pauta</a>
+        }
+    </div>
+</div>
+
+<div class="filter-bar">
+    <form method="get" class="d-flex gap-2" style="flex-wrap:wrap;">
+        <select name="clienteId" class="form-select" style="width:200px;">
+            <option value="">Todos os clientes</option>
+            @foreach (var c in clientes)
+            {
+                <option value="@c.Id" selected="@(clienteId?.ToString() == c.Id.ToString())">@c.NomeEmpresa</option>
+            }
+        </select>
+        <div class="d-flex gap-1 align-items-center">
+            <a asp-action="Index" asp-route-mes="@(mes == 1 ? 12 : mes - 1)" asp-route-ano="@(mes == 1 ? ano - 1 : ano)" asp-route-clienteId="@clienteId" class="btn btn-outline btn-sm"><i class="bi bi-chevron-left"></i></a>
+            <span class="fw-600" style="min-width:130px;text-align:center;text-transform:capitalize;">@NomeMes(mes) @ano</span>
+            <a asp-action="Index" asp-route-mes="@(mes == 12 ? 1 : mes + 1)" asp-route-ano="@(mes == 12 ? ano + 1 : ano)" asp-route-clienteId="@clienteId" class="btn btn-outline btn-sm"><i class="bi bi-chevron-right"></i></a>
+        </div>
+        <button type="submit" class="btn btn-outline">Filtrar</button>
+    </form>
+</div>
+
+<!-- Legenda -->
+<div class="d-flex gap-3 mb-3" style="flex-wrap:wrap;">
+    <div class="d-flex align-items-center gap-1" style="font-size:11px;"><span style="width:10px;height:10px;background:#d1fae5;border-radius:3px;display:inline-block;"></span>Aprovado</div>
+    <div class="d-flex align-items-center gap-1" style="font-size:11px;"><span style="width:10px;height:10px;background:#dbeafe;border-radius:3px;display:inline-block;"></span>Publicado</div>
+    <div class="d-flex align-items-center gap-1" style="font-size:11px;"><span style="width:10px;height:10px;background:#fef3c7;border-radius:3px;display:inline-block;"></span>Aguardando</div>
+    <div class="d-flex align-items-center gap-1" style="font-size:11px;"><span style="width:10px;height:10px;background:#fee2e2;border-radius:3px;display:inline-block;"></span>Ajuste</div>
+    <div class="d-flex align-items-center gap-1" style="font-size:11px;"><span style="width:10px;height:10px;background:#f1f5f9;border-radius:3px;display:inline-block;"></span>Em andamento</div>
+</div>
+
+<div class="cal-grid">
+    @foreach (var dia in new[] { "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb" })
+    {
+        <div class="cal-header-day">@dia</div>
+    }
+
+    @for (var d = inicioGrade; d <= fimGrade; d = d.AddDays(1))
+    {
+        var outroMes = d.Month != mes;
+        var hoje = d.Date == DateTime.Today;
+        var eventos = conteudosPorDia.GetValueOrDefault(d.Date, []);
+        <div class="cal-cell @(outroMes ? "other-month" : "") @(hoje ? "today" : "")">
+            <div class="cal-day-num">@d.Day</div>
+            @foreach (var ev in eventos.Take(3))
+            {
+                <a asp-action="Details" asp-route-id="@ev.Id" class="cal-event @BadgeClass(ev.Status)" title="@ev.Titulo — @ev.Tipo">
+                    @ev.Titulo
+                </a>
+            }
+            @if (eventos.Count > 3)
+            {
+                <div class="cal-event event-default">+@(eventos.Count - 3) mais</div>
+            }
+            @if (!outroMes && (User.IsInRole("Admin") || User.IsInRole("Equipe")))
+            {
+                <a asp-action="Create" asp-route-data="@d.ToString("yyyy-MM-dd")" asp-route-clienteId="@clienteId" class="cal-add-btn" title="Adicionar">
+                    <i class="bi bi-plus" style="font-size:11px;color:var(--text-muted);opacity:.5;"></i>
+                </a>
+            }
+        </div>
+    }
+</div>
+
+<!-- Lista de conteúdos do mês -->
+<div class="card mt-4">
+    <div class="card-header"><span class="card-title">Conteúdos do Mês (@Model.Count())</span></div>
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <table>
+                <thead>
+                    <tr><th>Título</th><th>Tipo</th><th>Cliente</th><th>Data</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.OrderBy(c => c.DataPrevista))
+                    {
+                        <tr>
+                            <td class="fw-600">@c.Titulo</td>
+                            <td><span class="badge-status badge-pauta">@c.Tipo</span></td>
+                            <td style="font-size:12px;">@c.Cliente?.NomeEmpresa</td>
+                            <td style="font-size:12px;">@c.DataPrevista.ToString("dd/MM")</td>
+                            <td>
+                                <span class="badge-status @BadgeClass(c.Status)">@c.Status.ToString()</span>
+                            </td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@c.Id" class="btn btn-sm btn-outline"><i class="bi bi-eye"></i></a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="bi bi-calendar3"></i>
+                <h3>Nenhum conteúdo este mês</h3>
+                <a asp-action="Create" class="btn btn-primary mt-3">Criar pauta</a>
+            </div>
+        }
+    </div>
+</div>

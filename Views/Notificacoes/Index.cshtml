@@ -1,0 +1,47 @@
+@model IEnumerable<AgenciaOS.Models.Notificacao>
+@{
+    ViewData["Title"] = "Notificações";
+}
+
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Notificações</h1>
+        <p>@Model.Count(n => !n.Lida) não lidas</p>
+    </div>
+    <button class="btn btn-outline" onclick="marcarTodasLidas()">
+        <i class="bi bi-check-all"></i> Marcar todas como lidas
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            @foreach (var n in Model)
+            {
+                <div class="notif-item @(!n.Lida ? "unread" : "")" style="@(!n.Lida ? "background:#f8f9ff;" : "")">
+                    <div class="notif-item-icon" style="width:40px;height:40px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;">
+                        <i class="@n.IconeCss" style="font-size:18px;"></i>
+                    </div>
+                    <div class="notif-item-body" style="overflow:visible;">
+                        <div class="notif-item-title">@n.Titulo</div>
+                        <div style="font-size:13px;color:var(--text-muted);">@n.Mensagem</div>
+                        <div class="notif-item-time mt-1">@n.CriadoEm.ToString("dd/MM/yyyy HH:mm")</div>
+                    </div>
+                    @if (!n.Lida)
+                    {
+                        <div style="width:8px;height:8px;background:var(--primary);border-radius:50%;flex-shrink:0;"></div>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="bi bi-bell-slash"></i>
+                <h3>Sem notificações</h3>
+                <p>Você está em dia!</p>
+            </div>
+        }
+    </div>
+</div>

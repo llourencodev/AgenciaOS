@@ -1,0 +1,158 @@
+@model AgenciaOS.Models.Conteudo
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = Model.Titulo;
+    string BadgeClass(StatusConteudo s) => s switch {
+        StatusConteudo.Aprovado => "badge-aprovado",
+        StatusConteudo.Publicado => "badge-publicado",
+        StatusConteudo.AguardandoAprovacao => "badge-aguardando",
+        StatusConteudo.AjusteSolicitado => "badge-ajuste",
+        StatusConteudo.PautaCriada => "badge-pauta",
+        StatusConteudo.AguardandoGravacao => "badge-gravacao",
+        StatusConteudo.AguardandoEdicao => "badge-edicao",
+        _ => "badge-revisao"
+    };
+}
+
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>@Model.Titulo</h1>
+        <p>@Model.Tipo · @Model.Cliente?.NomeEmpresa · @Model.DataPrevista.ToString("dd/MM/yyyy")</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        <span class="badge-status @BadgeClass(Model.Status)" style="font-size:13px;">@Model.Status.ToString()</span>
+        <a asp-action="Index" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Voltar</a>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+    <div style="display:flex;flex-direction:column;gap:20px;">
+        <!-- Conteúdo -->
+        <div class="card">
+            <div class="card-header"><span class="card-title">Informações do Conteúdo</span></div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(Model.Descricao))
+                {
+                    <div class="form-group">
+                        <label class="form-label text-muted">Briefing / Descrição</label>
+                        <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:13px;line-height:1.6;">@Model.Descricao</div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Legenda))
+                {
+                    <div class="form-group">
+                        <label class="form-label text-muted">Legenda</label>
+                        <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:13px;line-height:1.6;white-space:pre-wrap;">@Model.Legenda</div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Hashtags))
+                {
+                    <div>
+                        <label class="form-label text-muted">Hashtags</label>
+                        <div style="font-size:13px;color:var(--primary);">@Model.Hashtags</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Comentários -->
+        <div class="card">
+            <div class="card-header"><span class="card-title">Comentários (@Model.Comentarios.Count)</span></div>
+            <div class="card-body">
+                @foreach (var c in Model.Comentarios.OrderBy(c => c.CriadoEm))
+                {
+                    <div class="d-flex gap-3 mb-3">
+                        <div class="user-avatar" style="background:var(--primary);">@c.Usuario.Iniciais</div>
+                        <div style="flex:1;">
+                            <div class="d-flex gap-2 align-items-center mb-1">
+                                <span class="fw-600" style="font-size:13px;">@c.Usuario.NomeCompleto</span>
+                                <span class="text-muted" style="font-size:11px;">@c.CriadoEm.ToString("dd/MM HH:mm")</span>
+                            </div>
+                            <div style="background:var(--bg);border-radius:8px;padding:10px 14px;font-size:13px;">@c.Texto</div>
+                        </div>
+                    </div>
+                }
+                <form asp-action="Comentar" method="post" class="mt-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="conteudoId" value="@Model.Id" />
+                    <div class="d-flex gap-2">
+                        <input type="text" name="texto" class="form-control" placeholder="Adicionar comentário..." required />
+                        <button type="submit" class="btn btn-primary" style="flex-shrink:0;"><i class="bi bi-send"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px;">
+        <!-- Ações de Status -->
+        @if (User.IsInRole("Admin") || User.IsInRole("Equipe") || User.IsInRole("Cliente"))
+        {
+            <div class="card">
+                <div class="card-header"><span class="card-title">Ações</span></div>
+                <div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
+                    @if (User.IsInRole("Cliente") || User.IsInRole("Admin"))
+                    {
+                        if (Model.Status == StatusConteudo.AguardandoAprovacao)
+                        {
+                            <form asp-action="AlterarStatus" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="status" value="@StatusConteudo.Aprovado" />
+                                <button type="submit" class="btn btn-success w-100" style="justify-content:center;">
+                                    <i class="bi bi-check-circle-fill"></i> Aprovar Conteúdo
+                                </button>
+                            </form>
+                            <form asp-action="AlterarStatus" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="status" value="@StatusConteudo.AjusteSolicitado" />
+                                <button type="submit" class="btn btn-danger w-100" style="justify-content:center;">
+                                    <i class="bi bi-x-circle-fill"></i> Solicitar Ajuste
+                                </button>
+                            </form>
+                        }
+                    }
+                    @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+                    {
+                        <div class="form-group">
+                            <label class="form-label">Alterar Status</label>
+                            <form asp-action="AlterarStatus" method="post" class="d-flex gap-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <select name="status" class="form-select">
+                                    @foreach (var s in Enum.GetValues<StatusConteudo>())
+                                    {
+                                        <option value="@s" selected="@(s == Model.Status)">@s.ToString()</option>
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-primary" style="flex-shrink:0;"><i class="bi bi-check"></i></button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Histórico -->
+        <div class="card">
+            <div class="card-header"><span class="card-title">Histórico</span></div>
+            <div class="card-body p-0">
+                @if (Model.Historicos.Any())
+                {
+                    @foreach (var h in Model.Historicos.OrderByDescending(h => h.CriadoEm).Take(8))
+                    {
+                        <div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px;">
+                            <div class="fw-600">@h.Descricao</div>
+                            <div class="text-muted">@h.Usuario?.NomeCompleto · @h.CriadoEm.ToString("dd/MM HH:mm")</div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="empty-state" style="padding:20px;"><i class="bi bi-clock-history"></i><p>Sem histórico</p></div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

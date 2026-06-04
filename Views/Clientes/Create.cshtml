@@ -1,0 +1,81 @@
+@model AgenciaOS.Models.Cliente
+@{
+    ViewData["Title"] = "Novo Cliente";
+}
+
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Novo Cliente</h1>
+        <p>Preencha os dados do cliente</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Voltar</a>
+</div>
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+        <div class="card">
+            <div class="card-header"><span class="card-title">Dados da Empresa</span></div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Nome da Empresa *</label>
+                        <input asp-for="NomeEmpresa" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Responsável *</label>
+                        <input asp-for="Responsavel" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">E-mail *</label>
+                        <input asp-for="Email" class="form-control" type="email" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Telefone</label>
+                        <input asp-for="Telefone" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Instagram</label>
+                        <input asp-for="Instagram" class="form-control" placeholder="&#64;usuario" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Plano Contratado</label>
+                        <input asp-for="PlanoContratado" class="form-control" placeholder="Ex: Plano Plus" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Observações</label>
+                    <textarea asp-for="Observacoes" class="form-control"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Estratégia</span></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Estratégia</label>
+                        <textarea asp-for="Estrategia" class="form-control" style="min-height: 80px;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Objetivos</label>
+                        <textarea asp-for="Objetivos" class="form-control" style="min-height: 80px;"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Identidade Visual</span></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Cor Primária</label>
+                        <input asp-for="CorPrimaria" type="color" class="form-control" style="height: 42px; padding: 4px;" />
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100" style="justify-content:center; padding: 12px;">
+                <i class="bi bi-check-lg"></i> Salvar Cliente
+            </button>
+        </div>
+    </div>
+</form>

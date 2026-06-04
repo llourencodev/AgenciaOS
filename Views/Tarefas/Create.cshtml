@@ -1,0 +1,69 @@
+@model AgenciaOS.Models.Tarefa
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Nova Tarefa";
+    var clientes = ViewData["Clientes"] as IEnumerable<Cliente> ?? [];
+    var usuarios = ViewData["Usuarios"] as IEnumerable<Usuario> ?? [];
+}
+
+<div class="page-header">
+    <div class="page-header-left"><h1>Nova Tarefa</h1></div>
+    <a asp-action="Index" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Voltar</a>
+</div>
+
+<div style="max-width: 700px;">
+    <div class="card">
+        <div class="card-header"><span class="card-title">Detalhes da Tarefa</span></div>
+        <div class="card-body">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="form-group">
+                    <label class="form-label">Título *</label>
+                    <input asp-for="Titulo" class="form-control" required placeholder="Ex: Criar artes para o Stories" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descrição</label>
+                    <textarea asp-for="Descricao" class="form-control" placeholder="Detalhes da tarefa..."></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Cliente</label>
+                        <select asp-for="ClienteId" class="form-select">
+                            <option value="">Sem cliente</option>
+                            @foreach (var c in clientes)
+                            {
+                                <option value="@c.Id">@c.NomeEmpresa</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Responsável</label>
+                        <select asp-for="ResponsavelId" class="form-select">
+                            <option value="">Sem responsável</option>
+                            @foreach (var u in usuarios)
+                            {
+                                <option value="@u.Id">@u.NomeCompleto</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Prioridade</label>
+                        <select asp-for="Prioridade" class="form-select">
+                            <option value="Baixa">Baixa</option>
+                            <option value="Media" selected>Média</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Urgente">Urgente</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Prazo</label>
+                        <input asp-for="Prazo" type="date" class="form-control" />
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100" style="justify-content:center;padding:12px;">
+                    <i class="bi bi-check-lg"></i> Criar Tarefa
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

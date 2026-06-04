@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "🚀 AgenciaOS",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/AgenciaOS.csproj",
+            "launchBrowser": {
+                "enabled": true,
+                "args": "${auto-detect-url}",
+                "windows": { "command": "cmd.exe", "args": "/C start {url}" },
+                "osx": { "command": "open", "args": "{url}" },
+                "linux": { "command": "xdg-open", "args": "{url}" }
+            }
+        }
+    ]
+}
