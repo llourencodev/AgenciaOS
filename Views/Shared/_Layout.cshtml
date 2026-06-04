@@ -14,87 +14,6 @@
         @inject AgenciaOS.Data.ApplicationDbContext _cfgDb
         var _cfg = await _cfgDb.Configuracoes.OrderBy(c => c.Id).FirstOrDefaultAsync() ?? new AgenciaOS.Models.Configuracao();
     }
-    <style>
-        :root {
-            --primary:       @_cfg.CorPrimaria;
-            --primary-dark:  @_cfg.CorPrimariaDark;
-            --primary-light: @(_cfg.CorPrimaria)18;
-            --primary-rgb:   @(HexToRgb(_cfg.CorPrimaria));
-            --grad-primary:  @_cfg.GradienteIcone;
-        }
-
-        /* ═══ SIDEBAR — fundo sempre usa CorSidebar ═══ */
-        .sidebar {
-            background: @_cfg.CorSidebar !important;
-            @((_cfg.CorSidebar == "#ffffff" || _cfg.SidebarClara)
-                ? "border-right: 1.5px solid #e8eaf2 !important; box-shadow: 4px 0 20px rgba(0,0,0,.06) !important;"
-                : "box-shadow: 6px 0 40px rgba(0,0,0,.5) !important;")
-        }
-        .sidebar::before { background: radial-gradient(circle, @(_cfg.CorPrimaria)25 0%, transparent 70%) !important; }
-        .sidebar::after  { background: radial-gradient(circle, @(_cfg.CorSecundaria)12 0%, transparent 70%) !important; }
-
-        @if (_cfg.SidebarClara)
-        {
-            <text>
-        /* ── SIDEBAR CLARA — textos escuros ── */
-        .nav-group-label   { color: #94a3b8 !important; }
-        .nav-link-item     { color: #475569 !important; }
-        .nav-link-item:hover { background: @(_cfg.CorPrimaria)14 !important; color: @_cfg.CorPrimaria !important; }
-        .nav-link-item.active { color: @_cfg.CorPrimaria !important; font-weight: 700 !important; background: @(_cfg.CorPrimaria)12 !important; }
-        .brand-name        { color: #0f172a !important; }
-        .brand-tagline     { color: #94a3b8 !important; }
-        .sidebar-user-name { color: #0f172a !important; }
-        .sidebar-user-role { color: #64748b !important; }
-        .sb-logout-btn { background: #f1f5f9 !important; color: #64748b !important; }
-        .sb-logout-btn:hover { background: #fee2e2 !important; color: #ef4444 !important; }
-        /* Logo não inverte no tema claro */
-        .brand-logo-img { filter: none !important; }
-            </text>
-        }
-
-        /* ═══ LOGO SIZE ═══ */
-        @{ var logoH = _cfg.TamanhoLogo switch { "sm" => "36px", "lg" => "68px", "xl" => "90px", _ => "50px" }; }
-        .brand-logo-img {
-            height: @logoH !important;
-            max-width: 170px !important;
-            width: auto !important;
-            object-fit: contain !important;
-            @(_cfg.SidebarClara ? "filter: none !important;" : "filter: brightness(0) invert(1) !important;")
-        }
-
-        /* ═══ BRAND ACCENT — botões, avatares, ícone ativo ═══ */
-        .brand-logo, .topbar-avatar, .sidebar-user-avatar { background: @_cfg.GradienteIcone !important; }
-
-        /* ── BOTÕES ── */
-        .btn-primary { background: @_cfg.GradienteIcone !important; border-color: transparent !important; color: @_cfg.CorTextoSobrePrimaria !important; box-shadow: 0 4px 14px rgba(0,0,0,.25) !important; }
-        .btn-primary:hover { filter: brightness(1.08) !important; box-shadow: 0 6px 20px rgba(0,0,0,.35) !important; }
-
-        /* ── NAV ATIVO — sobrescreve QUALQUER cor de ícone ── */
-        .nav-link-item.active { background: linear-gradient(90deg, @(_cfg.CorPrimaria)33 0%, @(_cfg.CorPrimaria)0d 100%) !important; }
-        .nav-link-item.active .nav-icon { background: @_cfg.GradienteIcone !important; color: @_cfg.CorTextoSobrePrimaria !important; box-shadow: 0 6px 20px rgba(0,0,0,.3) !important; }
-        .nav-link-item.active::before { background: @_cfg.GradienteIcone !important; }
-
-        /* ── BANNER SAUDAÇÃO ── */
-        .saudacao-banner { background: @_cfg.GradienteSaudacao !important; }
-
-        /* ── FOCO, BORDAS, CHECKS ── */
-        .form-control:focus, .form-select:focus { border-color: @_cfg.CorPrimaria !important; box-shadow: 0 0 0 3px @(_cfg.CorPrimaria)22 !important; }
-        .form-check-input:checked { background-color: @_cfg.CorPrimaria !important; border-color: @_cfg.CorPrimaria !important; }
-
-        /* ── TOPBAR BOTÃO HOVER ── */
-        .topbar-btn:hover { background: @(_cfg.CorPrimaria)18 !important; color: @_cfg.CorPrimaria !important; }
-
-        /* ── TABELA HOVER ── */
-        .table-hover tbody tr:hover { background: @(_cfg.CorPrimaria)08 !important; }
-
-        /* ── BOARD COUNT BADGE ── */
-        .board-col-count { background: @(_cfg.CorPrimaria)18 !important; color: @_cfg.CorPrimaria !important; }
-
-        /* ── PRIMARY LIGHT ── */
-        .text-primary { color: @_cfg.CorPrimaria !important; }
-        .btn-link { color: @_cfg.CorPrimaria !important; }
-        .primary-light { background: @(_cfg.CorPrimaria)18 !important; }
-    </style>
     @functions {
         static string HexToRgb(string hex) {
             hex = hex.TrimStart('#');
@@ -107,6 +26,75 @@
             return "99,102,241";
         }
     }
+    @{
+        var _rgb   = HexToRgb(_cfg.CorPrimaria);
+        var _rgbS  = HexToRgb(_cfg.CorSecundaria);
+        var _logoH = _cfg.TamanhoLogo switch { "sm" => "36px", "lg" => "68px", "xl" => "90px", _ => "50px" };
+    }
+    <style>
+        /* ── CSS VARS ── */
+        :root {
+            --primary:      @_cfg.CorPrimaria;
+            --primary-dark: @_cfg.CorPrimariaDark;
+            --primary-rgb:  @_rgb;
+        }
+
+        /* ── SIDEBAR FUNDO ── */
+        .sidebar { background: @_cfg.CorSidebar !important; }
+        .sidebar::before { background: radial-gradient(circle, rgba(@_rgb,.2) 0%, transparent 70%) !important; }
+        .sidebar::after  { background: radial-gradient(circle, rgba(@_rgbS,.12) 0%, transparent 70%) !important; }
+
+        @if (_cfg.SidebarClara)
+        {
+            /* sidebar clara — borda e sombra leve */
+            <text>
+        .sidebar { border-right: 1.5px solid #e8eaf2 !important; box-shadow: 4px 0 20px rgba(0,0,0,.06) !important; }
+        .nav-group-label   { color: #94a3b8 !important; }
+        .nav-link-item     { color: #475569 !important; }
+        .nav-link-item:hover { color: @_cfg.CorPrimaria !important; background: rgba(@_rgb,.08) !important; }
+        .nav-link-item.active { color: @_cfg.CorPrimaria !important; background: rgba(@_rgb,.1) !important; }
+        .brand-name        { color: #0f172a !important; }
+        .brand-tagline     { color: #94a3b8 !important; }
+        .sidebar-user-name { color: #0f172a !important; }
+        .sidebar-user-role { color: #64748b !important; }
+        .sb-logout-btn     { background: #f1f5f9 !important; color: #64748b !important; }
+        .sb-logout-btn:hover { background: #fee2e2 !important; color: #ef4444 !important; }
+        .brand-logo-img    { filter: none !important; }
+            </text>
+        }
+        else
+        {
+            /* sidebar escura — shadow forte */
+            <text>
+        .sidebar { box-shadow: 6px 0 40px rgba(0,0,0,.5) !important; }
+        .brand-logo-img { filter: brightness(0) invert(1) !important; }
+            </text>
+        }
+
+        /* ── LOGO SIZE ── */
+        .brand-logo-img { height: @_logoH !important; max-width: 170px !important; width: auto !important; object-fit: contain !important; }
+
+        /* ── BRAND / BOTÕES / AVATARES ── */
+        .brand-logo, .topbar-avatar, .sidebar-user-avatar { background: @_cfg.GradienteIcone !important; }
+        .btn-primary { background: @_cfg.GradienteIcone !important; border: none !important; color: @_cfg.CorTextoSobrePrimaria !important; box-shadow: 0 4px 14px rgba(0,0,0,.25) !important; }
+        .btn-primary:hover { filter: brightness(1.08) !important; }
+
+        /* ── NAV ATIVO (sobrescreve qualquer ni-*) ── */
+        .nav-link-item.active { background: rgba(@_rgb,.15) !important; }
+        .nav-link-item.active .nav-icon { background: @_cfg.GradienteIcone !important; color: @_cfg.CorTextoSobrePrimaria !important; box-shadow: 0 6px 20px rgba(@_rgb,.4) !important; }
+        .nav-link-item.active::before { background: @_cfg.GradienteIcone !important; }
+
+        /* ── BANNER SAUDAÇÃO ── */
+        .saudacao-banner { background: @_cfg.GradienteSaudacao !important; }
+
+        /* ── FOCO / CHECKS / LINKS ── */
+        .form-control:focus, .form-select:focus { border-color: @_cfg.CorPrimaria !important; box-shadow: 0 0 0 3px rgba(@_rgb,.12) !important; }
+        .form-check-input:checked { background-color: @_cfg.CorPrimaria !important; border-color: @_cfg.CorPrimaria !important; }
+        .topbar-btn:hover { background: rgba(@_rgb,.1) !important; color: @_cfg.CorPrimaria !important; }
+        .board-col-count  { background: rgba(@_rgb,.12) !important; color: @_cfg.CorPrimaria !important; }
+        .text-primary { color: @_cfg.CorPrimaria !important; }
+        .btn-link     { color: @_cfg.CorPrimaria !important; }
+    </style>
 </head>
 <body>
 
