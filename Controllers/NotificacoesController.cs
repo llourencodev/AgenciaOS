@@ -22,16 +22,20 @@ public class NotificacoesController(ApplicationDbContext db, UserManager<Usuario
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Marcar(int id)
     {
+        var usuario = await userManager.GetUserAsync(User);
         var notif = await db.Notificacoes.FindAsync(id);
         if (notif == null) return NotFound();
+        if (notif.UsuarioId != usuario?.Id) return Forbid();
         notif.Lida = true;
         await db.SaveChangesAsync();
         return Ok();
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> MarcarTodas()
     {
         var usuario = await userManager.GetUserAsync(User);

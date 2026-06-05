@@ -77,6 +77,7 @@ public class CalendarioController(ApplicationDbContext db, UserManager<Usuario> 
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     [Authorize(Roles = "Admin,Equipe")]
     public async Task<IActionResult> AlterarStatus(int id, StatusConteudo status)
     {
@@ -102,14 +103,18 @@ public class CalendarioController(ApplicationDbContext db, UserManager<Usuario> 
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Comentar(int conteudoId, string texto)
     {
+        if (string.IsNullOrWhiteSpace(texto))
+            return RedirectToAction(nameof(Details), new { id = conteudoId });
+
         var usuario = await userManager.GetUserAsync(User);
         db.ComentariosConteudo.Add(new ComentarioConteudo
         {
             ConteudoId = conteudoId,
             UsuarioId = usuario!.Id,
-            Texto = texto
+            Texto = texto.Trim()
         });
         await db.SaveChangesAsync();
         return RedirectToAction(nameof(Details), new { id = conteudoId });
@@ -128,7 +133,7 @@ public class CalendarioController(ApplicationDbContext db, UserManager<Usuario> 
                 title = c.Titulo,
                 start = c.DataPrevista.ToString("yyyy-MM-dd"),
                 className = StatusCss(c.Status),
-                extendedProps = new { tipo = c.Tipo.ToString(), status = c.Status.ToString(), cliente = c.Cliente.NomeEmpresa }
+                extendedProps = new { tipo = c.Tipo.ToString(), status = c.Status.ToString(), cliente = c.Cliente != null ? c.Cliente.NomeEmpresa : "" }
             }).ToListAsync();
 
         return Json(conteudos);

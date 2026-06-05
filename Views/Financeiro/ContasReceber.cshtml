@@ -225,7 +225,17 @@
                                 }
                             </select>
                         </div>
-                        <div class="col-12">
+                        <div class="col-6">
+                            <label class="form-label">Responsável</label>
+                            <select name="ResponsavelId" class="form-select">
+                                <option value="">Sem responsável</option>
+                                @foreach (var u in usuarios)
+                                {
+                                    <option value="@u.Id">@u.Nome @u.Sobrenome</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6">
                             <label class="form-label">Observações</label>
                             <textarea name="Observacoes" class="form-control" rows="2" placeholder="Notas adicionais..."></textarea>
                         </div>

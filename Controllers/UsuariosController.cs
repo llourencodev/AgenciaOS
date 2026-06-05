@@ -66,6 +66,7 @@ public class UsuariosController(UserManager<Usuario> userManager, RoleManager<Id
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Ativar(string id)
     {
         var u = await userManager.FindByIdAsync(id);

@@ -111,6 +111,7 @@ public class TarefasController(ApplicationDbContext db, UserManager<Usuario> use
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AlterarStatus(int id, StatusTarefa status)
     {
         var tarefa = await db.Tarefas.FindAsync(id);

@@ -72,6 +72,7 @@ public class ContratosController(ApplicationDbContext db, UserManager<Usuario> u
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Excluir(int id)
     {
         var c = await db.Contratos.FindAsync(id);

@@ -11,6 +11,7 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 
 var conn = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("DATABASE_URL")
@@ -52,9 +53,12 @@ else
 builder.Services.AddIdentity<Usuario, IdentityRole>(o =>
 {
     o.Password.RequireDigit = false;
-    o.Password.RequiredLength = 6;
+    o.Password.RequiredLength = 8;
     o.Password.RequireNonAlphanumeric = false;
     o.Password.RequireUppercase = false;
+    o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    o.Lockout.MaxFailedAccessAttempts = 5;
+    o.Lockout.AllowedForNewUsers = true;
     o.SignIn.RequireConfirmedAccount = false;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -82,6 +86,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
 }
 
 // Não redirecionar HTTPS no Railway (proxy cuida disso)
@@ -119,7 +124,8 @@ using (var scope = app.Services.CreateScope())
             Tipo = TipoUsuario.Admin,
             EmailConfirmed = true
         };
-        await userMgr.CreateAsync(admin, "Admin@123");
+        var senhaAdmin = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "Admin@2025!";
+        await userMgr.CreateAsync(admin, senhaAdmin);
         await userMgr.AddToRoleAsync(admin, "Admin");
     }
 

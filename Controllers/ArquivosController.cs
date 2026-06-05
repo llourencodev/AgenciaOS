@@ -10,6 +10,16 @@ namespace AgenciaOS.Controllers;
 [Authorize]
 public class ArquivosController(ApplicationDbContext db, UserManager<Usuario> userManager, IWebHostEnvironment env) : Controller
 {
+    private static readonly HashSet<string> _extensoesPermitidas = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg",
+        ".mp4", ".mov", ".avi", ".webm",
+        ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+        ".zip", ".rar", ".7z", ".txt", ".csv"
+    };
+
+    private const long MaxBytes = 50 * 1024 * 1024; // 50 MB
+
     public async Task<IActionResult> Index(int? clienteId, CategoriaArquivo? categoria, string? mes, string? dia)
     {
         var usuario = await userManager.GetUserAsync(User);
@@ -48,8 +58,20 @@ public class ArquivosController(ApplicationDbContext db, UserManager<Usuario> us
             return RedirectToAction(nameof(Index), new { clienteId });
         }
 
-        var usuario = await userManager.GetUserAsync(User);
+        if (arquivo.Length > MaxBytes)
+        {
+            TempData["Erro"] = "Arquivo muito grande. Limite: 50 MB.";
+            return RedirectToAction(nameof(Index), new { clienteId });
+        }
+
         var ext = Path.GetExtension(arquivo.FileName);
+        if (!_extensoesPermitidas.Contains(ext))
+        {
+            TempData["Erro"] = $"Tipo de arquivo não permitido: {ext}";
+            return RedirectToAction(nameof(Index), new { clienteId });
+        }
+
+        var usuario = await userManager.GetUserAsync(User);
         var nomeArquivo = $"{Guid.NewGuid()}{ext}";
         var pasta = Path.Combine(env.WebRootPath, "uploads", clienteId.ToString());
         Directory.CreateDirectory(pasta);
@@ -83,7 +105,9 @@ public class ArquivosController(ApplicationDbContext db, UserManager<Usuario> us
         var arquivo = await db.Arquivos.FindAsync(id);
         if (arquivo == null) return NotFound();
 
-        var caminho = Path.Combine(env.WebRootPath, arquivo.Url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+        var uploadsRoot = Path.GetFullPath(Path.Combine(env.WebRootPath, "uploads"));
+        var caminho = Path.GetFullPath(Path.Combine(env.WebRootPath, arquivo.Url.TrimStart('/')));
+        if (!caminho.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase)) return BadRequest();
         if (System.IO.File.Exists(caminho)) System.IO.File.Delete(caminho);
 
         db.Arquivos.Remove(arquivo);

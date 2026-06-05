@@ -172,6 +172,7 @@ public class FinanceiroController(ApplicationDbContext db, UserManager<Usuario> 
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> MarcarPago(int id)
     {
         var f = await db.Financeiros.FindAsync(id);
@@ -183,6 +184,7 @@ public class FinanceiroController(ApplicationDbContext db, UserManager<Usuario> 
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Excluir(int id)
     {
         var f = await db.Financeiros.FindAsync(id);

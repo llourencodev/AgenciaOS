@@ -235,9 +235,9 @@ function isClaroHex(hex) {
 // Selecionar tema claro/escuro
 function selecionarTema(tema) {
     const isClaro = tema === 'light';
-    // Marca o radio correto
-    document.getElementById('temaDark').checked  = !isClaro;
-    document.getElementById('temaLight').checked =  isClaro;
+    // Atualiza o checkbox sidebar clara
+    const chkClara = document.getElementById('chkClara');
+    if (chkClara) chkClara.checked = isClaro;
     // Preview
     const sidebarVal = document.querySelector('[name="CorSidebar"]')?.value || '#ffffff';
     atualizarPreviewTexto(isClaro || isClaroHex(sidebarVal));

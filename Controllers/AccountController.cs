@@ -25,17 +25,29 @@ public class AccountController(SignInManager<Usuario> signInManager, UserManager
     {
         if (!ModelState.IsValid) return View(model);
 
-        var result = await signInManager.PasswordSignInAsync(model.Email, model.Senha, model.LembrarMe, lockoutOnFailure: false);
+        var result = await signInManager.PasswordSignInAsync(model.Email, model.Senha, model.LembrarMe, lockoutOnFailure: true);
 
         if (result.Succeeded)
         {
             var user = await userManager.FindByEmailAsync(model.Email);
+            if (user != null && !user.Ativo)
+            {
+                await signInManager.SignOutAsync();
+                ModelState.AddModelError("", "Sua conta foi desativada. Entre em contato com o administrador.");
+                return View(model);
+            }
             if (user != null)
             {
                 user.UltimoAcesso = DateTime.UtcNow;
                 await userManager.UpdateAsync(user);
             }
             return LocalRedirect(returnUrl ?? "/");
+        }
+
+        if (result.IsLockedOut)
+        {
+            ModelState.AddModelError("", "Conta bloqueada por excesso de tentativas. Tente novamente em 5 minutos.");
+            return View(model);
         }
 
         ModelState.AddModelError("", "E-mail ou senha inválidos.");
