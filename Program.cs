@@ -1,6 +1,7 @@
 using AgenciaOS.Data;
 using AgenciaOS.Models;
 using AgenciaOS.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -72,6 +73,8 @@ builder.Services.ConfigureApplicationCookie(o =>
 });
 
 builder.Services.AddScoped<NotificacaoService>();
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<AgenciaOS.Data.ApplicationDbContext>();
 
 var app = builder.Build();
 
@@ -84,7 +87,6 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
 }
 
 // Não redirecionar HTTPS no Railway (proxy cuida disso)

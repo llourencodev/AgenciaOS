@@ -1,38 +1,16 @@
 using AgenciaOS.Models;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace AgenciaOS.Data;
 
-public class ApplicationDbContext : IdentityDbContext<Usuario>
+public class ApplicationDbContext : IdentityDbContext<Usuario>, IDataProtectionKeyContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-    // Garante que todos os DateTime salvos no PostgreSQL são UTC
-    public override int SaveChanges()
-    {
-        NormalizarDateTimes();
-        return base.SaveChanges();
-    }
-
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        NormalizarDateTimes();
-        return base.SaveChangesAsync(cancellationToken);
-    }
-
-    private void NormalizarDateTimes()
-    {
-        foreach (var entry in ChangeTracker.Entries()
-            .Where(e => e.State is EntityState.Added or EntityState.Modified))
-        {
-            foreach (var prop in entry.Properties
-                .Where(p => p.CurrentValue is DateTime dt && dt.Kind == DateTimeKind.Unspecified))
-            {
-                prop.CurrentValue = DateTime.SpecifyKind((DateTime)prop.CurrentValue!, DateTimeKind.Utc);
-            }
-        }
-    }
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Conteudo> Conteudos => Set<Conteudo>();
@@ -49,6 +27,28 @@ public class ApplicationDbContext : IdentityDbContext<Usuario>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        // Converte todos os DateTime para UTC antes de salvar no PostgreSQL
+        var utcConverter = new ValueConverter<DateTime, DateTime>(
+            v => v.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(v, DateTimeKind.Utc) : v.ToUniversalTime(),
+            v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+        var utcNullableConverter = new ValueConverter<DateTime?, DateTime?>(
+            v => v == null ? null : v.Value.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc)
+                : v.Value.ToUniversalTime(),
+            v => v == null ? null : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc));
+
+        foreach (var entityType in builder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime))
+                    property.SetValueConverter(utcConverter);
+                else if (property.ClrType == typeof(DateTime?))
+                    property.SetValueConverter(utcNullableConverter);
+            }
+        }
 
         builder.Entity<Usuario>(e =>
         {
