@@ -1,12 +1,20 @@
 using AgenciaOS.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace AgenciaOS.Data;
 
 public class ApplicationDbContext : IdentityDbContext<Usuario>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+        optionsBuilder.ConfigureWarnings(w =>
+            w.Ignore(RelationalEventId.PendingModelChangesWarning));
+    }
 
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Conteudo> Conteudos => Set<Conteudo>();
