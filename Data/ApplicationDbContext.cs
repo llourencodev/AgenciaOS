@@ -8,6 +8,32 @@ public class ApplicationDbContext : IdentityDbContext<Usuario>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
+    // Garante que todos os DateTime salvos no PostgreSQL são UTC
+    public override int SaveChanges()
+    {
+        NormalizarDateTimes();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        NormalizarDateTimes();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void NormalizarDateTimes()
+    {
+        foreach (var entry in ChangeTracker.Entries()
+            .Where(e => e.State is EntityState.Added or EntityState.Modified))
+        {
+            foreach (var prop in entry.Properties
+                .Where(p => p.CurrentValue is DateTime dt && dt.Kind == DateTimeKind.Unspecified))
+            {
+                prop.CurrentValue = DateTime.SpecifyKind((DateTime)prop.CurrentValue!, DateTimeKind.Utc);
+            }
+        }
+    }
+
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Conteudo> Conteudos => Set<Conteudo>();
     public DbSet<ComentarioConteudo> ComentariosConteudo => Set<ComentarioConteudo>();
