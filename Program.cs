@@ -99,7 +99,7 @@ using (var scope = app.Services.CreateScope())
     var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<Usuario>>();
     var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 
     string[] roles = ["Admin", "Equipe", "Cliente", "ColaboradorExterno"];
     foreach (var role in roles)
