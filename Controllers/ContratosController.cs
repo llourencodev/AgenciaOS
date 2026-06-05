@@ -36,6 +36,12 @@ public class ContratosController(ApplicationDbContext db, UserManager<Usuario> u
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(Contrato model)
     {
+        if (!ModelState.IsValid)
+        {
+            ViewData["Clientes"] = await db.Clientes.Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
+            return View(model);
+        }
+
         var usuario = await userManager.GetUserAsync(User);
         model.CriadoPorId = usuario?.Id;
         model.CriadoEm = DateTime.UtcNow;

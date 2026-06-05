@@ -55,6 +55,13 @@ public class TarefasController(ApplicationDbContext db, UserManager<Usuario> use
     [Authorize(Roles = "Admin,Equipe")]
     public async Task<IActionResult> Create(Tarefa model)
     {
+        if (!ModelState.IsValid)
+        {
+            ViewData["Clientes"] = await db.Clientes.Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
+            ViewData["Usuarios"] = await userManager.Users.Where(u => u.Ativo).ToListAsync();
+            return View(model);
+        }
+
         var usuario = await userManager.GetUserAsync(User);
         model.CriadoPorId = usuario?.Id;
         model.CriadoEm = DateTime.UtcNow;
@@ -134,6 +141,13 @@ public class TarefasController(ApplicationDbContext db, UserManager<Usuario> use
     [Authorize(Roles = "Admin,Equipe")]
     public async Task<IActionResult> Edit(Tarefa model)
     {
+        if (!ModelState.IsValid)
+        {
+            ViewData["Clientes"] = await db.Clientes.Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
+            ViewData["Usuarios"] = await userManager.Users.Where(u => u.Ativo).ToListAsync();
+            return View(model);
+        }
+
         model.AtualizadoEm = DateTime.UtcNow;
         db.Tarefas.Update(model);
         await db.SaveChangesAsync();

@@ -84,10 +84,18 @@ public class FinanceiroController(ApplicationDbContext db, UserManager<Usuario> 
         return View(lista);
     }
 
+    [HttpGet]
+    public IActionResult Create() => RedirectToAction(nameof(ContasReceber));
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(Financeiro model, int? numeroParcelas, bool contaFixa)
     {
+        if (!ModelState.IsValid)
+            return model.Tipo == TipoFinanceiro.Entrada
+                ? RedirectToAction(nameof(ContasReceber))
+                : RedirectToAction(nameof(ContasPagar));
+
         var usuario = await userManager.GetUserAsync(User);
         model.CriadoPorId = usuario?.Id;
         model.CriadoEm = DateTime.UtcNow;
