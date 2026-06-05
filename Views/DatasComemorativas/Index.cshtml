@@ -16,9 +16,14 @@
     </div>
     @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
     {
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novaDataModal">
-            <i class="bi bi-plus-lg me-1"></i> Adicionar Data
-        </button>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#importarBrasilModal">
+                <i class="bi bi-flag-fill me-1"></i> Importar datas do Brasil
+            </button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novaDataModal">
+                <i class="bi bi-plus-lg me-1"></i> Adicionar Data
+            </button>
+        </div>
     }
 </div>
 
@@ -118,6 +123,56 @@ else
         </div>
     </div>
 }
+
+<!-- MODAL IMPORTAR BRASIL -->
+<div class="modal fade" id="importarBrasilModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="ImportarBrasil" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header" style="border-left:4px solid #22c55e;">
+                    <h5 class="modal-title"><i class="bi bi-flag-fill text-success me-2"></i>Importar Datas do Brasil</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Importa automaticamente feriados nacionais e principais datas comemorativas do Brasil. Datas já cadastradas não serão duplicadas.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-600">Ano</label>
+                        <div class="d-flex gap-2">
+                            @for (int a = DateTime.Now.Year; a <= DateTime.Now.Year + 1; a++)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="ano" value="@a" id="ano@a"
+                                           @(a == DateTime.Now.Year ? "checked" : "") />
+                                    <label class="form-check-label" for="ano@a">@a</label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="card p-3" style="background:#f8fafc;">
+                        <div class="fw-600 text-sm mb-2">O que será importado:</div>
+                        <div class="row g-1 text-sm text-muted">
+                            <div class="col-6"><i class="bi bi-check2 text-success me-1"></i>Feriados nacionais fixos</div>
+                            <div class="col-6"><i class="bi bi-check2 text-success me-1"></i>Páscoa e Carnaval</div>
+                            <div class="col-6"><i class="bi bi-check2 text-success me-1"></i>Dia das Mães e dos Pais</div>
+                            <div class="col-6"><i class="bi bi-check2 text-success me-1"></i>Dia dos Namorados</div>
+                            <div class="col-6"><i class="bi bi-check2 text-success me-1"></i>Dia das Crianças</div>
+                            <div class="col-6"><i class="bi bi-check2 text-success me-1"></i>Black Friday / Cyber Monday</div>
+                            <div class="col-6"><i class="bi bi-check2 text-success me-1"></i>Dia do Consumidor</div>
+                            <div class="col-6"><i class="bi bi-check2 text-success me-1"></i>Consciência Negra</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success px-4">
+                        <i class="bi bi-download me-1"></i> Importar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <!-- MODAL -->
 <div class="modal fade" id="novaDataModal" tabindex="-1">

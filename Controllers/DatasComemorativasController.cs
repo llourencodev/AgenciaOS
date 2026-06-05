@@ -1,5 +1,6 @@
 using AgenciaOS.Data;
 using AgenciaOS.Models;
+using AgenciaOS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,43 @@ public class DatasComemorativasController(ApplicationDbContext db) : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin,Equipe")]
+    public async Task<IActionResult> ImportarBrasil(int? ano)
+    {
+        var anoImportar = ano ?? DateTime.Now.Year;
+        var datas = BrasilDatasService.ObterParaAno(anoImportar);
+
+        // Busca existentes para evitar duplicatas
+        var existentes = await db.DatasComemorativas.ToListAsync();
+
+        int adicionadas = 0;
+        foreach (var d in datas)
+        {
+            bool jáExiste = existentes.Any(e =>
+                e.Nome == d.Nome &&
+                e.Dia  == d.Dia  &&
+                e.Mes  == d.Mes  &&
+                (d.Anual ? e.Anual : e.Ano == d.Ano));
+
+            if (!jáExiste)
+            {
+                db.DatasComemorativas.Add(d);
+                adicionadas++;
+            }
+        }
+
+        await db.SaveChangesAsync();
+
+        TempData["Sucesso"] = adicionadas > 0
+            ? $"{adicionadas} datas do Brasil importadas para {anoImportar}!"
+            : $"Todas as datas de {anoImportar} já estavam cadastradas.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     [Authorize(Roles = "Admin,Equipe")]
     public async Task<IActionResult> Excluir(int id)
     {
