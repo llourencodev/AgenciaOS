@@ -28,6 +28,18 @@ public static class SeedInicial
 
         await CriarPrimeiroAdminAsync(db, userMgr, env, logger);
         await CriarSuperAdminAsync(userMgr, logger);
+
+        // Planos de exemplo só em desenvolvimento. Em produção quem define planos e preços é o proprietário (painel /Plataforma/Planos).
+        if (env.IsDevelopment() && !await db.Planos.AnyAsync())
+        {
+            db.Planos.AddRange(
+                new Plano { Codigo = "essencial", Nome = "Essencial (exemplo)", Preco = 97m, LimiteUsuarios = 3, LimiteClientes = 10, LimiteArmazenamentoMb = 2048,
+                    Modulos = "Dashboard,Clientes,Calendario,Arquivos,Tarefas", RecursosAdicionais = "Calendário editorial\nAprovação pelo cliente", Ordem = 1 },
+                new Plano { Codigo = "profissional", Nome = "Profissional (exemplo)", Preco = 197m, LimiteUsuarios = 10, LimiteClientes = 40, LimiteArmazenamentoMb = 10240,
+                    RecursosAdicionais = "Todos os módulos\nCentral de Marketing", Ordem = 2 },
+                new Plano { Codigo = "agencia-plus", Nome = "Agência+ (exemplo)", Preco = 397m, RecursosAdicionais = "Sem limites de usuários e clientes", Ordem = 3 });
+            await db.SaveChangesAsync();
+        }
     }
 
     private static async Task CriarPrimeiroAdminAsync(ApplicationDbContext db, UserManager<Usuario> userMgr, IHostEnvironment env, ILogger logger)

@@ -6,6 +6,7 @@ using AgenciaOS.Services.Tenancy;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -45,7 +46,15 @@ public sealed class AppMultiTenant : WebApplicationFactory<Program>, IAsyncLifet
         Environment.SetEnvironmentVariable("RATE_LIMIT_CONTA", "100000");
         Environment.SetEnvironmentVariable("STORAGE_PROVIDER", "local");
         Environment.SetEnvironmentVariable("STORAGE_LOCAL_PATH", Path.Combine(Path.GetTempPath(), "agenciaos-http-tests", Guid.NewGuid().ToString("N")));
+        // Cobrança com a configuração real do Asaas; só as chamadas HTTP ao Asaas são trocadas por um falso (ConfigureWebHost)
+        Environment.SetEnvironmentVariable("PAYMENT_GATEWAY", "asaas");
+        Environment.SetEnvironmentVariable("ASAAS_API_KEY", "$aact_hmlg_falsa");
+        Environment.SetEnvironmentVariable("ASAAS_WEBHOOK_TOKEN", TokenWebhook);
+        Environment.SetEnvironmentVariable("BILLING_WORKER_ENABLED", "false");
     }
+
+    public const string TokenWebhook = "token-webhook-de-teste-123";
+    public GatewayAsaasFalso Gateway { get; } = new();
 
     private static string RaizProjeto()
     {
@@ -58,6 +67,7 @@ public sealed class AppMultiTenant : WebApplicationFactory<Program>, IAsyncLifet
     {
         builder.UseEnvironment("Testing");
         builder.UseContentRoot(RaizProjeto());
+        builder.ConfigureTestServices(s => s.AddSingleton<AgenciaOS.Services.Cobranca.IGatewayPagamento>(Gateway));
     }
 
     public async Task InitializeAsync()

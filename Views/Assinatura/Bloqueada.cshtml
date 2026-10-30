@@ -1,0 +1,12 @@
+@model AgenciaOS.Controllers.AssinaturaController.Painel
+@{
+    ViewData["Title"] = "Acesso suspenso";
+}
+<div class="card mx-auto" style="max-width:560px;">
+    <div class="card-body text-center py-5">
+        <div style="font-size:48px;color:#ef4444;"><i class="bi bi-lock"></i></div>
+        <h1 class="h4 fw-bold mt-2">O acesso da agência está suspenso</h1>
+        <p class="text-muted">Isso acontece quando o período de teste termina ou um pagamento fica em aberto. Nenhum dado foi apagado.</p>
+        <p class="text-muted mb-0">Peça ao administrador da <strong>@Model.Agencia.NomeExibicao</strong> para regularizar a assinatura.</p>
+    </div>
+</div>

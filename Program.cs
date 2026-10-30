@@ -4,6 +4,7 @@ using AgenciaOS.Services;
 using AgenciaOS.Services.Marketing;
 using AgenciaOS.Services.Tenancy;
 using AgenciaOS.Services.Armazenamento;
+using AgenciaOS.Services.Cobranca;
 using AgenciaOS.Services.Contas;
 using AgenciaOS.Services.Email;
 using Microsoft.AspNetCore.DataProtection;
@@ -109,6 +110,7 @@ builder.Services.AddScoped<AcessoAbas>();
 builder.Services.AddScoped<NotificacaoService>();
 builder.Services.AddCentralMarketing(builder.Configuration);
 builder.Services.AddArmazenamento(builder.Configuration, builder.Environment);
+builder.Services.AddCobranca(builder.Configuration, builder.Environment);
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<AgenciaOS.Data.ApplicationDbContext>();
 
@@ -165,6 +167,9 @@ using (var scope = app.Services.GetRequiredService<IServiceScopeFactory>().Criar
 if (app.Environment.IsProduction() && app.Services.GetRequiredService<EmailOptions>() is { } emailOpt
     && (emailOpt.Provedor != "resend" || string.IsNullOrEmpty(emailOpt.UrlBase)))
     app.Logger.LogError("E-mail não configurado para produção (EMAIL_PROVIDER=resend, RESEND_API_KEY, EMAIL_FROM, APP_BASE_URL): cadastro, convites e recuperação de senha não enviarão e-mails.");
+
+if (app.Services.GetRequiredService<AgenciaOS.Services.Cobranca.CobrancaOptions>().Gateway == "desabilitado")
+    app.Logger.LogError("Cobrança desabilitada: configure PAYMENT_GATEWAY=asaas, ASAAS_API_KEY e ASAAS_WEBHOOK_TOKEN.");
 
 var armazenamentoOpt = app.Services.GetRequiredService<ArmazenamentoOptions>();
 if (armazenamentoOpt.Provedor == "local" && app.Environment.IsProduction())

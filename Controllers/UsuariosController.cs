@@ -1,5 +1,6 @@
 using AgenciaOS.Data;
 using AgenciaOS.Models;
+using AgenciaOS.Services.Cobranca;
 using AgenciaOS.Services.Contas;
 using AgenciaOS.Services.Tenancy;
 using Microsoft.AspNetCore.RateLimiting;
@@ -11,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AgenciaOS.Controllers;
 
 [Authorize(Roles = "Admin")]
-public class UsuariosController(UserManager<Usuario> userManager, ITenantContext tenant, ApplicationDbContext db, ContasService contas) : Controller
+public class UsuariosController(UserManager<Usuario> userManager, ITenantContext tenant, ApplicationDbContext db, ContasService contas, LimitesPlanoService limites) : Controller
 {
     static readonly string[] TodasAbas = ["Dashboard", "Clientes", "Calendario", "Arquivos", "Tarefas", "Financeiro", "Contratos", "DatasComemorativas", "Marketing"];
 
@@ -41,6 +42,11 @@ public class UsuariosController(UserManager<Usuario> userManager, ITenantContext
     [EnableRateLimiting(RateLimitingContas.AcoesConta)]
     public async Task<IActionResult> Convidar(string email, string? nome, TipoUsuario tipo, string[] abasPermitidas, CancellationToken ct)
     {
+        if (tipo != TipoUsuario.Cliente && await limites.VerificarUsuarioAsync(ct) is { } limite)
+        {
+            TempData["Erro"] = limite;
+            return RedirectToAction(nameof(Index));
+        }
         var admin = await userManager.GetUserAsync(User);
         var abas = abasPermitidas.Length > 0 ? string.Join(",", abasPermitidas.Where(a => TodasAbas.Contains(a))) : null;
         var (ok, erro) = await contas.ConvidarAsync(email ?? "", nome, tipo, abas, admin!, Request, ct);
@@ -65,6 +71,11 @@ public class UsuariosController(UserManager<Usuario> userManager, ITenantContext
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(string nome, string sobrenome, string email, string senha, TipoUsuario tipo, string[] abasPermitidas)
     {
+        if (tipo != TipoUsuario.Cliente && await limites.VerificarUsuarioAsync() is { } limite)
+        {
+            TempData["Erro"] = limite;
+            return RedirectToAction(nameof(Index));
+        }
         var usuario = new Usuario
         {
             UserName = email,

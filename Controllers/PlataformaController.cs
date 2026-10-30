@@ -98,6 +98,57 @@ public class PlataformaController(ApplicationDbContext db, UserManager<Usuario> 
         return RedirectToAction(nameof(Index));
     }
 
+    // ── Planos (cadastrados aqui, sem alterar código) ────────────────────
+    public async Task<IActionResult> Planos() => View(await db.Planos.OrderBy(p => p.Ordem).ThenBy(p => p.Preco).ToListAsync());
+
+    public async Task<IActionResult> Plano(int? id)
+    {
+        if (id == null) return View(new Plano { Ativo = true });
+        var plano = await db.Planos.FindAsync(id);
+        return plano == null ? NotFound() : View(plano);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Plano(Plano input, string[]? modulos)
+    {
+        input.Codigo = GerarSlug(string.IsNullOrWhiteSpace(input.Codigo) ? input.Nome : input.Codigo);
+        if (string.IsNullOrWhiteSpace(input.Nome)) ModelState.AddModelError(nameof(input.Nome), "Informe o nome.");
+        if (input.Preco < 0) ModelState.AddModelError(nameof(input.Preco), "Preço inválido.");
+        if (await db.Planos.AnyAsync(p => p.Codigo == input.Codigo && p.Id != input.Id))
+            ModelState.AddModelError(nameof(input.Codigo), "Já existe um plano com esse código.");
+        if (!ModelState.IsValid) return View(input);
+
+        var plano = input.Id == 0 ? new Plano() : await db.Planos.FindAsync(input.Id);
+        if (plano == null) return NotFound();
+        if (input.Id != 0 && plano.Codigo != input.Codigo && await db.Assinaturas.IgnoreQueryFilters().AnyAsync(a => a.PlanoId == plano.Id))
+        {
+            ModelState.AddModelError(nameof(input.Codigo), "O código não pode mudar depois que o plano tem assinaturas.");
+            return View(input);
+        }
+
+        plano.Codigo = input.Codigo;
+        plano.Nome = input.Nome.Trim();
+        plano.Descricao = input.Descricao;
+        // Preço novo vale para novas contratações; assinaturas existentes mantêm o valor contratado
+        plano.Preco = input.Preco;
+        plano.Periodicidade = input.Periodicidade;
+        plano.LimiteUsuarios = input.LimiteUsuarios;
+        plano.LimiteClientes = input.LimiteClientes;
+        plano.LimiteArmazenamentoMb = input.LimiteArmazenamentoMb;
+        plano.Modulos = modulos is { Length: > 0 } ? string.Join(",", modulos.Where(m => ModulosDisponiveis.Contains(m))) : null;
+        plano.RecursosAdicionais = input.RecursosAdicionais;
+        plano.Ativo = input.Ativo;
+        plano.Ordem = input.Ordem;
+        plano.AtualizadoEm = DateTime.UtcNow;
+        if (plano.Id == 0) db.Planos.Add(plano);
+        await db.SaveChangesAsync();
+        TempData["Sucesso"] = $"Plano {plano.Nome} salvo.";
+        return RedirectToAction(nameof(Planos));
+    }
+
+    public static readonly string[] ModulosDisponiveis = ["Clientes", "Calendario", "Arquivos", "Tarefas", "Financeiro", "Contratos", "DatasComemorativas", "Marketing"];
+
     internal static string GerarSlug(string texto)
     {
         var normalizado = new string(texto.Normalize(System.Text.NormalizationForm.FormD)

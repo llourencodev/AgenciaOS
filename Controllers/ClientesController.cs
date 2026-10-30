@@ -1,6 +1,7 @@
 using AgenciaOS.Data;
 using AgenciaOS.Models;
 using AgenciaOS.Services;
+using AgenciaOS.Services.Cobranca;
 using AgenciaOS.Services.Tenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -10,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AgenciaOS.Controllers;
 
 [Authorize]
-public class ClientesController(ApplicationDbContext db, UserManager<Usuario> userManager, AcessoService acesso, ITenantContext tenant) : Controller
+public class ClientesController(ApplicationDbContext db, UserManager<Usuario> userManager, AcessoService acesso, ITenantContext tenant, LimitesPlanoService limites) : Controller
 {
     public async Task<IActionResult> Index(string? busca)
     {
@@ -69,6 +70,13 @@ public class ClientesController(ApplicationDbContext db, UserManager<Usuario> us
         if (!await UsuarioClienteValido(model.UsuarioClienteId, null))
         {
             ModelState.AddModelError(nameof(Cliente.UsuarioClienteId), "Usuário de acesso inválido ou já vinculado a outro cliente.");
+            await CarregarUsuariosCliente(null);
+            return View(model);
+        }
+
+        if (await limites.VerificarClienteAsync() is { } limite)
+        {
+            TempData["Erro"] = limite;
             await CarregarUsuariosCliente(null);
             return View(model);
         }

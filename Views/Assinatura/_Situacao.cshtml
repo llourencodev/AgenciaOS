@@ -1,0 +1,26 @@
+@model AgenciaOS.Controllers.AssinaturaController.Painel
+@using AgenciaOS.Models
+@{
+    var a = Model.Agencia;
+    var (cor, texto) = a.SituacaoAssinatura switch
+    {
+        SituacaoAssinatura.Teste => ("text-bg-info", a.TesteExpiraEm is { } fim
+            ? $"Período de teste até {fim.ToLocalTime():dd/MM/yyyy}" : "Período de teste"),
+        SituacaoAssinatura.Ativa => ("text-bg-success", "Assinatura ativa"),
+        SituacaoAssinatura.PagamentoPendente => ("text-bg-warning", "Aguardando o primeiro pagamento"),
+        SituacaoAssinatura.Tolerancia => ("text-bg-warning", Model.Assinatura?.ToleranciaAte is { } t
+            ? $"Pagamento em atraso: regularize até {t.ToLocalTime():dd/MM/yyyy}" : "Pagamento em atraso"),
+        SituacaoAssinatura.Atrasada => ("text-bg-warning", "Pagamento estornado ou contestado"),
+        SituacaoAssinatura.Suspensa => ("text-bg-danger", "Acesso suspenso"),
+        SituacaoAssinatura.Cancelada => ("text-bg-secondary", "Assinatura cancelada"),
+        _ => ("text-bg-light", a.SituacaoAssinatura.ToString())
+    };
+}
+<span class="badge @cor" style="font-size:13px;">@texto</span>
+@if (Model.Bloqueada)
+{
+    <div class="alert alert-danger mt-3 mb-0">
+        <i class="bi bi-lock-fill me-1"></i> O acesso aos módulos está bloqueado. <strong>Nenhum dado foi apagado.</strong>
+        Escolha um plano ou pague a cobrança em aberto para liberar.
+    </div>
+}

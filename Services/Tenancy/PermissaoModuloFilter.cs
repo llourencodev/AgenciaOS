@@ -7,9 +7,10 @@ namespace AgenciaOS.Services.Tenancy;
 /// Filtro global (servidor) que:
 /// 1) mantém o superadministrador fora dos módulos das agências (só /Plataforma);
 /// 2) bloqueia usuários autenticados sem agência;
-/// 3) aplica Usuario.AbasPermitidas, que antes só escondia itens do menu.
+/// 3) aplica Usuario.AbasPermitidas, que antes só escondia itens do menu;
+/// 4) aplica o bloqueio por assinatura e os módulos do plano (Fase 4).
 /// </summary>
-public class PermissaoModuloFilter(ITenantContext tenant, AcessoAbas acessoAbas) : IAsyncActionFilter
+public class PermissaoModuloFilter(TenantContext tenant, AcessoAbas acessoAbas, Cobranca.LimitesPlanoService limites) : IAsyncActionFilter
 {
     // Controller → aba (mesmos nomes usados em UsuariosController.TodasAbas e no menu)
     private static readonly Dictionary<string, string> Abas = new(StringComparer.OrdinalIgnoreCase)
@@ -51,14 +52,34 @@ public class PermissaoModuloFilter(ITenantContext tenant, AcessoAbas acessoAbas)
             return;
         }
 
-        if (!user.IsInRole("Admin") && Abas.TryGetValue(controller, out var aba) && !await acessoAbas.PermiteAsync(user, aba))
+        // Bloqueio comercial por agência (assinatura suspensa/cancelada, teste vencido, agência suspensa).
+        // Só a tela de assinatura continua acessível; nenhum dado é apagado e as outras agências não são afetadas.
+        if (tenant.Situacao is { } s
+            && (s.Status != Models.StatusAgencia.Ativa || Cobranca.CobrancaService.Bloqueada(s.Assinatura, s.TesteExpiraEm, DateTime.UtcNow))
+            && !LiberadoQuandoBloqueado.Contains(controller))
         {
-            ctx.Result = new ForbidResult();
+            ctx.Result = new RedirectToActionResult("Bloqueada", "Assinatura", null);
             return;
+        }
+
+        if (Abas.TryGetValue(controller, out var aba))
+        {
+            if (!user.IsInRole("Admin") && !await acessoAbas.PermiteAsync(user, aba))
+            {
+                ctx.Result = new ForbidResult();
+                return;
+            }
+            if (!await limites.ModuloLiberadoAsync(aba))
+            {
+                ctx.Result = new RedirectToActionResult("ModuloIndisponivel", "Assinatura", new { modulo = aba });
+                return;
+            }
         }
 
         await next();
     }
+
+    private static readonly HashSet<string> LiberadoQuandoBloqueado = new(StringComparer.OrdinalIgnoreCase) { "Assinatura" };
 }
 
 /// <summary>A guarda do DbContext barrou uma referência/gravação em outra agência: responde 403 em vez de erro 500.</summary>

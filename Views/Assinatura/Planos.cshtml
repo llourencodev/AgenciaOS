@@ -1,0 +1,71 @@
+@model AgenciaOS.Controllers.AssinaturaController.Painel
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Planos";
+    var br = new System.Globalization.CultureInfo("pt-BR");
+    var atual = Model.Assinatura is { CanceladaEm: null } a && a.Situacao is SituacaoAssinatura.Ativa or SituacaoAssinatura.Tolerancia ? a : null;
+}
+<div class="page-header">
+    <div>
+        <h1>Escolha seu plano</h1>
+        <p>O pagamento é feito na página segura do nosso parceiro de pagamentos (PIX, boleto ou cartão). Os dados do cartão não passam pelo AgenciaOS.</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline">Voltar</a>
+</div>
+
+<div class="mb-3"><partial name="_Situacao" model="Model" /></div>
+
+@if (Model.Planos.Count == 0)
+{
+    <div class="alert alert-info">Nenhum plano disponível no momento. Fale com o suporte do AgenciaOS.</div>
+}
+<div class="row g-3">
+    @foreach (var p in Model.Planos)
+    {
+        <div class="col-md-6 col-xl-4">
+            <div class="card h-100 @(atual?.PlanoId == p.Id ? "border-primary" : "")">
+                <div class="card-body d-flex flex-column">
+                    <div class="fw-700" style="font-size:18px;">@p.Nome</div>
+                    <div class="my-2"><span style="font-size:28px;font-weight:800;">@p.Preco.ToString("C", br)</span> <span class="text-muted">/@(p.Periodicidade == Periodicidade.Anual ? "ano" : "mês")</span></div>
+                    @if (!string.IsNullOrEmpty(p.Descricao)) { <p class="text-sm text-muted">@p.Descricao</p> }
+                    <ul class="list-unstyled text-sm mb-3">
+                        <li><i class="bi bi-people me-1"></i> @(p.LimiteUsuarios is int u ? $"Até {u} usuários da equipe" : "Usuários ilimitados")</li>
+                        <li><i class="bi bi-briefcase me-1"></i> @(p.LimiteClientes is int c ? $"Até {c} clientes ativos" : "Clientes ilimitados")</li>
+                        <li><i class="bi bi-hdd me-1"></i> @(p.LimiteArmazenamentoMb is int mb ? $"{(mb >= 1024 ? $"{mb / 1024} GB" : $"{mb} MB")} de arquivos" : "Armazenamento ilimitado")</li>
+                        <li><i class="bi bi-grid me-1"></i> @(p.ListaModulos.Count == 0 ? "Todos os módulos" : string.Join(", ", p.ListaModulos))</li>
+                        @foreach (var r in (p.RecursosAdicionais ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        {
+                            <li><i class="bi bi-check2 me-1 text-success"></i> @r</li>
+                        }
+                    </ul>
+                    <div class="mt-auto">
+                        @if (atual != null)
+                        {
+                            @if (atual.PlanoId == p.Id) { <span class="badge text-bg-primary">Seu plano atual</span> }
+                            else if (p.Periodicidade == atual.Plano?.Periodicidade)
+                            {
+                                <form asp-action="AlterarPlano" method="post"><input type="hidden" name="planoId" value="@p.Id" /><button class="btn btn-outline-primary w-100">Trocar para este plano</button></form>
+                            }
+                        }
+                        else
+                        {
+                            <form asp-action="Assinar" method="post">
+                                <input type="hidden" name="planoId" value="@p.Id" />
+                                <label class="form-label text-sm mb-1">CPF ou CNPJ para a cobrança</label>
+                                <input name="cpfCnpj" class="form-control form-control-sm mb-2" value="@Model.Agencia.Cnpj" required inputmode="numeric" />
+                                <label class="form-label text-sm mb-1">Forma de pagamento</label>
+                                <select name="forma" class="form-select form-select-sm mb-3">
+                                    <option value="Pix">PIX</option>
+                                    <option value="CartaoCredito">Cartão de crédito (recorrente)</option>
+                                    <option value="Boleto">Boleto</option>
+                                    <option value="Indefinida">Escolher na hora do pagamento</option>
+                                </select>
+                                <button class="btn btn-primary w-100">Assinar e ir para o pagamento</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

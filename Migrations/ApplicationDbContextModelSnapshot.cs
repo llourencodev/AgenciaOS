@@ -158,6 +158,82 @@ namespace AgenciaOS.Migrations
                     b.ToTable("Arquivos");
                 });
 
+            modelBuilder.Entity("AgenciaOS.Models.Assinatura", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AcessoAte")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("CanceladaEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FormaPagamento")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Gateway")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("GatewayAssinaturaId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("GatewayClienteId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("PlanoId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ProximoVencimento")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime?>("ToleranciaAte")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Valor")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<bool>("Vigente")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgenciaId");
+
+                    b.HasIndex("PlanoId");
+
+                    b.HasIndex("AgenciaId", "Vigente");
+
+                    b.HasIndex("Gateway", "GatewayAssinaturaId")
+                        .IsUnique();
+
+                    b.ToTable("Assinaturas");
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.Cliente", b =>
                 {
                     b.Property<int>("Id")
@@ -757,6 +833,54 @@ namespace AgenciaOS.Migrations
                     b.ToTable("DatasComemorativas");
                 });
 
+            modelBuilder.Entity("AgenciaOS.Models.EventoWebhook", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Erro")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("EventoId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Gateway")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ProcessadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("RecebidoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Tentativas")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Gateway", "EventoId")
+                        .IsUnique();
+
+                    b.ToTable("EventosWebhook");
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.Financeiro", b =>
                 {
                     b.Property<int>("Id")
@@ -1063,6 +1187,139 @@ namespace AgenciaOS.Migrations
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("Notificacoes");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.Pagamento", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("AssinaturaId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FormaPagamento")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("GatewayPagamentoId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("PagoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("UrlFatura")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<decimal>("Valor")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal?>("ValorLiquido")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime?>("Vencimento")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgenciaId");
+
+                    b.HasIndex("AssinaturaId");
+
+                    b.HasIndex("GatewayPagamentoId")
+                        .IsUnique();
+
+                    b.ToTable("Pagamentos");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.Plano", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Descricao")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int?>("LimiteArmazenamentoMb")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("LimiteClientes")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("LimiteUsuarios")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Modulos")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Periodicidade")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<decimal>("Preco")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("RecursosAdicionais")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique();
+
+                    b.ToTable("Planos");
                 });
 
             modelBuilder.Entity("AgenciaOS.Models.PublicacaoMarketing", b =>
@@ -1537,6 +1794,23 @@ namespace AgenciaOS.Migrations
                     b.Navigation("UploadPor");
                 });
 
+            modelBuilder.Entity("AgenciaOS.Models.Assinatura", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgenciaOS.Models.Plano", "Plano")
+                        .WithMany()
+                        .HasForeignKey("PlanoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Plano");
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.Cliente", b =>
                 {
                     b.HasOne("AgenciaOS.Models.Agencia", null)
@@ -1811,6 +2085,23 @@ namespace AgenciaOS.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("AgenciaOS.Models.Pagamento", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgenciaOS.Models.Assinatura", "Assinatura")
+                        .WithMany("Pagamentos")
+                        .HasForeignKey("AssinaturaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Assinatura");
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.PublicacaoMarketing", b =>
                 {
                     b.HasOne("AgenciaOS.Models.ContaMarketing", "Conta")
@@ -1934,6 +2225,11 @@ namespace AgenciaOS.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.Assinatura", b =>
+                {
+                    b.Navigation("Pagamentos");
                 });
 
             modelBuilder.Entity("AgenciaOS.Models.Cliente", b =>

@@ -27,6 +27,9 @@ public sealed class TenantContext : ITenantContext
     public ModoTenant Modo { get; private set; } = ModoTenant.Nenhum;
     public int? AgenciaId { get; private set; }
 
+    /// <summary>Situação comercial da agência da requisição (preenchida pelo TenantMiddleware).</summary>
+    public SituacaoAgenciaAtual? Situacao { get; set; }
+
     public void UsarAgencia(int agenciaId)
     {
         if (agenciaId <= 0) throw new ArgumentOutOfRangeException(nameof(agenciaId));
@@ -48,6 +51,8 @@ public sealed class TenantContext : ITenantContext
     }
 }
 
+public record SituacaoAgenciaAtual(StatusAgencia Status, SituacaoAssinatura Assinatura, DateTime? TesteExpiraEm, string? PlanoCodigo);
+
 /// <summary>Tentativa de ler/gravar dados fora da agência do usuário.</summary>
 public class AcessoEntreAgenciasException(string mensagem) : InvalidOperationException(mensagem);
 
@@ -62,8 +67,20 @@ public class TenantMiddleware(RequestDelegate next)
         if (http.User.Identity?.IsAuthenticated == true
             && http.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } usuarioId)
         {
-            var agenciaId = await db.Users.Where(u => u.Id == usuarioId).Select(u => u.AgenciaId).FirstOrDefaultAsync();
-            if (agenciaId is int id) tenant.UsarAgencia(id);
+            // Uma consulta: agência do usuário + situação comercial (usada pelo bloqueio por assinatura)
+            var dados = await db.Users.Where(u => u.Id == usuarioId)
+                .Select(u => new
+                {
+                    u.AgenciaId,
+                    Situacao = u.Agencia == null ? (SituacaoAgenciaAtual?)null : new SituacaoAgenciaAtual(
+                        u.Agencia.Status, u.Agencia.SituacaoAssinatura, u.Agencia.TesteExpiraEm, u.Agencia.PlanoCodigo)
+                })
+                .FirstOrDefaultAsync();
+            if (dados?.AgenciaId is int id)
+            {
+                tenant.UsarAgencia(id);
+                tenant.Situacao = dados.Situacao;
+            }
         }
         await next(http);
     }

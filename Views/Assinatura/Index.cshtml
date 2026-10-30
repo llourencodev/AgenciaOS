@@ -1,0 +1,104 @@
+@model AgenciaOS.Controllers.AssinaturaController.Painel
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Assinatura";
+    var br = new System.Globalization.CultureInfo("pt-BR");
+    var a = Model.Assinatura;
+    var emAberto = Model.Pagamentos.FirstOrDefault(p => p.Status is StatusPagamento.Pendente or StatusPagamento.Vencido && !string.IsNullOrEmpty(p.UrlFatura));
+}
+<div class="page-header">
+    <div>
+        <h1>Assinatura</h1>
+        <p>@Model.Agencia.NomeExibicao</p>
+    </div>
+    <a asp-action="Planos" class="btn btn-primary"><i class="bi bi-tags me-1"></i> @(a == null || a.CanceladaEm != null ? "Escolher plano" : "Ver planos")</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header"><span class="card-title">Situação</span></div>
+            <div class="card-body">
+                <partial name="_Situacao" model="Model" />
+                @if (a != null)
+                {
+                    <dl class="row mt-3 mb-0 text-sm">
+                        <dt class="col-5">Plano</dt><dd class="col-7">@a.Plano?.Nome</dd>
+                        <dt class="col-5">Valor</dt><dd class="col-7">@a.Valor.ToString("C", br) / @(a.Plano?.Periodicidade == Periodicidade.Anual ? "ano" : "mês")</dd>
+                        <dt class="col-5">Forma de pagamento</dt><dd class="col-7">@a.FormaPagamento</dd>
+                        <dt class="col-5">Próximo vencimento</dt><dd class="col-7">@(a.ProximoVencimento?.ToString("dd/MM/yyyy") ?? "—")</dd>
+                        @if (a.CanceladaEm != null)
+                        {
+                            <dt class="col-5">Cancelada em</dt><dd class="col-7">@a.CanceladaEm.Value.ToLocalTime().ToString("dd/MM/yyyy") (acesso até @a.AcessoAte?.ToLocalTime().ToString("dd/MM/yyyy"))</dd>
+                        }
+                    </dl>
+                }
+                else
+                {
+                    <p class="text-sm text-muted mt-3 mb-0">Nenhum plano contratado ainda.</p>
+                }
+                @if (emAberto != null)
+                {
+                    <a href="@emAberto.UrlFatura" class="btn btn-warning mt-3" rel="noopener"><i class="bi bi-qr-code me-1"></i> Pagar cobrança em aberto (@emAberto.Valor.ToString("C", br))</a>
+                    <div class="text-xs text-muted mt-1">A confirmação chega automaticamente pelo banco; pode levar alguns minutos.</div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header"><span class="card-title">Gerenciar</span></div>
+            <div class="card-body">
+                @if (a != null && a.CanceladaEm == null && a.Situacao is SituacaoAssinatura.Ativa or SituacaoAssinatura.Tolerancia)
+                {
+                    <form asp-action="AlterarPlano" method="post" class="mb-3">
+                        <label class="form-label">Trocar de plano</label>
+                        <div class="d-flex gap-2">
+                            <select name="planoId" class="form-select">
+                                @foreach (var p in Model.Planos.Where(p => p.Periodicidade == a.Plano?.Periodicidade))
+                                {
+                                    <option value="@p.Id" selected="@(p.Id == a.PlanoId)">@p.Nome — @p.Preco.ToString("C", br)</option>
+                                }
+                            </select>
+                            <button class="btn btn-outline-primary">Trocar</button>
+                        </div>
+                        <div class="form-text">O novo valor vale a partir da próxima cobrança.</div>
+                    </form>
+                    <form asp-action="Cancelar" method="post" onsubmit="return confirm('Cancelar a assinatura? O acesso continua até o fim do período pago e os dados ficam preservados.');">
+                        <button class="btn btn-outline-danger"><i class="bi bi-x-circle me-1"></i> Cancelar assinatura</button>
+                    </form>
+                }
+                else
+                {
+                    <p class="text-sm text-muted mb-0">Escolha um plano para ativar ou reativar a assinatura.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header"><span class="card-title">Histórico de cobranças</span></div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Vencimento</th><th>Valor</th><th>Forma</th><th>Situação</th><th>Pago em</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var p in Model.Pagamentos)
+                {
+                    <tr>
+                        <td>@(p.Vencimento?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td>@p.Valor.ToString("C", br)</td>
+                        <td>@p.FormaPagamento</td>
+                        <td><span class="badge @(p.Quitado ? "text-bg-success" : p.Status == StatusPagamento.Vencido ? "text-bg-danger" : "text-bg-light border")">@p.Status</span></td>
+                        <td>@(p.PagoEm?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="text-end">@if (!string.IsNullOrEmpty(p.UrlFatura)) { <a href="@p.UrlFatura" rel="noopener" class="btn btn-xs btn-outline-secondary">Fatura</a> }</td>
+                    </tr>
+                }
+                @if (Model.Pagamentos.Count == 0)
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-3">Nenhuma cobrança ainda.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

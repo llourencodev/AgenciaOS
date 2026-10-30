@@ -8,7 +8,7 @@ Cada fase termina com entrega verificável e testes. Nada vai para produção se
 | 1 | Multi-tenancy e isolamento | Concluída localmente (não publicada) |
 | 2 | Armazenamento seguro (R2/S3) | Concluída localmente (não publicada) |
 | 3 | Cadastro público, confirmação de e-mail, recuperação de senha, convites | Concluída localmente (não publicada) |
-| 4 | E-mail transacional, planos, assinaturas, gateway, bloqueio | Pendente |
+| 4 | E-mail transacional, planos, assinaturas, gateway, bloqueio | Concluída localmente (gateway real ainda não configurado) |
 | 5 | LGPD e painel administrativo global com auditoria | Pendente |
 | 6 | 2FA, backups testados, homologação, monitoramento, CI/CD | Pendente |
 | 7 | Domínios personalizados e aprovação Meta/TikTok/Google | Pendente |
@@ -133,7 +133,33 @@ Sem essas variáveis o app registra erro no log e cadastro/convites/recuperaçã
 - E-mail é único na plataforma: uma pessoa não pode ser usuária de duas agências com o mesmo e-mail.
 
 ## Fase 4 — E-mail e cobrança
-`IEnviadorEmail` (Resend) com templates Razor; `Plano`, `Assinatura`, `Pagamento`, `EventoWebhook` (idempotência por id do evento); integração Asaas (cliente, assinatura, PIX/cartão/boleto, webhooks assinados); máquina de estados da assinatura e middleware de bloqueio por agência (somente leitura/tela de regularização), sem apagar dados. Cenário 5.
+
+### O que foi entregue (30/10/2026)
+
+- **Modelo:** `Plano` (preço, periodicidade, limites de usuários/clientes/armazenamento, módulos, recursos, à venda), `Assinatura` (por agência, espelhada em `Agencia.SituacaoAssinatura`), `Pagamento` (histórico), `EventoWebhook` (idempotência). Migration aditiva `PlanosAssinaturasCobranca`.
+- **Gateway:** `IGatewayPagamento` com `GatewayAsaas` (API v3: clientes, assinaturas, cobranças da assinatura, troca de valor, cancelamento) e `GatewaySimulado` (só fora de produção).
+- **Checkout:** `/Assinatura/Planos` → escolhe plano, forma (PIX, cartão recorrente, boleto ou escolher na hora) e CPF/CNPJ → redireciona para a fatura hospedada do Asaas. Dados de cartão nunca passam pelo AgenciaOS.
+- **Webhook:** `POST /webhooks/asaas`, token em `asaas-access-token` comparado em tempo constante, payload até 256 KB, idempotente, erro → 500 para o Asaas reenviar.
+- **Ciclo:** Teste → (assina) PagamentoPendente → (webhook) Ativa → (vencida) Tolerância de N dias → Suspensa → (paga) Ativa. Cancelamento mantém o acesso até o fim do período pago e depois vira Cancelada. Troca de plano altera o valor das próximas cobranças. Rotina horária (`AssinaturasWorker`) aplica teste vencido, fim da tolerância e fim do período cancelado.
+- **Bloqueio por agência (Cenário 5):** Suspensa, Cancelada, teste vencido ou pagamento pendente sem teste bloqueiam os módulos (tela de assinatura para o admin, aviso para os demais). Nenhum dado é apagado; outras agências não são afetadas. Na tolerância e no teste aparece um aviso no topo.
+- **Limites e módulos do plano** aplicados no servidor: clientes ativos, usuários da equipe (convites pendentes contam), armazenamento de arquivos, módulos (redireciona para "módulo indisponível").
+- **Painel global:** `/Plataforma/Planos` para cadastrar/editar planos sem alterar código.
+- **E-mails:** pagamento confirmado, atraso, suspensão, fim do teste, cancelamento (via `IEnviadorEmail`).
+- **Testes:** 104 passando. Novos: cliente Asaas (cabeçalhos e campos da API, erro legível, leitura do webhook), regras de bloqueio, ciclo completo da assinatura (teste→pagamento, idempotência, atraso→tolerância→suspensão→reativação com dados preservados, evento fora de ordem, assinatura desconhecida, teste vencido, cancelamento), HTTP (token do webhook, Cenário 5, teste vencido, checkout só ativa por webhook, webhook isolado por agência, limites e módulos, planos pelo superadmin). Com o bloqueio e a idempotência desligados de propósito, 4 testes falham.
+
+### Para ativar em produção (precisa de aprovação)
+
+1. Criar conta no Asaas, gerar a chave de API (sandbox primeiro: começa com `$aact_hmlg_`).
+2. Railway: `PAYMENT_GATEWAY=asaas`, `ASAAS_API_KEY=...`, `ASAAS_WEBHOOK_TOKEN=<segredo longo aleatório>`, opcional `BILLING_TOLERANCIA_DIAS` (padrão 7).
+3. No painel do Asaas, cadastrar o webhook `https://<APP_BASE_URL>/webhooks/asaas` com o mesmo token, eventos de cobrança, envio sequencial.
+4. Cadastrar os planos em `/Plataforma/Planos`.
+5. Validar no sandbox: assinar, pagar a fatura de teste, conferir a ativação; depois trocar para a chave de produção.
+
+### Pendências conhecidas
+- Taxas do gateway a confirmar nas páginas oficiais (D14).
+- A agência fundadora (Id 1) segue como "Ativa" sem assinatura: decidir se ela passa a pagar ou fica isenta.
+- Painel global sem MRR/ARR/churn ainda (Fase 5).
+- Pix Automático (autorização recorrente) não foi usado: as assinaturas PIX geram uma cobrança por ciclo que o cliente paga pela fatura.
 
 ## Fase 5 — LGPD e administração global
 Termos/Política versionados, registro de aceite, solicitações de titulares (exportação, exclusão/anonimização com exceções legais), DPA plataforma↔agência, painel global com métricas (MRR, ARR, churn), gestão de planos e agências, trilha de auditoria.

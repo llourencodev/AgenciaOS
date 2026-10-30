@@ -68,6 +68,29 @@ Login 20 por 5 min e ações que enviam e-mail ou criam contas 5 por 15 min, por
 ## D16 — Escrita direta no destino (armazenamento local)
 O provedor local grava direto no caminho final (chaves com GUID nunca colidem) em vez de gravar `.tmp` e renomear: no Windows o antivírus segura o arquivo recém-criado e o `Move` falha com "Access denied" (visto no teste local). Em caso de erro, o arquivo parcial é apagado.
 
-## D14 — E-mail e cobrança (Fase 4, proposta)
-- E-mail: Resend (API simples, bom free tier, domínio verificado) atrás de `IEnviadorEmail`; SES como alternativa de custo em volume.
-- Cobrança: Asaas como primeira opção para o mercado brasileiro (PIX, boleto e cartão recorrente nativos, webhooks, sem exigir empresa no exterior). Stripe como alternativa se houver venda internacional. Decisão final após comparar taxas atuais na Fase 4.
+## D14 — Gateway de cobrança: Asaas (Fase 4)
+
+| Critério | Asaas | Stripe | Pagar.me |
+|---|---|---|---|
+| PIX | Nativo, inclusive em assinaturas; Pix Automático disponível | Disponível no Brasil, citado como "por convite" | Disponível |
+| Cartão recorrente | Nativo (assinatura cobra no vencimento) | Stripe Billing (custo adicional sobre o volume) | Nativo |
+| Boleto | Nativo | Disponível | Disponível |
+| Checkout hospedado (sem dados de cartão no app) | Sim (fatura `invoiceUrl` com PIX/boleto/cartão) | Sim (Checkout) | Sim (link de pagamento) |
+| Webhooks | Token em `asaas-access-token`, entrega "pelo menos uma vez", id do evento para idempotência | Assinatura HMAC | Assinatura |
+| Sandbox | Sim (`api-sandbox.asaas.com`) | Sim | Sim |
+| Taxas | **Não confirmadas**: a página oficial de preços precisa ser consultada pelo proprietário | Fontes de terceiros citam ~3,99% + R$ 0,39 (cartão), ~1,19% (PIX) e ~0,7% (Billing), não confirmadas | Não encontradas em fonte confiável |
+
+**Decisão:** Asaas. Os três atendem tecnicamente; o Asaas cobre PIX, boleto e cartão recorrente no mesmo objeto "assinatura", com fatura hospedada (menor escopo PCI) e foco no mercado brasileiro. A integração fica atrás de `IGatewayPagamento`, então trocar de gateway é implementar outra classe.
+**Pendente:** confirmar as taxas atuais nas páginas oficiais antes de abrir as vendas. Fontes consultadas: documentação do Asaas (autenticação, assinaturas, webhooks, eventos de cobrança); dados de taxas apenas de blogs/calculadoras de terceiros.
+
+## D22 — Pagamento só é confirmado pelo webhook
+O retorno do checkout não muda nada. `PAYMENT_CONFIRMED`/`PAYMENT_RECEIVED` ativam; `PAYMENT_OVERDUE` abre a tolerância; estorno/contestação marcam como "Atrasada". Eventos guardados em `EventosWebhook` com índice único (gateway, id do evento): reentregas não repetem efeito; falhas ficam registradas e são reprocessadas na próxima entrega. Cobrança quitada não volta a "vencida" por evento atrasado.
+
+## D23 — Bloqueio comercial no mesmo filtro global, a partir de dados já carregados
+O `TenantMiddleware` passou a trazer a situação comercial da agência na mesma consulta do usuário; o `PermissaoModuloFilter` bloqueia (redireciona para a tela de assinatura) sem consulta extra. Teste vencido bloqueia imediatamente, sem depender da rotina horária. Nenhum dado é apagado; só a área de assinatura fica acessível.
+
+## D24 — Planos de exemplo só em desenvolvimento
+Preços são decisão comercial do proprietário. Em produção nenhum plano é criado automaticamente: o superadmin cadastra em `/Plataforma/Planos`. Mudar o preço não altera assinaturas existentes.
+
+## D25 — Gateway simulado bloqueado em produção
+`PAYMENT_GATEWAY=simulado` (padrão em desenvolvimento) inclui uma página que simula o pagamento. Em produção ele vira "desabilitado": o app sobe, contratar mostra erro e o log avisa. Assim um deploy sem as variáveis do Asaas não derruba o sistema nem permite "pagar" de mentira.

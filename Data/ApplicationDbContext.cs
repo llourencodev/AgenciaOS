@@ -22,6 +22,10 @@ public partial class ApplicationDbContext : IdentityDbContext<Usuario>, IDataPro
     public DbSet<Agencia> Agencias => Set<Agencia>();
     public DbSet<ConsentimentoTermos> ConsentimentosTermos => Set<ConsentimentoTermos>();
     public DbSet<ConviteUsuario> ConvitesUsuario => Set<ConviteUsuario>();
+    public DbSet<Plano> Planos => Set<Plano>();
+    public DbSet<Assinatura> Assinaturas => Set<Assinatura>();
+    public DbSet<Pagamento> Pagamentos => Set<Pagamento>();
+    public DbSet<EventoWebhook> EventosWebhook => Set<EventoWebhook>();
 
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Conteudo> Conteudos => Set<Conteudo>();
@@ -213,6 +217,53 @@ public partial class ApplicationDbContext : IdentityDbContext<Usuario>, IDataPro
             e.Property(c => c.Nome).HasMaxLength(100);
             e.Property(c => c.TokenHash).HasMaxLength(64);
             e.HasIndex(c => c.TokenHash).IsUnique();
+        });
+
+        // ── Planos e cobrança (Fase 4) ───────────────────────────────────
+        builder.Entity<Plano>(e =>
+        {
+            e.Property(p => p.Codigo).HasMaxLength(50);
+            e.HasIndex(p => p.Codigo).IsUnique();
+            e.Property(p => p.Nome).HasMaxLength(100);
+            e.Property(p => p.Descricao).HasMaxLength(1000);
+            e.Property(p => p.Preco).HasPrecision(18, 2);
+            e.Property(p => p.Periodicidade).HasConversion<string>().HasMaxLength(20);
+            e.Property(p => p.Modulos).HasMaxLength(500);
+            e.Property(p => p.RecursosAdicionais).HasMaxLength(2000);
+        });
+
+        builder.Entity<Assinatura>(e =>
+        {
+            e.HasOne(a => a.Plano).WithMany().HasForeignKey(a => a.PlanoId).OnDelete(DeleteBehavior.Restrict);
+            e.Property(a => a.Situacao).HasConversion<string>().HasMaxLength(30);
+            e.Property(a => a.FormaPagamento).HasConversion<string>().HasMaxLength(20);
+            e.Property(a => a.Valor).HasPrecision(18, 2);
+            e.Property(a => a.Gateway).HasMaxLength(20);
+            e.Property(a => a.GatewayClienteId).HasMaxLength(100);
+            e.Property(a => a.GatewayAssinaturaId).HasMaxLength(100);
+            e.HasIndex(a => new { a.Gateway, a.GatewayAssinaturaId }).IsUnique();
+            e.HasIndex(a => new { a.AgenciaId, a.Vigente });
+        });
+
+        builder.Entity<Pagamento>(e =>
+        {
+            e.HasOne(p => p.Assinatura).WithMany(a => a.Pagamentos).HasForeignKey(p => p.AssinaturaId).OnDelete(DeleteBehavior.Restrict);
+            e.Property(p => p.GatewayPagamentoId).HasMaxLength(100);
+            e.HasIndex(p => p.GatewayPagamentoId).IsUnique();
+            e.Property(p => p.Valor).HasPrecision(18, 2);
+            e.Property(p => p.ValorLiquido).HasPrecision(18, 2);
+            e.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(p => p.FormaPagamento).HasConversion<string>().HasMaxLength(20);
+            e.Property(p => p.UrlFatura).HasMaxLength(500);
+        });
+
+        builder.Entity<EventoWebhook>(e =>
+        {
+            e.Property(w => w.Gateway).HasMaxLength(20);
+            e.Property(w => w.EventoId).HasMaxLength(100);
+            e.Property(w => w.Tipo).HasMaxLength(80);
+            e.Property(w => w.Erro).HasMaxLength(2000);
+            e.HasIndex(w => new { w.Gateway, w.EventoId }).IsUnique();
         });
 
         ConfigurarMultiTenancy(builder);

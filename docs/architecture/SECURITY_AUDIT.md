@@ -34,6 +34,7 @@
 | S28 | Alta | `UseForwardedHeaders` | Sem limpar redes conhecidas, atrás do proxy do Railway o IP do cliente seria o do proxy (rate limit por IP viraria global; logs sem IP real) | Corrigido na Fase 3 (em produção confia no proxy, `ForwardLimit = 1`) |
 | S29 | Média | Links de e-mail | Risco de envenenamento do link de redefinição pelo cabeçalho Host | Corrigido na Fase 3 (`APP_BASE_URL` obrigatório em produção) |
 | S30 | Baixa | Convites | Admin que convida um e-mail já cadastrado em outra agência recebe "já tem acesso" (revela que o e-mail existe na plataforma) | Aceito (e-mail único global); reavaliar se e-mail passar a ser por agência |
+| S31 | Alta | Cobrança (Fase 4) | Riscos típicos: ativar plano pelo retorno do navegador, webhook forjado, reprocessamento duplicado, dados de cartão no servidor | Tratados: ativação só por webhook autenticado (token em tempo constante), idempotência por id do evento, checkout hospedado pelo gateway, gateway simulado bloqueado em produção |
 | S24 | Média | Dashboard | Colaborador externo via receita/despesa e tarefas de toda a agência | Corrigido na Fase 1 |
 
 ## Pontos positivos encontrados

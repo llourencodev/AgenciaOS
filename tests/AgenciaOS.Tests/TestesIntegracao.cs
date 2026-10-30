@@ -46,6 +46,9 @@ public sealed class BancoTeste : IDisposable
         return new(_opcoes, t);
     }
 
+    /// <summary>Contexto que usa um TenantContext compartilhado com o serviço testado.</summary>
+    public ApplicationDbContext Contexto(TenantContext tenant) => new(_opcoes, tenant);
+
     /// <summary>Contexto sem agência (anônimo / superadmin fora do painel).</summary>
     public ApplicationDbContext ContextoSemAgencia() => new(_opcoes, new TenantContext());
 

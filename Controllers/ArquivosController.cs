@@ -2,6 +2,7 @@ using AgenciaOS.Data;
 using AgenciaOS.Models;
 using AgenciaOS.Services;
 using AgenciaOS.Services.Armazenamento;
+using AgenciaOS.Services.Cobranca;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,7 @@ namespace AgenciaOS.Controllers;
 
 [Authorize]
 public class ArquivosController(ApplicationDbContext db, AcessoService acesso, ServicoArquivos servico,
-    ArmazenamentoOptions opcoes, IWebHostEnvironment env, ILogger<ArquivosController> logger) : Controller
+    ArmazenamentoOptions opcoes, IWebHostEnvironment env, ILogger<ArquivosController> logger, LimitesPlanoService limites) : Controller
 {
     /// <summary>Arquivos dos clientes que o usuário enxerga (a agência já é filtrada pelo DbContext).</summary>
     private IQueryable<Arquivo> Visiveis(AcessoService.Escopo? escopo)
@@ -53,6 +54,12 @@ public class ArquivosController(ApplicationDbContext db, AcessoService acesso, S
         var escopo = await acesso.ObterAsync(User);
         var cliente = escopo == null ? null : await acesso.Clientes(escopo).FirstOrDefaultAsync(c => c.Id == clienteId, ct);
         if (cliente == null) return NotFound();
+
+        if (arquivo != null && await limites.VerificarArmazenamentoAsync(arquivo.Length, ct) is { } limite)
+        {
+            TempData["Erro"] = limite;
+            return RedirectToAction(nameof(Index), new { clienteId });
+        }
 
         var r = await servico.GravarAsync(arquivo, ext => ChavesArmazenamento.ArquivoCliente(cliente.AgenciaId, cliente.Id, ext), ct: ct);
         if (r.Arquivo is not { } g)

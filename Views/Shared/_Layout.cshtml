@@ -1,5 +1,6 @@
 @inject AgenciaOS.Data.ApplicationDbContext _db
 @inject Microsoft.AspNetCore.Identity.UserManager<AgenciaOS.Models.Usuario> _userMgr
+@inject AgenciaOS.Services.Tenancy.TenantContext _tenant
 @using Microsoft.EntityFrameworkCore
 @functions {
     static string HexToRgb(string hex) {
@@ -222,6 +223,10 @@
                         <span class="nav-icon ni-slate"><i class="bi bi-palette-fill"></i></span>
                         <span class="nav-label">Personalização</span>
                     </a>
+                    <a asp-controller="Assinatura" asp-action="Index" class="nav-link-item @(ctrl=="Assinatura"?"active":"")">
+                        <span class="nav-icon ni-slate"><i class="bi bi-credit-card-fill"></i></span>
+                        <span class="nav-label">Assinatura</span>
+                    </a>
                 </div>
             }
         </nav>
@@ -308,6 +313,23 @@
         </header>
 
         <main class="page-main">
+            @if (_tenant.Situacao is { } _sit && User.IsInRole("Admin") && ctrl != "Assinatura")
+            {
+                var _aviso = _sit.Assinatura switch
+                {
+                    AgenciaOS.Models.SituacaoAssinatura.Teste when _sit.TesteExpiraEm is { } _fim && _fim > DateTime.UtcNow =>
+                        $"Período de teste: faltam {Math.Max(0, (int)Math.Ceiling((_fim - DateTime.UtcNow).TotalDays))} dia(s).",
+                    AgenciaOS.Models.SituacaoAssinatura.Tolerancia or AgenciaOS.Models.SituacaoAssinatura.Atrasada => "Há um pagamento em aberto. Regularize para evitar a suspensão.",
+                    _ => null
+                };
+                if (_aviso != null)
+                {
+                    <div class="alert alert-warning d-flex justify-content-between align-items-center py-2 mb-3" style="font-size:13px;">
+                        <span><i class="bi bi-info-circle me-1"></i>@_aviso</span>
+                        <a asp-controller="Assinatura" asp-action="Index" class="btn btn-sm btn-warning">Ver assinatura</a>
+                    </div>
+                }
+            }
             @if (TempData["Sucesso"] != null)
             {
                 <div class="toast-notification toast-success show" id="toastMsg">

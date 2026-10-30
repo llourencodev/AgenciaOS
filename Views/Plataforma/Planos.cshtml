@@ -1,0 +1,42 @@
+@model List<AgenciaOS.Models.Plano>
+@{
+    Layout = "_LayoutPlataforma";
+    ViewData["Title"] = "Planos";
+}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h1 class="h3 fw-bold mb-0">Planos</h1>
+        <p class="text-muted mb-0">Alterar o preço vale para novas contratações; assinaturas existentes mantêm o valor contratado.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-building"></i> Agências</a>
+        <a asp-action="Plano" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Novo plano</a>
+    </div>
+</div>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead><tr><th>Plano</th><th>Código</th><th class="text-end">Preço</th><th>Período</th><th>Usuários</th><th>Clientes</th><th>Arquivos</th><th>Situação</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@p.Nome</td>
+                        <td><code>@p.Codigo</code></td>
+                        <td class="text-end">@p.Preco.ToString("C", new System.Globalization.CultureInfo("pt-BR"))</td>
+                        <td>@p.Periodicidade</td>
+                        <td>@(p.LimiteUsuarios?.ToString() ?? "∞")</td>
+                        <td>@(p.LimiteClientes?.ToString() ?? "∞")</td>
+                        <td>@(p.LimiteArmazenamentoMb is int mb ? $"{mb} MB" : "∞")</td>
+                        <td><span class="badge @(p.Ativo ? "text-bg-success" : "text-bg-secondary")">@(p.Ativo ? "À venda" : "Fora de venda")</span></td>
+                        <td class="text-end"><a asp-action="Plano" asp-route-id="@p.Id" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a></td>
+                    </tr>
+                }
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="9" class="text-center text-muted py-4">Nenhum plano cadastrado. As agências não conseguem assinar até existir um plano à venda.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
