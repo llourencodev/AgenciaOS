@@ -1,8 +1,9 @@
 namespace AgenciaOS.Models;
 
-public class DataComemorativa
+public class DataComemorativa : IPertenceAgencia
 {
     public int Id { get; set; }
+    public int AgenciaId { get; set; }
     public string Nome { get; set; } = "";
     public string? Descricao { get; set; }
     public int Dia { get; set; }

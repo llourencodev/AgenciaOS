@@ -1,6 +1,11 @@
 using AgenciaOS.Data;
 using AgenciaOS.Models;
 using AgenciaOS.Services;
+using AgenciaOS.Services.Marketing;
+using AgenciaOS.Services.Tenancy;
+using AgenciaOS.Services.Armazenamento;
+using AgenciaOS.Services.Contas;
+using AgenciaOS.Services.Email;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -9,7 +14,11 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(o =>
+{
+    o.Filters.Add<PermissaoModuloFilter>();
+    o.Filters.Add<AcessoEntreAgenciasExceptionFilter>();
+});
 builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 
 var conn = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -51,17 +60,29 @@ else
 
 builder.Services.AddIdentity<Usuario, IdentityRole>(o =>
 {
-    o.Password.RequireDigit = false;
-    o.Password.RequiredLength = 8;
+    // Vale para senhas novas/alteradas; senhas existentes continuam funcionando
+    o.Password.RequiredLength = 10;
+    o.Password.RequireDigit = true;
+    o.Password.RequireLowercase = true;
+    o.Password.RequireUppercase = true;
     o.Password.RequireNonAlphanumeric = false;
-    o.Password.RequireUppercase = false;
     o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     o.Lockout.MaxFailedAccessAttempts = 5;
     o.Lockout.AllowedForNewUsers = true;
-    o.SignIn.RequireConfirmedAccount = false;
+    o.User.RequireUniqueEmail = true;
+    // Contas criadas pelo cadastro público só entram depois de confirmar o e-mail
+    // (usuários existentes e convidados já estão com EmailConfirmed = true)
+    o.SignIn.RequireConfirmedEmail = true;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
+.AddErrorDescriber<IdentityErrosPortugues>()
 .AddDefaultTokenProviders();
+
+// Links de confirmação e de redefinição de senha expiram em 3 horas
+builder.Services.Configure<DataProtectionTokenProviderOptions>(o => o.TokenLifespan = TimeSpan.FromHours(3));
+// Revogação de sessões: troca de senha/desativação invalida cookies na próxima validação
+builder.Services.Configure<SecurityStampValidatorOptions>(o => o.ValidationInterval =
+    TimeSpan.FromSeconds(int.TryParse(builder.Configuration["SECURITY_STAMP_INTERVAL_SECONDS"], out var s) && s >= 0 ? s : 300));
 
 builder.Services.ConfigureApplicationCookie(o =>
 {
@@ -70,19 +91,43 @@ builder.Services.ConfigureApplicationCookie(o =>
     o.AccessDeniedPath = "/Account/AcessoNegado";
     o.ExpireTimeSpan = TimeSpan.FromDays(7);
     o.SlidingExpiration = true;
+    o.Cookie.HttpOnly = true;
+    o.Cookie.SameSite = SameSiteMode.Lax;
+    o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
 
+builder.Services.AddEmail(builder.Configuration);
+builder.Services.AddScoped<ContasService>();
+builder.Services.AddRateLimitingContas();
+
+// Multi-tenancy: a agência vem sempre do usuário autenticado (TenantMiddleware)
+builder.Services.AddScoped<TenantContext>();
+builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
+builder.Services.AddScoped<AcessoService>();
+builder.Services.AddScoped<AcessoAbas>();
+
 builder.Services.AddScoped<NotificacaoService>();
+builder.Services.AddCentralMarketing(builder.Configuration);
+builder.Services.AddArmazenamento(builder.Configuration, builder.Environment);
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<AgenciaOS.Data.ApplicationDbContext>();
 
 var app = builder.Build();
 
 // Proxy headers (Railway / reverse proxy)
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+// O Railway é o único ponto de entrada; sem limpar as redes conhecidas o IP do cliente seria sempre o do proxy
+// (e o rate limit por IP viraria um limite global).
+var forwarded = new ForwardedHeadersOptions
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    ForwardLimit = 1
+};
+if (app.Environment.IsProduction())
+{
+    forwarded.KnownIPNetworks.Clear();
+    forwarded.KnownProxies.Clear();
+}
+app.UseForwardedHeaders(forwarded);
 
 if (!app.Environment.IsDevelopment())
 {
@@ -92,61 +137,49 @@ if (!app.Environment.IsDevelopment())
 // Não redirecionar HTTPS no Railway (proxy cuida disso)
 if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
+
+// Arquivos de clientes não são mais públicos: /uploads só é acessível via /Arquivos/Baixar (com autorização)
+app.Use(async (ctx, next) =>
+{
+    if (ctx.Request.Path.StartsWithSegments("/uploads", StringComparison.OrdinalIgnoreCase))
+    {
+        ctx.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+    await next();
+});
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
+app.UseMiddleware<TenantMiddleware>();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapGet("/health", () => Results.Ok("healthy"));
 app.MapControllerRoute("default", "{controller=Dashboard}/{action=Index}/{id?}");
 
-// Seed de dados iniciais
-using (var scope = app.Services.CreateScope())
+// Migrations + seed (escopo em modo Sistema: roda fora de qualquer agência)
+using (var scope = app.Services.GetRequiredService<IServiceScopeFactory>().CriarEscopoSistema())
+    await SeedInicial.ExecutarAsync(scope.ServiceProvider, app.Environment, app.Logger);
+
+if (app.Environment.IsProduction() && app.Services.GetRequiredService<EmailOptions>() is { } emailOpt
+    && (emailOpt.Provedor != "resend" || string.IsNullOrEmpty(emailOpt.UrlBase)))
+    app.Logger.LogError("E-mail não configurado para produção (EMAIL_PROVIDER=resend, RESEND_API_KEY, EMAIL_FROM, APP_BASE_URL): cadastro, convites e recuperação de senha não enviarão e-mails.");
+
+var armazenamentoOpt = app.Services.GetRequiredService<ArmazenamentoOptions>();
+if (armazenamentoOpt.Provedor == "local" && app.Environment.IsProduction())
+    app.Logger.LogWarning("Armazenamento local em produção ({Caminho}): sem volume persistente os arquivos se perdem a cada deploy. Configure STORAGE_PROVIDER=s3.", armazenamentoOpt.CaminhoLocal);
+
+// Migração controlada dos arquivos legados: dotnet AgenciaOS.dll --migrar-arquivos [--remover-originais]
+if (args.Contains("--migrar-arquivos"))
 {
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<Usuario>>();
-    var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
-    db.Database.Migrate();
-
-    string[] roles = ["Admin", "Equipe", "Cliente", "ColaboradorExterno"];
-    foreach (var role in roles)
-        if (!await roleMgr.RoleExistsAsync(role))
-            await roleMgr.CreateAsync(new IdentityRole(role));
-
-    if (await userMgr.FindByEmailAsync("admin@agencia.com") == null)
-    {
-        var admin = new Usuario
-        {
-            UserName = "admin@agencia.com",
-            Email = "admin@agencia.com",
-            Nome = "Administrador",
-            Tipo = TipoUsuario.Admin,
-            EmailConfirmed = true
-        };
-        var senhaAdmin = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "Admin@2025!";
-        await userMgr.CreateAsync(admin, senhaAdmin);
-        await userMgr.AddToRoleAsync(admin, "Admin");
-    }
-
-    // Seed configuração inicial da agência
-    if (!db.Configuracoes.Any())
-    {
-        db.Configuracoes.Add(new Configuracao
-        {
-            NomeAgencia           = "Social Unânime",
-            Tagline               = "Marketing Estratégico",
-            CorPrimaria           = "#732734",
-            CorPrimariaDark       = "#5a1e28",
-            CorSecundaria         = "#d99ec8",
-            CorTextoSobrePrimaria = "#e6dace",
-            CorSidebar            = "#1c0a0f",
-            GradienteIcone        = "linear-gradient(135deg,#722835 0%,#9e2d45 100%)",
-            GradienteSaudacao     = "linear-gradient(135deg,#4a1620 0%,#732734 60%,#9e2d45 100%)",
-            LogoUrl               = "/brand/logo.png"
-        });
-        await db.SaveChangesAsync();
-    }
+    using var scope = app.Services.GetRequiredService<IServiceScopeFactory>().CriarEscopoSistema();
+    var rel = await scope.ServiceProvider.GetRequiredService<MigracaoArquivosService>()
+        .ExecutarAsync(removerOriginais: args.Contains("--remover-originais"));
+    Environment.ExitCode = rel.Falhas > 0 ? 1 : 0;
+    return;
 }
 
 app.Run();
+
+public partial class Program;

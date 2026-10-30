@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "Usuários";
     var lista = ViewData["Lista"] as IEnumerable<(Usuario u, IList<string> roles)> ?? [];
-    string[] todasAbas = ["Dashboard", "Clientes", "Calendario", "Arquivos", "Tarefas", "Financeiro", "Contratos", "DatasComemorativas"];
+    string[] todasAbas = ["Dashboard", "Clientes", "Calendario", "Arquivos", "Tarefas", "Financeiro", "Contratos", "DatasComemorativas", "Marketing"];
 }
 
 <div class="page-header">
@@ -10,10 +10,42 @@
         <h1>Usuários</h1>
         <p>Gerencie o acesso e permissões da equipe</p>
     </div>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoUsuarioModal">
-        <i class="bi bi-person-plus-fill me-1"></i> Novo Usuário
-    </button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#novoUsuarioModal">
+            <i class="bi bi-person-plus me-1"></i> Criar com senha
+        </button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#convidarModal">
+            <i class="bi bi-envelope-plus-fill me-1"></i> Convidar por e-mail
+        </button>
+    </div>
 </div>
+
+@if (ViewData["Convites"] is List<ConviteUsuario> convites && convites.Count > 0)
+{
+    <div class="card mb-3">
+        <div class="card-header"><span class="card-title">Convites pendentes</span></div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>E-mail</th><th>Tipo</th><th>Expira em</th><th class="text-end">Ações</th></tr></thead>
+                <tbody>
+                    @foreach (var c in convites)
+                    {
+                        <tr>
+                            <td class="text-sm">@c.Email @if (!string.IsNullOrEmpty(c.Nome)) { <span class="text-muted">(@c.Nome)</span> }</td>
+                            <td><span class="badge text-bg-light border">@c.Tipo</span></td>
+                            <td class="text-sm text-muted">@c.ExpiraEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="text-end">
+                                <form asp-action="RevogarConvite" asp-route-id="@c.Id" method="post" class="d-inline">
+                                    <button class="btn btn-xs btn-outline-danger" title="Revogar convite"><i class="bi bi-x-circle"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
 
 <div class="card">
     <div class="table-responsive">
@@ -159,7 +191,8 @@
                         </div>
                         <div class="col-6">
                             <label class="form-label">Senha *</label>
-                            <input type="password" name="senha" class="form-control" required minlength="6" />
+                            <input type="password" name="senha" class="form-control" required minlength="10" autocomplete="new-password" />
+                            <div class="form-text">10+ caracteres, com maiúscula, minúscula e número.</div>
                         </div>
                         <div class="col-6">
                             <label class="form-label">Tipo</label>
@@ -189,6 +222,60 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary px-4">Criar Usuário</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONVIDAR -->
+<div class="modal fade" id="convidarModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="Convidar" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-envelope-plus-fill me-2 text-primary"></i>Convidar por e-mail</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-sm text-muted">A pessoa recebe um link (válido por 7 dias) e cria a própria senha.</p>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">E-mail *</label>
+                            <input type="email" name="email" class="form-control" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Nome</label>
+                            <input type="text" name="nome" class="form-control" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Tipo</label>
+                            <select name="tipo" class="form-select">
+                                <option value="Equipe">Equipe</option>
+                                <option value="ColaboradorExterno">Colaborador Externo</option>
+                                <option value="Cliente">Cliente</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Abas permitidas (vazio = todas)</label>
+                            <div class="row g-1">
+                                @foreach (var aba in todasAbas)
+                                {
+                                    <div class="col-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="abasPermitidas" value="@aba" id="conv_@aba" />
+                                            <label class="form-check-label text-sm" for="conv_@aba">@aba</label>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">Enviar convite</button>
                 </div>
             </form>
         </div>

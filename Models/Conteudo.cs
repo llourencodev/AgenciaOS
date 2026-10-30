@@ -1,8 +1,9 @@
 namespace AgenciaOS.Models;
 
-public class Conteudo
+public class Conteudo : IPertenceAgencia
 {
     public int Id { get; set; }
+    public int AgenciaId { get; set; }
     public string Titulo { get; set; } = "";
     public string? Descricao { get; set; }
     public string? Legenda { get; set; }

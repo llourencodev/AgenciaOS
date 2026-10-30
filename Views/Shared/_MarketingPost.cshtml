@@ -1,0 +1,38 @@
+@model AgenciaOS.Models.PublicacaoMarketing
+@using AgenciaOS.Services.Marketing
+@{
+    var p = Model;
+    var pt = new System.Globalization.CultureInfo("pt-BR");
+    string N(long? v) => v is long l ? l.ToString("N0", pt) : "—";
+    var seguidores = ViewData["Seguidores"] as decimal?;
+    decimal? taxa = p.Alcance is > 0
+        ? CalculosMarketing.EngajamentoPorAlcance(p.Interacoes, p.Alcance)
+        : CalculosMarketing.EngajamentoPorSeguidores(p.Interacoes, seguidores);
+    var base_ = p.Alcance is > 0 ? "por alcance" : "por seguidores";
+    var thumbOk = !string.IsNullOrEmpty(p.ThumbnailUrl) && p.ThumbnailUrl.StartsWith("https://");
+}
+<div class="post-card">
+    <div class="post-thumb" style="@(thumbOk ? $"background-image:url('{p.ThumbnailUrl!.Replace("'", "%27").Replace("(", "%28").Replace(")", "%29")}')" : "")">
+        @if (!thumbOk) { <i class="bi @PlataformaInfo.Icone(p.Plataforma)"></i> }
+        <span class="post-badge" style="background:@PlataformaInfo.Cor(p.Plataforma)"><i class="bi @PlataformaInfo.Icone(p.Plataforma) me-1"></i>@(p.Tipo ?? "Post")</span>
+    </div>
+    <div class="post-body">
+        <div class="text-xs text-muted">@p.PublicadoEm.AddHours(-3).ToString("dd/MM/yyyy HH:mm") · @PlataformaInfo.Nome(p.Plataforma)</div>
+        <div class="post-legenda">@(string.IsNullOrWhiteSpace(p.Legenda) ? "(sem legenda)" : p.Legenda)</div>
+        <div class="post-metricas">
+            <div><b>@N(p.Visualizacoes)</b>Visualizações</div>
+            <div><b>@N(p.Alcance)</b>Alcance</div>
+            <div><b>@N(p.Interacoes)</b>Interações</div>
+            <div><b>@N(p.Curtidas)</b>Curtidas</div>
+            <div><b>@N(p.Comentarios)</b>Comentários</div>
+            <div><b>@N(p.Compartilhamentos)</b>Compart.</div>
+            <div><b>@N(p.Salvamentos)</b>Salvos</div>
+            <div title="Taxa de engajamento @base_"><b>@(taxa is decimal t ? t.ToString("0.##", pt) + "%" : "—")</b>Engaj. @base_</div>
+            @if (p.Cliques != null) { <div><b>@N(p.Cliques)</b>Cliques</div> }
+        </div>
+        @if (!string.IsNullOrEmpty(p.Link) && p.Link.StartsWith("https://"))
+        {
+            <a href="@p.Link" target="_blank" rel="noopener noreferrer" class="text-xs text-primary mt-auto">Abrir publicação <i class="bi bi-box-arrow-up-right"></i></a>
+        }
+    </div>
+</div>

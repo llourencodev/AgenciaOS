@@ -1,4 +1,5 @@
 using AgenciaOS.Models;
+using AgenciaOS.Services.Tenancy;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -6,11 +7,21 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace AgenciaOS.Data;
 
-public class ApplicationDbContext : IdentityDbContext<Usuario>, IDataProtectionKeyContext
+public partial class ApplicationDbContext : IdentityDbContext<Usuario>, IDataProtectionKeyContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+    private readonly ITenantContext? _tenant;
+
+    /// <param name="tenant">Agência atual. Sem tenant (testes antigos, dotnet ef) o contexto opera em modo Sistema.</param>
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ITenantContext? tenant = null) : base(options)
+    {
+        _tenant = tenant;
+    }
 
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
+
+    public DbSet<Agencia> Agencias => Set<Agencia>();
+    public DbSet<ConsentimentoTermos> ConsentimentosTermos => Set<ConsentimentoTermos>();
+    public DbSet<ConviteUsuario> ConvitesUsuario => Set<ConviteUsuario>();
 
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Conteudo> Conteudos => Set<Conteudo>();
@@ -23,6 +34,15 @@ public class ApplicationDbContext : IdentityDbContext<Usuario>, IDataProtectionK
     public DbSet<DataComemorativa> DatasComemorativas => Set<DataComemorativa>();
     public DbSet<Contrato> Contratos => Set<Contrato>();
     public DbSet<Configuracao> Configuracoes => Set<Configuracao>();
+
+    // Central de Inteligência de Marketing
+    public DbSet<ConexaoMarketing> ConexoesMarketing => Set<ConexaoMarketing>();
+    public DbSet<ContaMarketing> ContasMarketing => Set<ContaMarketing>();
+    public DbSet<MetricaDiaria> MetricasDiarias => Set<MetricaDiaria>();
+    public DbSet<MetricaDimensao> MetricasDimensao => Set<MetricaDimensao>();
+    public DbSet<PublicacaoMarketing> PublicacoesMarketing => Set<PublicacaoMarketing>();
+    public DbSet<HistoricoSincronizacao> HistoricosSincronizacao => Set<HistoricoSincronizacao>();
+    public DbSet<RelatorioMarketing> RelatoriosMarketing => Set<RelatorioMarketing>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -81,6 +101,9 @@ public class ApplicationDbContext : IdentityDbContext<Usuario>, IDataProtectionK
         builder.Entity<Arquivo>(e =>
         {
             e.HasOne(a => a.UploadPor).WithMany().HasForeignKey(a => a.UploadPorId).OnDelete(DeleteBehavior.NoAction);
+            e.Property(a => a.ChaveArmazenamento).HasMaxLength(500);
+            e.Property(a => a.Provedor).HasMaxLength(20);
+            e.Property(a => a.HashSha256).HasMaxLength(64);
         });
 
         builder.Entity<Financeiro>(e =>
@@ -101,5 +124,97 @@ public class ApplicationDbContext : IdentityDbContext<Usuario>, IDataProtectionK
             e.HasOne(c => c.CriadoPor).WithMany().HasForeignKey(c => c.CriadoPorId).OnDelete(DeleteBehavior.NoAction);
             e.Property(c => c.Valor).HasPrecision(18, 2);
         });
+
+        // ── Central de Inteligência de Marketing ──────────────────────────
+        builder.Entity<ConexaoMarketing>(e =>
+        {
+            e.HasOne(c => c.Cliente).WithMany().HasForeignKey(c => c.ClienteId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(c => c.ConectadoPor).WithMany().HasForeignKey(c => c.ConectadoPorId).OnDelete(DeleteBehavior.SetNull);
+            e.Property(c => c.Plataforma).HasConversion<string>().HasMaxLength(30);
+            e.Property(c => c.Status).HasConversion<string>().HasMaxLength(30);
+            e.HasIndex(c => new { c.ClienteId, c.Plataforma }).IsUnique();
+        });
+
+        builder.Entity<ContaMarketing>(e =>
+        {
+            e.HasOne(c => c.Cliente).WithMany().HasForeignKey(c => c.ClienteId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(c => c.Conexao).WithMany(x => x.Contas).HasForeignKey(c => c.ConexaoMarketingId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(c => c.Plataforma).HasConversion<string>().HasMaxLength(30);
+            e.Property(c => c.Status).HasConversion<string>().HasMaxLength(30);
+            e.Property(c => c.IdExterno).HasMaxLength(300);
+            e.HasIndex(c => new { c.ClienteId, c.Plataforma, c.IdExterno }).IsUnique();
+            e.HasIndex(c => new { c.Ativa, c.ProximaSincronizacao });
+        });
+
+        builder.Entity<MetricaDiaria>(e =>
+        {
+            e.HasOne(m => m.Conta).WithMany(c => c.Metricas).HasForeignKey(m => m.ContaMarketingId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(m => m.Plataforma).HasConversion<string>().HasMaxLength(30);
+            e.Property(m => m.Metrica).HasMaxLength(60);
+            e.Property(m => m.Fonte).HasMaxLength(120);
+            e.Property(m => m.Valor).HasPrecision(20, 4);
+            e.HasIndex(m => new { m.ContaMarketingId, m.Data, m.Metrica }).IsUnique();
+            e.HasIndex(m => new { m.ClienteId, m.Plataforma, m.Data });
+        });
+
+        builder.Entity<MetricaDimensao>(e =>
+        {
+            e.HasOne(m => m.Conta).WithMany().HasForeignKey(m => m.ContaMarketingId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(m => m.Plataforma).HasConversion<string>().HasMaxLength(30);
+            e.Property(m => m.Dimensao).HasMaxLength(60);
+            e.Property(m => m.ValorDimensao).HasMaxLength(500);
+            e.Property(m => m.Metrica).HasMaxLength(60);
+            e.Property(m => m.Valor).HasPrecision(20, 4);
+            e.HasIndex(m => new { m.ContaMarketingId, m.Data, m.Dimensao, m.ValorDimensao, m.Metrica }).IsUnique();
+            e.HasIndex(m => new { m.ClienteId, m.Dimensao, m.Data });
+        });
+
+        builder.Entity<PublicacaoMarketing>(e =>
+        {
+            e.HasOne(p => p.Conta).WithMany(c => c.Publicacoes).HasForeignKey(p => p.ContaMarketingId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(p => p.Plataforma).HasConversion<string>().HasMaxLength(30);
+            e.Property(p => p.IdExterno).HasMaxLength(200);
+            e.HasIndex(p => new { p.ContaMarketingId, p.IdExterno }).IsUnique();
+            e.HasIndex(p => new { p.ClienteId, p.PublicadoEm });
+        });
+
+        builder.Entity<HistoricoSincronizacao>(e =>
+        {
+            e.HasOne(h => h.Conta).WithMany().HasForeignKey(h => h.ContaMarketingId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(h => h.Plataforma).HasConversion<string>().HasMaxLength(30);
+            e.Property(h => h.Tipo).HasConversion<string>().HasMaxLength(20);
+            e.Property(h => h.Mensagem).HasMaxLength(2000);
+            e.HasIndex(h => new { h.ClienteId, h.IniciadoEm });
+        });
+
+        builder.Entity<RelatorioMarketing>(e =>
+        {
+            e.HasOne(r => r.Cliente).WithMany().HasForeignKey(r => r.ClienteId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(r => r.GeradoPor).WithMany().HasForeignKey(r => r.GeradoPorId).OnDelete(DeleteBehavior.SetNull);
+            e.Property(r => r.Titulo).HasMaxLength(200);
+        });
+
+        // ── Contas (Fase 3) ───────────────────────────────────────────────
+        builder.Entity<ConsentimentoTermos>(e =>
+        {
+            e.HasOne(c => c.Usuario).WithMany().HasForeignKey(c => c.UsuarioId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Agencia>().WithMany().HasForeignKey(c => c.AgenciaId).OnDelete(DeleteBehavior.Restrict);
+            e.Property(c => c.Documento).HasMaxLength(60);
+            e.Property(c => c.Versao).HasMaxLength(30);
+            e.Property(c => c.Ip).HasMaxLength(64);
+            e.Property(c => c.UserAgent).HasMaxLength(400);
+            e.HasIndex(c => new { c.UsuarioId, c.Documento });
+        });
+
+        builder.Entity<ConviteUsuario>(e =>
+        {
+            e.HasOne(c => c.CriadoPor).WithMany().HasForeignKey(c => c.CriadoPorId).OnDelete(DeleteBehavior.SetNull);
+            e.Property(c => c.Email).HasMaxLength(256);
+            e.Property(c => c.Nome).HasMaxLength(100);
+            e.Property(c => c.TokenHash).HasMaxLength(64);
+            e.HasIndex(c => c.TokenHash).IsUnique();
+        });
+
+        ConfigurarMultiTenancy(builder);
     }
 }

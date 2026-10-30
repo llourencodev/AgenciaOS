@@ -1,5 +1,7 @@
 using AgenciaOS.Data;
 using AgenciaOS.Models;
+using AgenciaOS.Services;
+using AgenciaOS.Services.Tenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -8,15 +10,27 @@ using Microsoft.EntityFrameworkCore;
 namespace AgenciaOS.Controllers;
 
 [Authorize]
-public class TarefasController(ApplicationDbContext db, UserManager<Usuario> userManager) : Controller
+public class TarefasController(ApplicationDbContext db, UserManager<Usuario> userManager, AcessoService acesso, ITenantContext tenant) : Controller
 {
+    private Task<List<Usuario>> UsuariosDaAgencia() =>
+        userManager.Users.DaAgencia(tenant).Where(u => u.Ativo).ToListAsync();
+
     public async Task<IActionResult> Index(string? status, int? clienteId, string? responsavelId, TipoTarefa? tipo)
     {
-        var usuario = await userManager.GetUserAsync(User);
+        var escopo = await acesso.ObterAsync(User);
         var query = db.Tarefas.Include(t => t.Cliente).Include(t => t.Responsavel).AsQueryable();
 
-        if (usuario?.Tipo == TipoUsuario.ColaboradorExterno)
-            query = query.Where(t => t.ResponsavelId == usuario.Id);
+        if (escopo == null)
+            query = query.Where(_ => false);
+        else if (escopo.EhColaboradorExterno)
+            query = query.Where(t => t.ResponsavelId == escopo.Usuario.Id);
+        else if (escopo.EhCliente)
+        {
+            var proprio = escopo.ClienteProprioId;
+            query = query.Where(t => proprio != null && t.ClienteId == proprio);
+        }
+        else if (!escopo.EhInterno)
+            query = query.Where(_ => false);
 
         if (!string.IsNullOrEmpty(status) && Enum.TryParse<StatusTarefa>(status, out var s))
             query = query.Where(t => t.Status == s);
@@ -36,8 +50,8 @@ public class TarefasController(ApplicationDbContext db, UserManager<Usuario> use
         ViewData["ClienteId"]     = clienteId;
         ViewData["ResponsavelId"] = responsavelId;
         ViewData["TipoFiltro"]    = tipo;
-        ViewData["Clientes"]      = await db.Clientes.Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
-        ViewData["Usuarios"]      = await userManager.Users.Where(u => u.Ativo).ToListAsync();
+        ViewData["Clientes"]      = await acesso.Clientes(escopo).Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
+        ViewData["Usuarios"]      = escopo?.EhInterno == true ? await UsuariosDaAgencia() : new List<Usuario>();
 
         return View(tarefas);
     }
@@ -46,7 +60,7 @@ public class TarefasController(ApplicationDbContext db, UserManager<Usuario> use
     public async Task<IActionResult> Create()
     {
         ViewData["Clientes"] = await db.Clientes.Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
-        ViewData["Usuarios"] = await userManager.Users.Where(u => u.Ativo).ToListAsync();
+        ViewData["Usuarios"] = await UsuariosDaAgencia();
         return View(new Tarefa());
     }
 
@@ -58,11 +72,13 @@ public class TarefasController(ApplicationDbContext db, UserManager<Usuario> use
         if (!ModelState.IsValid)
         {
             ViewData["Clientes"] = await db.Clientes.Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
-            ViewData["Usuarios"] = await userManager.Users.Where(u => u.Ativo).ToListAsync();
+            ViewData["Usuarios"] = await UsuariosDaAgencia();
             return View(model);
         }
 
         var usuario = await userManager.GetUserAsync(User);
+        model.Id = 0;
+        model.AgenciaId = 0;
         model.CriadoPorId = usuario?.Id;
         model.CriadoEm = DateTime.UtcNow;
         db.Tarefas.Add(model);
@@ -117,8 +133,9 @@ public class TarefasController(ApplicationDbContext db, UserManager<Usuario> use
         var tarefa = await db.Tarefas.FindAsync(id);
         if (tarefa == null) return NotFound();
 
-        var usuario = await userManager.GetUserAsync(User);
-        if (usuario?.Tipo == TipoUsuario.ColaboradorExterno && tarefa.ResponsavelId != usuario.Id)
+        var escopo = await acesso.ObterAsync(User);
+        if (escopo == null || escopo.EhCliente) return Forbid();
+        if (escopo.EhColaboradorExterno && tarefa.ResponsavelId != escopo.Usuario.Id)
             return Forbid();
 
         tarefa.Status = status;
@@ -133,7 +150,7 @@ public class TarefasController(ApplicationDbContext db, UserManager<Usuario> use
         var tarefa = await db.Tarefas.FindAsync(id);
         if (tarefa == null) return NotFound();
         ViewData["Clientes"] = await db.Clientes.Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
-        ViewData["Usuarios"] = await userManager.Users.Where(u => u.Ativo).ToListAsync();
+        ViewData["Usuarios"] = await UsuariosDaAgencia();
         return View(tarefa);
     }
 
@@ -142,15 +159,27 @@ public class TarefasController(ApplicationDbContext db, UserManager<Usuario> use
     [Authorize(Roles = "Admin,Equipe")]
     public async Task<IActionResult> Edit(Tarefa model)
     {
+        // Carrega da agência atual e copia só os campos editáveis (sem Update() da entidade do formulário)
+        var tarefa = await db.Tarefas.FindAsync(model.Id);
+        if (tarefa == null) return NotFound();
+
         if (!ModelState.IsValid)
         {
             ViewData["Clientes"] = await db.Clientes.Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
-            ViewData["Usuarios"] = await userManager.Users.Where(u => u.Ativo).ToListAsync();
+            ViewData["Usuarios"] = await UsuariosDaAgencia();
             return View(model);
         }
 
-        model.AtualizadoEm = DateTime.UtcNow;
-        db.Tarefas.Update(model);
+        tarefa.Titulo = model.Titulo;
+        tarefa.Descricao = model.Descricao;
+        tarefa.Tipo = model.Tipo;
+        tarefa.Prioridade = model.Prioridade;
+        tarefa.Status = model.Status;
+        tarefa.Prazo = model.Prazo;
+        tarefa.ClienteId = model.ClienteId;
+        tarefa.ResponsavelId = string.IsNullOrEmpty(model.ResponsavelId) ? null : model.ResponsavelId;
+        tarefa.AtualizadoEm = DateTime.UtcNow;
+
         await db.SaveChangesAsync();
         TempData["Sucesso"] = "Tarefa atualizada!";
         return RedirectToAction(nameof(Index));

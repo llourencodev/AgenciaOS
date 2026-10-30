@@ -1,0 +1,73 @@
+@model AgenciaOS.ViewModels.FiltrosMarketingPartial
+@using AgenciaOS.Services.Marketing
+@{
+    var f = Model.Filtro;
+}
+<div class="filter-bar mkt-filtros">
+    <form method="get" asp-action="@Model.Acao" class="d-flex gap-2 flex-wrap align-items-end w-100">
+        @if (!string.IsNullOrEmpty(f.Aba))
+        {
+            <input type="hidden" name="aba" value="@f.Aba" />
+        }
+        @if (Model.EhAgencia)
+        {
+            <div>
+                <label class="form-label text-xs mb-1">Cliente</label>
+                <select name="clienteId" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Todos os clientes</option>
+                    @foreach (var c in Model.Clientes)
+                    {
+                        <option value="@c.Id" selected="@(f.ClienteId == c.Id)">@c.NomeEmpresa</option>
+                    }
+                </select>
+            </div>
+        }
+        @if (Model.MostrarPlataforma)
+        {
+            <div>
+                <label class="form-label text-xs mb-1">Plataforma</label>
+                <select name="plataforma" class="form-select form-select-sm">
+                    <option value="">Todas</option>
+                    @foreach (var p in PlataformaInfo.Sociais)
+                    {
+                        <option value="@p" selected="@(f.Plataforma == p)">@PlataformaInfo.Nome(p)</option>
+                    }
+                </select>
+            </div>
+        }
+        <div>
+            <label class="form-label text-xs mb-1">Período</label>
+            <select name="periodo" id="mktPeriodo" class="form-select form-select-sm">
+                @foreach (var (codigo, rotulo) in PeriodoMarketing.Opcoes)
+                {
+                    <option value="@codigo" selected="@((f.Periodo ?? "30d") == codigo)">@rotulo</option>
+                }
+            </select>
+        </div>
+        <div id="mktDatas" class="d-flex gap-2 d-none">
+            <div>
+                <label class="form-label text-xs mb-1">De</label>
+                <input type="date" name="de" value="@f.De?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+            </div>
+            <div>
+                <label class="form-label text-xs mb-1">Até</label>
+                <input type="date" name="ate" value="@f.Ate?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+            </div>
+        </div>
+        @if (Model.MostrarConta && Model.Contas.Count > 1)
+        {
+            <div>
+                <label class="form-label text-xs mb-1">Conta conectada</label>
+                <select name="contaId" class="form-select form-select-sm">
+                    <option value="">Todas as contas</option>
+                    @foreach (var c in Model.Contas)
+                    {
+                        <option value="@c.Id" selected="@(f.ContaId == c.Id)">@PlataformaInfo.Nome(c.Plataforma) · @(c.NomeUsuario != null ? "@" + c.NomeUsuario : c.Nome)@(Model.EhAgencia && f.ClienteId == null ? $" ({c.Cliente})" : "")</option>
+                    }
+                </select>
+            </div>
+        }
+        @Html.Raw(Model.Extra)
+        <button type="submit" class="btn btn-primary btn-sm px-3"><i class="bi bi-funnel-fill me-1"></i>Aplicar</button>
+    </form>
+</div>

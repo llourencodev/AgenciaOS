@@ -1,0 +1,15 @@
+@model string?
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = "Reenviar confirmação";
+}
+<div class="login-form-title">Reenviar confirmação</div>
+<div class="login-form-sub mb-3">Informe o e-mail usado no cadastro.</div>
+<form asp-action="ReenviarConfirmacao" method="post">
+    <div class="mb-3">
+        <label class="form-label">E-mail</label>
+        <input type="email" name="email" value="@Model" class="form-control" required autocomplete="email" />
+    </div>
+    <button type="submit" class="btn btn-primary w-100 py-2" style="font-weight:600;border-radius:10px;">Enviar novo link</button>
+</form>
+<div class="text-center mt-4 auth-link"><a asp-action="Login">Voltar para o login</a></div>

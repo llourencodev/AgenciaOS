@@ -1,0 +1,162 @@
+@model AgenciaOS.ViewModels.IntegracoesViewModel
+@using AgenciaOS.Models
+@using AgenciaOS.Services.Marketing
+@{
+    ViewData["Title"] = "Contas e Integrações";
+    ViewData["MktSecao"] = "integracoes";
+    ViewData["MktAgencia"] = Model.EhAgencia;
+    ViewData["MktClienteId"] = Model.Cliente?.Id;
+    string StatusNome(StatusIntegracao s) => s switch
+    {
+        StatusIntegracao.NaoConectado => "Não conectado", StatusIntegracao.Conectando => "Conectando",
+        StatusIntegracao.Conectado => "Conectado", StatusIntegracao.Sincronizando => "Sincronizando",
+        StatusIntegracao.TokenExpirado => "Token expirado", StatusIntegracao.PermissaoRevogada => "Permissão revogada",
+        _ => "Erro na sincronização"
+    };
+    string StatusIcone(StatusIntegracao s) => s switch
+    {
+        StatusIntegracao.Conectado => "bi-check-circle-fill", StatusIntegracao.Sincronizando => "bi-arrow-repeat",
+        StatusIntegracao.Conectando => "bi-hourglass-split", StatusIntegracao.NaoConectado => "bi-circle",
+        _ => "bi-exclamation-triangle-fill"
+    };
+    var nomesMetricas = Metricas.Definicoes;
+}
+@section Styles { <link rel="stylesheet" href="~/css/marketing.css" asp-append-version="true" /> }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-plug-fill me-2 text-primary"></i>Contas e Integrações</h1>
+        <p>Conecte as contas oficiais pelo login de cada plataforma. O AgenciaOS nunca pede nem guarda senhas das redes sociais.</p>
+    </div>
+</div>
+
+<partial name="_MarketingNav" />
+
+@if (Model.EhAgencia)
+{
+    <div class="filter-bar">
+        <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+            <label class="form-label mb-0 text-sm fw-600">Cliente</label>
+            <select name="clienteId" class="form-select" style="min-width:260px;" onchange="this.form.submit()">
+                <option value="">Selecione um cliente...</option>
+                @foreach (var c in Model.Clientes) { <option value="@c.Id" selected="@(Model.Cliente?.Id == c.Id)">@c.NomeEmpresa</option> }
+            </select>
+        </form>
+    </div>
+}
+
+@if (Model.Cliente == null)
+{
+    <div class="card">
+        <div class="empty-state">
+            <i class="bi bi-person-badge empty-state-icon"></i>
+            <h5>@(Model.EhAgencia ? "Selecione um cliente" : "Seu usuário não está vinculado a um cliente")</h5>
+            <p>@(Model.EhAgencia ? "As contas são conectadas por cliente, para manter os dados de cada um isolados." : "Peça à agência para vincular seu login ao cadastro da sua empresa.")</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="integ-grid">
+        @foreach (var card in Model.Cards)
+        {
+            var p = card.Plataforma;
+            var configurado = card.VariaveisPendentes.Length == 0;
+            <div class="integ-card">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="integ-logo" style="background:@PlataformaInfo.Cor(p)"><i class="bi @PlataformaInfo.Icone(p)"></i></div>
+                    <div class="flex-grow-1">
+                        <div class="fw-700">@PlataformaInfo.Nome(p)</div>
+                        <div class="text-xs text-muted">@PlataformaInfo.Descricao(p)</div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <span class="integ-status st-@card.Status"><i class="bi @StatusIcone(card.Status)"></i>@StatusNome(card.Status)</span>
+                    <span class="text-xs text-muted">
+                        Última sincronização: @(card.UltimaSincronizacao?.AddHours(-3).ToString("dd/MM/yyyy HH:mm") ?? "—")
+                    </span>
+                </div>
+
+                @foreach (var conta in card.Contas.Where(c => c.Ativa))
+                {
+                    <div class="integ-conta">
+                        @if (!string.IsNullOrEmpty(conta.FotoUrl) && conta.FotoUrl.StartsWith("https://"))
+                        {
+                            <img src="@conta.FotoUrl" alt="" referrerpolicy="no-referrer" />
+                        }
+                        else
+                        {
+                            <div class="integ-avatar"><i class="bi @PlataformaInfo.Icone(p)"></i></div>
+                        }
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="fw-600 text-sm text-truncate">@conta.Nome</div>
+                            <div class="text-xs text-muted text-truncate">@(conta.NomeUsuario != null ? "@" + conta.NomeUsuario : "") @(conta.UltimaSincronizacao == null ? "· aguardando primeira sincronização" : "")</div>
+                        </div>
+                        @if (conta.Status != StatusIntegracao.Conectado)
+                        {
+                            <span class="integ-status st-@conta.Status" title="@conta.UltimoErro"><i class="bi @StatusIcone(conta.Status)"></i></span>
+                        }
+                        <form asp-action="Atualizar" method="post" class="m-0">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="contaId" value="@conta.Id" />
+                            <button type="submit" class="btn btn-xs btn-outline-secondary" title="Atualizar agora" disabled="@(conta.Status == StatusIntegracao.Sincronizando)"><i class="bi bi-arrow-clockwise"></i> Atualizar</button>
+                        </form>
+                    </div>
+                    @if (conta.Limitacao != null)
+                    {
+                        <div class="integ-aviso"><i class="bi bi-info-circle-fill me-1"></i>@conta.Limitacao</div>
+                    }
+                    @if (conta.Indisponiveis.Length > 0)
+                    {
+                        <div class="text-xs text-muted">
+                            <i class="bi bi-slash-circle me-1"></i>Não disponibilizado pela API para esta conta:
+                            @string.Join(", ", conta.Indisponiveis.Select(Metricas.Nome))
+                        </div>
+                    }
+                }
+
+                @if (!string.IsNullOrEmpty(card.Erro) && card.Status != StatusIntegracao.Conectado)
+                {
+                    <div class="integ-erro"><i class="bi bi-exclamation-octagon-fill me-1"></i>@card.Erro
+                        @if (card.Status is StatusIntegracao.TokenExpirado or StatusIntegracao.PermissaoRevogada) { <div class="mt-1 fw-600">Clique em Conectar para autorizar novamente.</div> }
+                    </div>
+                }
+
+                @if (!configurado)
+                {
+                    <div class="integ-aviso integ-pend">
+                        <i class="bi bi-gear-fill me-1"></i>Integração ainda não configurada no servidor. Variáveis pendentes:
+                        @foreach (var v in card.VariaveisPendentes) { <code class="ms-1">@v</code> }
+                        <div class="mt-1">URL de retorno a cadastrar: <code>@Model.RedirectBase/Integracoes/Callback/@PlataformaInfo.Slug(p)</code></div>
+                    </div>
+                }
+
+                <div class="d-flex gap-2 flex-wrap mt-auto">
+                    <form asp-action="Conectar" method="post" class="m-0">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="plataforma" value="@p" />
+                        <input type="hidden" name="clienteId" value="@Model.Cliente.Id" />
+                        <button type="submit" class="btn btn-sm btn-primary" disabled="@(!configurado)" title="@(configurado ? "" : "Configure as variáveis de ambiente para habilitar")">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>@(card.Status == StatusIntegracao.NaoConectado ? "Conectar" : "Reconectar")
+                        </button>
+                    </form>
+                    @if (card.Conexao != null && card.Status != StatusIntegracao.NaoConectado)
+                    {
+                        @if (card.Status is not (StatusIntegracao.TokenExpirado or StatusIntegracao.PermissaoRevogada))
+                        {
+                            <a asp-action="Selecionar" asp-route-conexaoId="@card.Conexao.Id" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-list-check me-1"></i>@(PlataformaInfo.PermiteMultiplas(p) ? "Escolher contas" : "Escolher conta")
+                            </a>
+                        }
+                        <form asp-action="Desconectar" method="post" class="m-0" onsubmit="return confirm('Desconectar @PlataformaInfo.Nome(p)? Os tokens serão apagados e a sincronização será interrompida. O histórico já coletado é mantido.');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="conexaoId" value="@card.Conexao.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-secondary text-danger"><i class="bi bi-x-circle me-1"></i>Desconectar</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

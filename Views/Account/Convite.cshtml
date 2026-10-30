@@ -1,0 +1,44 @@
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = "Aceitar convite";
+    var valido = ViewData["Valido"] is true;
+}
+@if (!valido)
+{
+    <div class="text-center">
+        <div style="font-size:48px;color:#ef4444;"><i class="bi bi-envelope-x"></i></div>
+        <div class="login-form-title">Convite inválido</div>
+        <p class="text-muted">O convite expirou, foi revogado ou já foi usado. Peça um novo ao administrador da agência.</p>
+        <a asp-action="Login" class="btn btn-outline-secondary mt-2">Ir para o login</a>
+    </div>
+}
+else
+{
+    <div class="login-form-title">Entrar na @ViewData["Agencia"]</div>
+    <div class="login-form-sub mb-3">Crie sua senha para acessar com <strong>@ViewData["Email"]</strong>.</div>
+    <form asp-action="Convite" method="post">
+        <input type="hidden" name="token" value="@ViewData["Token"]" />
+        <div class="mb-3">
+            <label class="form-label">Seu nome</label>
+            <input type="text" name="nome" value="@ViewData["Nome"]" class="form-control" required autocomplete="name" />
+        </div>
+        <div class="row g-2 mb-1">
+            <div class="col-6">
+                <label class="form-label">Senha</label>
+                <input type="password" name="senha" class="form-control" required minlength="10" autocomplete="new-password" />
+            </div>
+            <div class="col-6">
+                <label class="form-label">Confirmar</label>
+                <input type="password" name="confirmarSenha" class="form-control" required autocomplete="new-password" />
+            </div>
+        </div>
+        <div class="form-text mb-3">10+ caracteres, com letra maiúscula, minúscula e número.</div>
+        <div class="form-check mb-4">
+            <input type="checkbox" name="aceitaTermos" value="true" id="aceitaTermos" class="form-check-input" />
+            <label for="aceitaTermos" class="form-check-label" style="font-size:13px;">
+                Li e aceito os <a asp-action="Termos" target="_blank">Termos de Uso</a> e a <a asp-action="Privacidade" target="_blank">Política de Privacidade</a>.
+            </label>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 py-2" style="font-weight:600;border-radius:10px;">Criar acesso</button>
+    </form>
+}

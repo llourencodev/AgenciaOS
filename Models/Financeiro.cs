@@ -1,8 +1,9 @@
 namespace AgenciaOS.Models;
 
-public class Financeiro
+public class Financeiro : IPertenceAgencia
 {
     public int Id { get; set; }
+    public int AgenciaId { get; set; }
     public string Descricao { get; set; } = "";
     public decimal Valor { get; set; }
     public TipoFinanceiro Tipo { get; set; }

@@ -1,0 +1,145 @@
+# Roadmap de implementação — AgenciaOS SaaS
+
+Cada fase termina com entrega verificável e testes. Nada vai para produção sem aprovação explícita do proprietário.
+
+| Fase | Entrega | Status |
+|---|---|---|
+| 0 | Auditoria, arquitetura e plano (`docs/architecture/`) | Concluída |
+| 1 | Multi-tenancy e isolamento | Concluída localmente (não publicada) |
+| 2 | Armazenamento seguro (R2/S3) | Concluída localmente (não publicada) |
+| 3 | Cadastro público, confirmação de e-mail, recuperação de senha, convites | Concluída localmente (não publicada) |
+| 4 | E-mail transacional, planos, assinaturas, gateway, bloqueio | Pendente |
+| 5 | LGPD e painel administrativo global com auditoria | Pendente |
+| 6 | 2FA, backups testados, homologação, monitoramento, CI/CD | Pendente |
+| 7 | Domínios personalizados e aprovação Meta/TikTok/Google | Pendente |
+
+## Fase 1 — Multi-tenancy e isolamento
+
+1. Entidade `Agencia`, interface `IPertenceAgencia`, `AgenciaId` nas entidades (ver `MULTITENANCY_DESIGN.md`).
+2. `ITenantContext` + `TenantMiddleware` + filtros globais + guarda no `SaveChanges`.
+3. Migration com migração da agência atual (ver `DATABASE_MIGRATION.md`), ensaiada em cópia do banco local.
+4. `AcessoService` e correção dos controllers (S01–S05, S07, S09, S10, S12).
+5. Vínculo usuário Cliente ↔ Cliente na tela de clientes (hoje não existe, por isso o perfil Cliente não funcionava).
+6. Role `SuperAdmin`, provisionamento por variável de ambiente e painel mínimo `/Plataforma` (listar agências e criar agência + primeiro admin) para operar várias agências antes da Fase 3.
+7. Remoção da senha padrão do seed.
+8. Testes:
+   - Cenário 1: Alpha consulta clientes da Beta → negado.
+   - Cenário 2: usuário da Alpha modifica tarefa da Beta → bloqueado.
+   - Cenário 3: Cliente A vê dados do Cliente B na mesma agência → negado.
+   - Cenário 4: AgenciaId forjado no formulário → ignorado/negado.
+   - Cenário 6 (parcial): upload para cliente de outra agência → negado. Download privado depende da Fase 2.
+   - Cenário 5 (inadimplência) → Fase 4.
+   - Regressão: testes de marketing existentes continuam passando.
+
+### Diário da Fase 1 (30/10/2026)
+
+1. Backup do banco local (`backups/antes-multitenant-20261030.dump`, fora do git) e **restauração testada** em `agenciaos_restore_test`.
+2. Na cópia restaurada: carga de dados de exemplo (tarefas, conteúdo com comentário, financeiro, contrato, arquivo, data comemorativa) → migration aplicada → `scripts/validar-migracao-tenant.sql` com 0 problemas → `Down()` executado (dados preservados, colunas removidas) → migration reaplicada.
+3. Migration aplicada no banco local principal; validação com 0 problemas; login do admin existente, clientes, edição de cliente, configuração e marketing conferidos no navegador.
+4. Testes: 51 passando (33 antigos + 8 de isolamento no DbContext + 10 HTTP de ponta a ponta contra Postgres). Prova de que os testes pegam vazamento: com o isolamento desligado de propósito, 20 testes falham.
+
+**Como rodar os testes**
+
+```bash
+dotnet test tests/AgenciaOS.Tests -c Release
+```
+
+Os testes HTTP usam o Postgres local do Docker (porta 5434) e recriam o banco `agenciaos_tests`. Em outro ambiente, defina `AGENCIAOS_TEST_PG` (ex.: `Host=...;Port=...;Username=...;Password=...`, sem `Database`).
+
+**Arquivos principais**
+
+- `Models/Agencia.cs` (entidade, enums, `IPertenceAgencia`)
+- `Data/ApplicationDbContext.Tenancy.cs` (filtros globais + guarda de escrita)
+- `Services/Tenancy/TenantContext.cs` (contexto, middleware, `CriarEscopoSistema`, `DaAgencia`)
+- `Services/Tenancy/PermissaoModuloFilter.cs` (superadmin × agência, abas no servidor, 403 para acesso entre agências)
+- `Services/AcessoService.cs` (o que cada perfil vê dentro da agência)
+- `Data/SeedInicial.cs` (sem senha padrão; superadmin por variável de ambiente)
+- `Controllers/PlataformaController.cs` + `Views/Plataforma/*` (painel mínimo)
+- `Migrations/20261030171004_MultiTenancyAgencias.cs`
+- `tests/AgenciaOS.Tests/TestesMultiTenant.cs`, `TestesHttpMultiTenant.cs`
+
+**Pendências para publicar a Fase 1 em produção (precisa de aprovação)**
+
+1. Commit (o módulo de marketing e a Fase 1 ainda não estão no git).
+2. Backup da produção + restauração de teste.
+3. Definir no Railway `SUPERADMIN_EMAIL` e `SUPERADMIN_PASSWORD` (12+ caracteres).
+4. Deploy (a migration roda no startup) + script de validação.
+5. Trocar a senha do admin de produção se ainda for a padrão antiga.
+
+## Fase 2 — Armazenamento seguro
+
+Desenho em `MULTITENANCY_DESIGN.md` §4.6 e decisões D13, D15, D16.
+
+### Diário da Fase 2 (30/10/2026)
+
+1. `Services/Armazenamento/`: interface, provedores local e S3, validador, serviço de upload, migração. `MarcaController` para logos. Migration aditiva `ArmazenamentoPrivadoArquivos` (colunas `ChaveArmazenamento`, `Provedor`, `HashSha256` em `Arquivos`).
+2. Backup `backups/antes-fase2-20261030.dump`, migration aplicada no banco local, `--migrar-arquivos` executado (banco local não tinha arquivos nem logo para migrar).
+3. Teste de ponta a ponta no app local: upload de PDF, download autenticado com conteúdo idêntico, anônimo redirecionado para login. Repetido com `STORAGE_PROVIDER=s3` contra um servidor S3 local (container `adobe/s3mock`): o download redireciona para URL assinada e o conteúdo bate.
+4. Testes: 71 passando. Novos: validação (executável disfarçado, conteúdo trocado, tamanho real, SVG nunca inline, nomes e chaves perigosos), provedor local, provedor S3 contra servidor S3 real, migração com hash/idempotência, Cenário 6 completo por HTTP. Com a verificação de dono removida de propósito do download, o Cenário 6 falha.
+
+### Como ativar o R2 em produção (precisa de aprovação)
+
+1. Cloudflare → R2 → criar bucket privado (ex.: `agenciaos-prod`) e um token de API com permissão de leitura/escrita só nesse bucket.
+2. No Railway, variáveis:
+   - `STORAGE_PROVIDER=s3`
+   - `S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`
+   - `S3_REGION=auto`
+   - `S3_BUCKET=agenciaos-prod`
+   - `S3_ACCESS_KEY_ID=...` / `S3_SECRET_ACCESS_KEY=...`
+   - opcionais: `STORAGE_URL_TTL_SECONDS` (padrão 300), `STORAGE_MAX_MB` (padrão 50)
+3. Deploy. Depois, uma vez: `dotnet AgenciaOS.dll --migrar-arquivos` (sem `--remover-originais`), conferir o relatório no log, testar downloads, e só então rodar com `--remover-originais`.
+4. Para homologação, usar outro bucket e outro token.
+
+**Observação:** hoje, em produção, `wwwroot/uploads` está no disco efêmero do container; arquivos enviados antes do último deploy podem já ter se perdido. A migração informa quais registros não têm mais o arquivo original.
+
+### Testes de armazenamento S3
+
+Usam `http://127.0.0.1:9090` (container local `agenciaos-s3mock`, bucket `agenciaos-test`). Para rodar contra um bucket R2 de homologação: `AGENCIAOS_TEST_S3_ENDPOINT`, `AGENCIAOS_TEST_S3_BUCKET`, `AGENCIAOS_TEST_S3_KEY`, `AGENCIAOS_TEST_S3_SECRET`.
+
+## Fase 3 — Cadastro e autenticação
+
+### O que foi entregue (30/10/2026)
+
+| Item | Onde |
+|---|---|
+| Cadastro público `/Account/Cadastro`: agência (status Ativa, assinatura em Teste por 14 dias) + configuração + primeiro Admin + aceite de Termos e Privacidade com versão, data, IP e navegador | `Services/Contas/ContasService.cs`, `Models/Contas.cs` (`ConsentimentoTermos`, `DocumentosLegais`) |
+| Confirmação de e-mail obrigatória para novas contas (`RequireConfirmedEmail`); reenvio sem revelar se a conta existe | `AccountController.ConfirmarEmail/ReenviarConfirmacao` |
+| Recuperação de senha com link de 3 h, de uso único; a troca derruba todas as sessões | `AccountController.EsqueciSenha/RedefinirSenha` |
+| Convites por e-mail (7 dias, token aleatório de 256 bits, só o hash SHA-256 no banco, revogáveis, novo convite invalida o anterior); o convidado define a própria senha e aceita os termos | `ConviteUsuario`, `UsuariosController.Convidar/RevogarConvite`, `AccountController.Convite` |
+| Página "Segurança da conta": troca de senha (com aviso por e-mail) e "encerrar outras sessões" | `ContaController` |
+| Política de senha: 10+ caracteres, maiúscula, minúscula e número (só para senhas novas). E-mail único. Mensagens do Identity em português | `Program.cs`, `IdentityErrosPortugues` |
+| Anti-abuso: rate limit por IP (login 20/5 min; cadastro, reenvio, recuperação e convites 5/15 min), honeypot no cadastro, cadastro com e-mail já usado responde igual e avisa o dono do e-mail | `RateLimitingContas`, `AccountController.Cadastro` |
+| Revogação de sessões: security stamp revalidado a cada 5 min (`SECURITY_STAMP_INTERVAL_SECONDS`) | `Program.cs` |
+| E-mail transacional mínimo (`IEnviadorEmail`): Resend em produção, log em desenvolvimento, memória nos testes; template com a identidade do AgenciaOS | `Services/Email/Email.cs` (completado na Fase 4) |
+| Superadmin continua só por `SUPERADMIN_EMAIL/SUPERADMIN_PASSWORD`; o cadastro sempre cria Admin de uma agência nova, ignorando campos extras | testado |
+| Login bloqueado para usuário desativado ou agência suspensa/cancelada | `AccountController.Login` |
+| Minutas de Termos de Uso e Política de Privacidade (marcadas para revisão jurídica) | `Views/Account/Termos.cshtml`, `Privacidade.cshtml` |
+
+Migration aditiva `ContasConvitesConsentimentos` aplicada no banco local (backup `backups/antes-fase3-20261030.dump`).
+
+Testes: 80 passando (9 novos por HTTP: cadastro + confirmação + isolamento da nova agência, tentativa de virar superadmin, e-mail duplicado, honeypot/termos/senha fraca, recuperação com token adulterado/reuso/queda de sessão, convite completo e entre agências, convite expirado/revogado, encerrar sessões, rate limit 429). Com a exigência de confirmação de e-mail desligada de propósito, o teste de cadastro falha.
+
+### Variáveis de ambiente para produção (precisa de aprovação para configurar)
+
+- `EMAIL_PROVIDER=resend`, `RESEND_API_KEY=...`, `EMAIL_FROM="AgenciaOS <nao-responda@seudominio>"` (domínio verificado no Resend)
+- `APP_BASE_URL=https://<domínio do app>` (obrigatório: os links de e-mail nunca usam o cabeçalho Host em produção)
+- opcionais: `RATE_LIMIT_LOGIN`, `RATE_LIMIT_CONTA`, `SECURITY_STAMP_INTERVAL_SECONDS`
+
+Sem essas variáveis o app registra erro no log e cadastro/convites/recuperação não enviam e-mail.
+
+### Pendências conhecidas
+- Agência suspensa: o login é bloqueado, mas sessões já abertas continuam até a Fase 4 (middleware de bloqueio por assinatura).
+- 2FA (TOTP): Fase 6.
+- E-mail é único na plataforma: uma pessoa não pode ser usuária de duas agências com o mesmo e-mail.
+
+## Fase 4 — E-mail e cobrança
+`IEnviadorEmail` (Resend) com templates Razor; `Plano`, `Assinatura`, `Pagamento`, `EventoWebhook` (idempotência por id do evento); integração Asaas (cliente, assinatura, PIX/cartão/boleto, webhooks assinados); máquina de estados da assinatura e middleware de bloqueio por agência (somente leitura/tela de regularização), sem apagar dados. Cenário 5.
+
+## Fase 5 — LGPD e administração global
+Termos/Política versionados, registro de aceite, solicitações de titulares (exportação, exclusão/anonimização com exceções legais), DPA plataforma↔agência, painel global com métricas (MRR, ARR, churn), gestão de planos e agências, trilha de auditoria.
+
+## Fase 6 — Operação
+TOTP + códigos de recuperação, backups automáticos com teste de restauração agendado, ambiente de homologação no Railway, Sentry + logs estruturados (Serilog) sem dados sensíveis, uptime/status page, GitHub Actions rodando testes (inclusive os de isolamento com Postgres em service container) e bloqueando deploy em falha.
+
+## Fase 7 — Domínios e integrações
+`DominioAgencia` com verificação por TXT, SSL via Railway custom domains, resolução de marca por host sem trocar o tenant do usuário; revisão de OAuth/escopos/exclusão de dados/webhooks de Meta, TikTok e Google; dossiê de aprovação de cada plataforma.

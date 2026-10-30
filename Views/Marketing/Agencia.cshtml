@@ -1,0 +1,128 @@
+@model AgenciaOS.ViewModels.CarteiraViewModel
+@using AgenciaOS.Models
+@using AgenciaOS.Services.Marketing
+@{
+    ViewData["Title"] = "Carteira da Agência";
+    ViewData["MktSecao"] = "agencia";
+    ViewData["MktAgencia"] = true;
+    var pt = new System.Globalization.CultureInfo("pt-BR");
+    string N(decimal? v) => v is decimal d ? d.ToString("N0", pt) : "—";
+    string StatusNome(StatusIntegracao s) => s switch
+    {
+        StatusIntegracao.NaoConectado => "Não conectado", StatusIntegracao.Conectando => "Conectando",
+        StatusIntegracao.Conectado => "Conectado", StatusIntegracao.Sincronizando => "Sincronizando",
+        StatusIntegracao.TokenExpirado => "Token expirado", StatusIntegracao.PermissaoRevogada => "Permissão revogada",
+        _ => "Erro na sincronização"
+    };
+    var expirados = Model.Clientes.SelectMany(c => c.Contas).Count(c => c.Ativa && c.Status is StatusIntegracao.TokenExpirado or StatusIntegracao.PermissaoRevogada);
+    var comErro = Model.Clientes.SelectMany(c => c.Contas).Count(c => c.Ativa && c.Status == StatusIntegracao.ErroSincronizacao);
+}
+@section Styles { <link rel="stylesheet" href="~/css/marketing.css" asp-append-version="true" /> }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-buildings-fill me-2 text-primary"></i>Carteira da Agência</h1>
+        <p>Performance e integrações de todos os clientes · métricas dos últimos 30 dias</p>
+    </div>
+</div>
+
+<partial name="_MarketingNav" />
+
+<div class="stat-grid">
+    <div class="stat-card purple"><div class="stat-icon purple"><i class="bi bi-people-fill"></i></div><div><div class="stat-value">@Model.Clientes.Count</div><div class="stat-label">Clientes listados</div></div></div>
+    <div class="stat-card green"><div class="stat-icon green"><i class="bi bi-plug-fill"></i></div><div><div class="stat-value">@Model.Clientes.SelectMany(c => c.Contas).Count(c => c.Ativa)</div><div class="stat-label">Contas conectadas</div></div></div>
+    <div class="stat-card orange"><div class="stat-icon orange"><i class="bi bi-key-fill"></i></div><div><div class="stat-value">@expirados</div><div class="stat-label">Tokens expirados / revogados</div></div></div>
+    <div class="stat-card red"><div class="stat-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div><div><div class="stat-value">@comErro</div><div class="stat-label">Erros de sincronização</div></div></div>
+</div>
+
+<div class="filter-bar">
+    <form method="get" class="d-flex gap-2 flex-wrap w-100">
+        <div class="input-group" style="max-width:280px;">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" name="busca" value="@Model.Busca" class="form-control" placeholder="Buscar cliente..." />
+        </div>
+        <select name="situacao" class="form-select" style="max-width:220px;">
+            <option value="">Todas as situações</option>
+            <option value="problemas" selected="@(Model.Situacao=="problemas")">Com problemas</option>
+            <option value="expirados" selected="@(Model.Situacao=="expirados")">Token expirado / revogado</option>
+            <option value="sem_conexao" selected="@(Model.Situacao=="sem_conexao")">Sem contas conectadas</option>
+            <option value="ok" selected="@(Model.Situacao=="ok")">Tudo funcionando</option>
+        </select>
+        <select name="plataforma" class="form-select" style="max-width:220px;">
+            <option value="">Todas as plataformas</option>
+            @foreach (var p in Enum.GetValues<PlataformaMarketing>()) { <option value="@p" selected="@(Model.Plataforma == p)">@PlataformaInfo.Nome(p)</option> }
+        </select>
+        <button type="submit" class="btn btn-primary px-3">Filtrar</button>
+    </form>
+</div>
+
+<div class="card mb-4">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr><th>Cliente</th><th>Contas conectadas</th><th>Seguidores</th><th>Interações</th><th>Sessões no site</th><th>Cliques orgânicos</th><th>Última sincronização</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model.Clientes)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-600">@c.Cliente.NomeEmpresa</div>
+                            @if (c.Problemas > 0) { <span class="integ-status st-ErroSincronizacao mt-1"><i class="bi bi-exclamation-circle-fill"></i>@c.Problemas com problema</span> }
+                        </td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-1">
+                                @foreach (var conta in c.Contas.Where(x => x.Ativa))
+                                {
+                                    <span class="integ-status st-@conta.Status" title="@PlataformaInfo.Nome(conta.Plataforma): @conta.Nome — @StatusNome(conta.Status)@(conta.UltimoErro != null ? " · " + conta.UltimoErro : "")">
+                                        <i class="bi @PlataformaInfo.Icone(conta.Plataforma)"></i>@(conta.NomeUsuario ?? conta.Nome)
+                                    </span>
+                                }
+                                @if (!c.Contas.Any(x => x.Ativa)) { <span class="text-muted text-sm">Nenhuma</span> }
+                            </div>
+                        </td>
+                        <td class="text-sm">@N(c.Seguidores)</td>
+                        <td class="text-sm">@N(c.Interacoes)</td>
+                        <td class="text-sm">@N(c.Sessoes)</td>
+                        <td class="text-sm">@N(c.CliquesOrganicos)</td>
+                        <td class="text-sm text-muted">@(c.UltimaSincronizacao?.AddHours(-3).ToString("dd/MM HH:mm") ?? "—")</td>
+                        <td class="text-end text-nowrap">
+                            <a asp-action="Index" asp-route-clienteId="@c.Cliente.Id" class="btn btn-xs btn-primary">Dashboard</a>
+                            <a asp-controller="Integracoes" asp-action="Index" asp-route-clienteId="@c.Cliente.Id" class="btn btn-xs btn-outline-secondary">Integrações</a>
+                        </td>
+                    </tr>
+                }
+                @if (Model.Clientes.Count == 0) { <tr><td colspan="8" class="text-center text-muted py-4">Nenhum cliente encontrado com esses filtros.</td></tr> }
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer text-xs text-muted">Seguidores: soma dos perfis sociais (a mesma pessoa pode seguir mais de um). Sessões: Google Analytics 4. Cliques orgânicos: Search Console. Fontes diferentes não são somadas entre si.</div>
+</div>
+
+<div class="card">
+    <div class="card-header"><span class="card-title">Histórico de sincronizações (últimas 100)</span></div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Quando</th><th>Cliente</th><th>Conta</th><th>Tipo</th><th>Resultado</th><th>Registros</th><th>Mensagem</th></tr></thead>
+            <tbody>
+                @foreach (var h in Model.Historico)
+                {
+                    <tr>
+                        <td class="text-sm text-nowrap">@h.IniciadoEm.AddHours(-3).ToString("dd/MM HH:mm")</td>
+                        <td class="text-sm">@Model.NomesClientes.GetValueOrDefault(h.ClienteId)</td>
+                        <td class="text-sm"><i class="bi @PlataformaInfo.Icone(h.Plataforma) me-1"></i>@h.Conta?.Nome</td>
+                        <td class="text-sm">@h.Tipo</td>
+                        <td>
+                            @if (h.FinalizadoEm == null) { <span class="integ-status st-Sincronizando">Em andamento</span> }
+                            else if (h.Sucesso) { <span class="integ-status st-Conectado">Sucesso</span> }
+                            else { <span class="integ-status st-ErroSincronizacao">Falha (tentativa @h.Tentativa)</span> }
+                        </td>
+                        <td class="text-sm">@h.RegistrosGravados</td>
+                        <td class="text-xs text-muted" style="max-width:360px;">@h.Mensagem</td>
+                    </tr>
+                }
+                @if (Model.Historico.Count == 0) { <tr><td colspan="7" class="text-center text-muted py-4">Nenhuma sincronização registrada.</td></tr> }
+            </tbody>
+        </table>
+    </div>
+</div>

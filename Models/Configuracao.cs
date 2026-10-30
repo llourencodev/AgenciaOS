@@ -1,8 +1,9 @@
 namespace AgenciaOS.Models;
 
-public class Configuracao
+public class Configuracao : IPertenceAgencia
 {
     public int Id { get; set; }
+    public int AgenciaId { get; set; }
     public string NomeAgencia { get; set; } = "AgenciaOS";
     public string Tagline { get; set; } = "Gestão de Agência";
     public string? LogoUrl { get; set; }

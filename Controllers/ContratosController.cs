@@ -44,6 +44,7 @@ public class ContratosController(ApplicationDbContext db, UserManager<Usuario> u
 
         var usuario = await userManager.GetUserAsync(User);
         model.CriadoPorId = usuario?.Id;
+        model.Id = 0; model.AgenciaId = 0; // nunca vêm do formulário
         model.CriadoEm = DateTime.UtcNow;
         db.Contratos.Add(model);
         await db.SaveChangesAsync();

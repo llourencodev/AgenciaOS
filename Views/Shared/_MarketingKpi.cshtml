@@ -1,0 +1,67 @@
+@model AgenciaOS.ViewModels.KpiMarketing
+@using AgenciaOS.Services.Marketing
+@{
+    var k = Model;
+    string Fmt(decimal? v) => RelatorioMarketingPdfService.Formatar(v, k.Formato);
+    string Var(decimal? v) => v is decimal d ? (d > 0 ? "+" : "") + d.ToString("0.#", new System.Globalization.CultureInfo("pt-BR")) + "%" : "";
+    string Classe(decimal? v) => v is decimal d ? (d > 0 ? "up" : d < 0 ? "down" : "flat") : "flat";
+    var dica = string.Join(" ", new[] { k.Metodologia, k.SemTotal }.Where(x => !string.IsNullOrEmpty(x)));
+}
+<div class="kpi-card @k.Cor">
+    <div class="kpi-head">
+        <div class="kpi-icon"><i class="bi @k.Icone"></i></div>
+        <div class="kpi-title">@k.Titulo</div>
+        @if (!string.IsNullOrEmpty(dica))
+        {
+            <i class="bi bi-info-circle kpi-info" data-bs-toggle="tooltip" title="@dica"></i>
+        }
+    </div>
+
+    @if (k.Valor != null)
+    {
+        <div class="kpi-value">@Fmt(k.Valor)</div>
+        @if (k.Variacao != null)
+        {
+            <span class="kpi-var @Classe(k.Variacao)">
+                <i class="bi @(k.Variacao > 0 ? "bi-arrow-up-right" : k.Variacao < 0 ? "bi-arrow-down-right" : "bi-dash")"></i>@Var(k.Variacao)
+                <span class="fw-normal text-muted ms-1">vs @Fmt(k.Anterior) no período anterior</span>
+            </span>
+        }
+        else if (k.Anterior == null)
+        {
+            <span class="kpi-var flat">Sem dados do período anterior para comparar</span>
+        }
+    }
+    else if (k.Fontes.Count == 0)
+    {
+        <div class="kpi-nodata">@(k.Indisponivel ?? "Sem dados sincronizados para este período.")</div>
+    }
+    else
+    {
+        <div class="kpi-nodata"><i class="bi bi-diagram-2 me-1"></i>Valores por plataforma (não somados)</div>
+    }
+
+    @if (k.Fontes.Count > 1 || (k.Valor == null && k.Fontes.Count > 0))
+    {
+        <ul class="kpi-fontes">
+            @foreach (var f in k.Fontes)
+            {
+                <li title="@f.Observacao">
+                    <span><i class="bi @PlataformaInfo.Icone(f.Plataforma) me-1"></i>@f.Conta</span>
+                    <span class="fw-600">@Fmt(f.Valor) <span class="kpi-var @Classe(f.Variacao)">@Var(f.Variacao)</span></span>
+                </li>
+            }
+        </ul>
+    }
+    <div class="kpi-sub">
+        Fonte: @(k.Fontes.Count > 0 ? k.FontesTexto : "—")
+        @if (k.UltimaAtualizacao != null)
+        {
+            <text> · atualizado em @k.UltimaAtualizacao.Value.AddHours(-3).ToString("dd/MM HH:mm")</text>
+        }
+        @if (k.Fontes.Count == 1 && k.Fontes[0].Observacao != null)
+        {
+            <div>@k.Fontes[0].Observacao</div>
+        }
+    </div>
+</div>

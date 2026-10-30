@@ -1,8 +1,9 @@
 namespace AgenciaOS.Models;
 
-public class Cliente
+public class Cliente : IPertenceAgencia
 {
     public int Id { get; set; }
+    public int AgenciaId { get; set; }
     public string NomeEmpresa { get; set; } = "";
     public string Responsavel { get; set; } = "";
     public string? Telefone { get; set; }

@@ -1,0 +1,76 @@
+@model AgenciaOS.ViewModels.ConteudoMarketingViewModel
+@using AgenciaOS.ViewModels
+@{
+    ViewData["Title"] = "Desempenho de Conteúdo";
+    ViewData["MktSecao"] = "conteudo";
+    ViewData["MktAgencia"] = Model.EhAgencia;
+    ViewData["MktClienteId"] = Model.Filtro.ClienteId;
+    var f = Model.Filtro;
+    var paginas = (int)Math.Ceiling(Model.Total / (double)Model.TamanhoPagina);
+    var extra = $@"<div><label class=""form-label text-xs mb-1"">Tipo</label><select name=""tipo"" class=""form-select form-select-sm""><option value="""">Todos</option>{string.Join("", Model.Tipos.Select(t => $"<option value=\"{System.Net.WebUtility.HtmlEncode(t)}\" {(f.Tipo == t ? "selected" : "")}>{System.Net.WebUtility.HtmlEncode(t)}</option>"))}</select></div>
+<div><label class=""form-label text-xs mb-1"">Ordenar por</label><select name=""ordem"" class=""form-select form-select-sm"">
+<option value=""recentes"" {(f.Ordem == "recentes" ? "selected" : "")}>Mais recentes</option>
+<option value=""visualizacoes"" {(f.Ordem == "visualizacoes" ? "selected" : "")}>Visualizações</option>
+<option value=""interacoes"" {(f.Ordem == "interacoes" ? "selected" : "")}>Interações</option>
+<option value=""alcance"" {(f.Ordem == "alcance" ? "selected" : "")}>Alcance</option></select></div>";
+    decimal? Seg(int contaId) => Model.SeguidoresPorConta.TryGetValue(contaId, out var v) ? v : null;
+    var filtrosPartial = new FiltrosMarketingPartial { Filtro = f, Clientes = Model.Clientes, Contas = Model.Contas, EhAgencia = Model.EhAgencia, Acao = "Conteudo", Extra = extra };
+}
+@section Styles { <link rel="stylesheet" href="~/css/marketing.css" asp-append-version="true" /> }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-images me-2 text-primary"></i>Desempenho de Conteúdo</h1>
+        <p>@Model.Total publicações publicadas em @Model.Periodo.Rotulo.ToLowerInvariant() · métricas acumuladas até a última sincronização</p>
+    </div>
+</div>
+
+<partial name="_MarketingNav" />
+<partial name="_MarketingFiltros" model="filtrosPartial" />
+
+@if (Model.Melhores.Count > 0 && f.Pagina == 1)
+{
+    <h6 class="fw-700 mb-3"><i class="bi bi-trophy-fill text-warning me-1"></i>Melhores conteúdos (por interações)</h6>
+    <div class="post-grid mb-4">
+        @foreach (var p in Model.Melhores)
+        {
+            <partial name="_MarketingPost" model="p" view-data='new ViewDataDictionary(ViewData) { ["Seguidores"] = Seg(p.ContaMarketingId) }' />
+        }
+    </div>
+    <h6 class="fw-700 mb-3">Todas as publicações</h6>
+}
+
+@if (Model.Publicacoes.Count == 0)
+{
+    <div class="card">
+        <div class="empty-state">
+            <i class="bi bi-images empty-state-icon"></i>
+            <h5>Nenhuma publicação encontrada</h5>
+            <p>@(Model.Contas.Count == 0 ? "Conecte as redes sociais em Contas e Integrações." : "Não há publicações sincronizadas com esses filtros.")</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="post-grid">
+        @foreach (var p in Model.Publicacoes)
+        {
+            <partial name="_MarketingPost" model="p" view-data='new ViewDataDictionary(ViewData) { ["Seguidores"] = Seg(p.ContaMarketingId) }' />
+        }
+    </div>
+
+    @if (paginas > 1)
+    {
+        <nav class="mt-4 d-flex justify-content-center gap-2">
+            @for (var i = 1; i <= paginas; i++)
+            {
+                <a asp-action="Conteudo" asp-route-pagina="@i" asp-route-clienteId="@f.ClienteId" asp-route-plataforma="@f.Plataforma"
+                   asp-route-contaId="@f.ContaId" asp-route-periodo="@f.Periodo" asp-route-de="@f.De?.ToString("yyyy-MM-dd")"
+                   asp-route-ate="@f.Ate?.ToString("yyyy-MM-dd")" asp-route-tipo="@f.Tipo" asp-route-ordem="@f.Ordem"
+                   class="btn btn-sm @(i == f.Pagina ? "btn-primary" : "btn-outline-secondary")">@i</a>
+            }
+        </nav>
+    }
+}
+
+@section Scripts { <script src="~/js/marketing.js" asp-append-version="true"></script> }

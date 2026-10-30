@@ -1,0 +1,123 @@
+@model AgenciaOS.ViewModels.RelatoriosViewModel
+@using AgenciaOS.Models
+@using AgenciaOS.Services.Marketing
+@{
+    ViewData["Title"] = "Relatórios de Marketing";
+    ViewData["MktSecao"] = "relatorios";
+    ViewData["MktAgencia"] = Model.EhAgencia;
+    var indicadores = new (string Chave, string Nome)[]
+    {
+        ("seguidores", "Seguidores"), ("crescimento", "Crescimento de seguidores"), ("alcance", "Alcance"), ("impressoes", "Impressões"),
+        ("visualizacoes", "Visualizações"), ("engajamento", "Engajamento por seguidores"), ("interacoes", "Interações"), ("cliques", "Cliques"),
+        ("visitas_site", "Visitas ao site"), ("conversoes", "Conversões"), ("sessoes", "Sessões (website)"), ("usuarios", "Usuários (website)"),
+        ("cliques_organicos", "Cliques orgânicos (SEO)"), ("ctr", "CTR (SEO)"), ("posicao", "Posição média (SEO)")
+    };
+}
+@section Styles { <link rel="stylesheet" href="~/css/marketing.css" asp-append-version="true" /> }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-file-earmark-pdf-fill me-2 text-primary"></i>Relatórios de Marketing</h1>
+        <p>Gere um PDF com indicadores, gráficos, desempenho por plataforma, melhores publicações e insights.</p>
+    </div>
+</div>
+
+<partial name="_MarketingNav" />
+
+<div class="row g-4">
+    <div class="col-xl-5">
+        <div class="card">
+            <div class="card-header"><span class="card-title">Novo relatório</span></div>
+            <div class="card-body">
+                @if (Model.Clientes.Count == 0)
+                {
+                    <p class="text-muted mb-0">Nenhum cliente disponível.</p>
+                }
+                else
+                {
+                    <form asp-action="Relatorios" method="post" class="d-flex flex-column gap-3">
+                        @Html.AntiForgeryToken()
+                        <div>
+                            <label class="form-label">Cliente</label>
+                            <select name="clienteId" class="form-select" required>
+                                @foreach (var c in Model.Clientes) { <option value="@c.Id">@c.NomeEmpresa</option> }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Período</label>
+                            <select name="periodo" id="mktPeriodo" class="form-select">
+                                @foreach (var (codigo, rotulo) in PeriodoMarketing.Opcoes.Where(o => o.Codigo != "hoje"))
+                                {
+                                    <option value="@codigo" selected="@(codigo == "30d")">@rotulo</option>
+                                }
+                            </select>
+                            <div id="mktDatas" class="d-flex gap-2 mt-2 d-none">
+                                <input type="date" name="de" class="form-control form-control-sm" />
+                                <input type="date" name="ate" class="form-control form-control-sm" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Plataformas</label>
+                            <div class="d-flex flex-wrap gap-3">
+                                @foreach (var p in Enum.GetValues<PlataformaMarketing>())
+                                {
+                                    <label class="form-check-label d-flex align-items-center gap-1 text-sm">
+                                        <input type="checkbox" class="form-check-input" name="plataformas" value="@p" checked /> @PlataformaInfo.Nome(p)
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Indicadores <span class="text-muted text-xs">(nenhum marcado = todos)</span></label>
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach (var (chave, nome) in indicadores)
+                                {
+                                    <label class="form-check-label d-flex align-items-center gap-1 text-xs border rounded px-2 py-1">
+                                        <input type="checkbox" class="form-check-input" name="indicadores" value="@chave" /> @nome
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                        <label class="form-check-label d-flex align-items-center gap-2 text-sm">
+
+                            <input type="checkbox" class="form-check-input" name="comparar" value="true" checked /><input type="hidden" name="comparar" value="false" /> Comparar com o período anterior
+                        </label>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-file-earmark-arrow-down-fill me-1"></i>Gerar PDF</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="card">
+            <div class="card-header"><span class="card-title">Relatórios gerados</span></div>
+            @if (Model.Gerados.Count == 0)
+            {
+                <div class="card-body text-muted text-sm">Nenhum relatório gerado ainda.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead><tr><th>Cliente</th><th>Período</th><th>Gerado</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var r in Model.Gerados)
+                            {
+                                <tr>
+                                    <td class="fw-600">@r.Cliente?.NomeEmpresa</td>
+                                    <td class="text-sm">@r.PeriodoInicio.ToString("dd/MM/yyyy") – @r.PeriodoFim.ToString("dd/MM/yyyy")</td>
+                                    <td class="text-sm text-muted">@r.GeradoEm.AddHours(-3).ToString("dd/MM HH:mm") · @(r.GeradoPor?.Nome ?? "—")</td>
+                                    <td class="text-end"><a asp-action="RelatorioPdf" asp-route-id="@r.Id" class="btn btn-xs btn-primary"><i class="bi bi-download"></i> PDF</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+        <p class="text-xs text-muted mt-2"><i class="bi bi-info-circle me-1"></i>O PDF é gerado com os dados mais recentes do banco no momento do download. A estrutura já guarda periodicidade e destinatários para envio automático por e-mail no futuro.</p>
+    </div>
+</div>
+
+@section Scripts { <script src="~/js/marketing.js" asp-append-version="true"></script> }

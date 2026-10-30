@@ -1,0 +1,21 @@
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = "Confirmação de e-mail";
+    var ok = ViewData["Confirmado"] is true;
+}
+<div class="text-center">
+    @if (ok)
+    {
+        <div style="font-size:48px;color:#10b981;"><i class="bi bi-check-circle"></i></div>
+        <div class="login-form-title">E-mail confirmado</div>
+        <p class="text-muted">Sua conta está liberada. Entre com seu e-mail e senha.</p>
+        <a asp-action="Login" class="btn btn-primary mt-2">Entrar</a>
+    }
+    else
+    {
+        <div style="font-size:48px;color:#ef4444;"><i class="bi bi-x-circle"></i></div>
+        <div class="login-form-title">Link inválido ou expirado</div>
+        <p class="text-muted">Peça um novo link de confirmação.</p>
+        <a asp-action="ReenviarConfirmacao" class="btn btn-primary mt-2">Reenviar confirmação</a>
+    }
+</div>

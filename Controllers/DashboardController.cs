@@ -35,19 +35,28 @@ public class DashboardController(ApplicationDbContext db, UserManager<Usuario> u
             return View("DashboardCliente", vm);
         }
 
+        // Colaborador externo enxerga só as tarefas atribuídas a ele
+        var tarefas = usuario.Tipo == TipoUsuario.ColaboradorExterno && !User.IsInRole("Admin")
+            ? db.Tarefas.Where(t => t.ResponsavelId == usuario.Id)
+            : db.Tarefas;
+
         vm.TotalClientes = await db.Clientes.CountAsync(c => c.Ativo);
-        vm.TarefasPendentes = await db.Tarefas.CountAsync(t => t.Status != StatusTarefa.Concluido);
-        vm.TarefasAtrasadas = await db.Tarefas.CountAsync(t => t.Status != StatusTarefa.Concluido && t.Prazo < DateTime.UtcNow);
+        vm.TarefasPendentes = await tarefas.CountAsync(t => t.Status != StatusTarefa.Concluido);
+        vm.TarefasAtrasadas = await tarefas.CountAsync(t => t.Status != StatusTarefa.Concluido && t.Prazo < DateTime.UtcNow);
         vm.AprovacoesPendentes = await db.Conteudos.CountAsync(c => c.Status == StatusConteudo.AguardandoAprovacao);
         vm.ConteudosAtrasados = await db.Conteudos.CountAsync(c => c.DataPrevista < DateTime.UtcNow && c.Status != StatusConteudo.Publicado);
 
-        vm.UltimasTarefas = await db.Tarefas.Include(t => t.Cliente).Include(t => t.Responsavel)
+        vm.UltimasTarefas = await tarefas.Include(t => t.Cliente).Include(t => t.Responsavel)
             .Where(t => t.Status != StatusTarefa.Concluido)
             .OrderBy(t => t.Prazo).Take(5).ToListAsync();
 
         vm.UltimosConteudos = await db.Conteudos.Include(c => c.Cliente)
             .Where(c => c.Status == StatusConteudo.AguardandoAprovacao)
             .OrderByDescending(c => c.CriadoEm).Take(5).ToListAsync();
+
+        // Colaborador externo não vê o financeiro da agência (o módulo Financeiro já é só Admin/Equipe)
+        if (!User.IsInRole("Admin") && !User.IsInRole("Equipe"))
+            return View(vm);
 
         var hoje = DateTime.Now;
         vm.ReceitaMes = await db.Financeiros

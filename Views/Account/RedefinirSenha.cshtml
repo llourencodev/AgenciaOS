@@ -1,0 +1,23 @@
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = "Redefinir senha";
+}
+<div class="login-form-title">Nova senha</div>
+<div class="login-form-sub mb-3">Ao salvar, todas as sessões abertas da sua conta serão encerradas.</div>
+<form asp-action="RedefinirSenha" method="post">
+    <input type="hidden" name="code" value="@ViewData["Code"]" />
+    <div class="mb-3">
+        <label class="form-label">E-mail</label>
+        <input type="email" name="email" value="@ViewData["Email"]" class="form-control" required autocomplete="email" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Nova senha</label>
+        <input type="password" name="senha" class="form-control" required minlength="10" autocomplete="new-password" />
+        <div class="form-text">10+ caracteres, com letra maiúscula, minúscula e número.</div>
+    </div>
+    <div class="mb-4">
+        <label class="form-label">Confirmar nova senha</label>
+        <input type="password" name="confirmarSenha" class="form-control" required autocomplete="new-password" />
+    </div>
+    <button type="submit" class="btn btn-primary w-100 py-2" style="font-weight:600;border-radius:10px;">Salvar nova senha</button>
+</form>

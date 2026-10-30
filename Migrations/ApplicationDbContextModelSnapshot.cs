@@ -22,6 +22,71 @@ namespace AgenciaOS.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("AgenciaOS.Models.Agencia", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Cnpj")
+                        .HasMaxLength(18)
+                        .HasColumnType("character varying(18)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EmailPrincipal")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("NomeFantasia")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("PlanoCodigo")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("SituacaoAssinatura")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Telefone")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime?>("TesteExpiraEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("Agencias");
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.Arquivo", b =>
                 {
                     b.Property<int>("Id")
@@ -30,14 +95,25 @@ namespace AgenciaOS.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Categoria")
                         .HasColumnType("integer");
+
+                    b.Property<string>("ChaveArmazenamento")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<int>("ClienteId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("HashSha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("MesReferencia")
                         .HasColumnType("text");
@@ -49,6 +125,10 @@ namespace AgenciaOS.Migrations
                     b.Property<string>("NomeOriginal")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("Provedor")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<long>("TamanhoBytes")
                         .HasColumnType("bigint");
@@ -69,6 +149,8 @@ namespace AgenciaOS.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AgenciaId");
+
                     b.HasIndex("ClienteId");
 
                     b.HasIndex("UploadPorId");
@@ -83,6 +165,9 @@ namespace AgenciaOS.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("Ativo")
                         .HasColumnType("boolean");
@@ -131,6 +216,8 @@ namespace AgenciaOS.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AgenciaId");
+
                     b.HasIndex("UsuarioClienteId");
 
                     b.ToTable("Clientes");
@@ -167,6 +254,76 @@ namespace AgenciaOS.Migrations
                     b.ToTable("ComentariosConteudo");
                 });
 
+            modelBuilder.Entity("AgenciaOS.Models.ConexaoMarketing", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ConectadoPorId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Escopos")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ExpiraEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Plataforma")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime?>("RefreshExpiraEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("TokenAcessoProtegido")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TokenRefreshProtegido")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UltimoErro")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UsuarioExternoId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UsuarioExternoNome")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgenciaId");
+
+                    b.HasIndex("ConectadoPorId");
+
+                    b.HasIndex("ClienteId", "Plataforma")
+                        .IsUnique();
+
+                    b.ToTable("ConexoesMarketing");
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.Configuracao", b =>
                 {
                     b.Property<int>("Id")
@@ -174,6 +331,9 @@ namespace AgenciaOS.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("AtualizadoEm")
                         .HasColumnType("timestamp with time zone");
@@ -236,7 +396,143 @@ namespace AgenciaOS.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AgenciaId");
+
                     b.ToTable("Configuracoes");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.ConsentimentoTermos", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("AceitoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("AgenciaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Documento")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Ip")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(400)
+                        .HasColumnType("character varying(400)");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Versao")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgenciaId");
+
+                    b.HasIndex("UsuarioId", "Documento");
+
+                    b.ToTable("ConsentimentosTermos");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.ContaMarketing", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ConexaoMarketingId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FalhasConsecutivas")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FotoUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IdExterno")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Limitacao")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MetricasIndisponiveis")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NomeUsuario")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Plataforma")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime?>("ProximaSincronizacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("TipoConta")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TokenRecursoProtegido")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UltimaSincronizacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UltimaSolicitacaoManual")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UltimoErro")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgenciaId");
+
+                    b.HasIndex("ConexaoMarketingId");
+
+                    b.HasIndex("Ativa", "ProximaSincronizacao");
+
+                    b.HasIndex("ClienteId", "Plataforma", "IdExterno")
+                        .IsUnique();
+
+                    b.ToTable("ContasMarketing");
                 });
 
             modelBuilder.Entity("AgenciaOS.Models.Conteudo", b =>
@@ -246,6 +542,9 @@ namespace AgenciaOS.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("ArquivoUrl")
                         .HasColumnType("text");
@@ -289,6 +588,8 @@ namespace AgenciaOS.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AgenciaId");
+
                     b.HasIndex("ClienteId");
 
                     b.HasIndex("CriadoPorId");
@@ -303,6 +604,9 @@ namespace AgenciaOS.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
 
                     b.Property<int>("ClienteId")
                         .HasColumnType("integer");
@@ -339,11 +643,71 @@ namespace AgenciaOS.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AgenciaId");
+
                     b.HasIndex("ClienteId");
 
                     b.HasIndex("CriadoPorId");
 
                     b.ToTable("Contratos");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.ConviteUsuario", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AbasPermitidas")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("AceitoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPorId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("ExpiraEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Nome")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("RevogadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgenciaId");
+
+                    b.HasIndex("CriadoPorId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("ConvitesUsuario");
                 });
 
             modelBuilder.Entity("AgenciaOS.Models.DataComemorativa", b =>
@@ -353,6 +717,9 @@ namespace AgenciaOS.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("Ano")
                         .HasColumnType("integer");
@@ -385,6 +752,8 @@ namespace AgenciaOS.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AgenciaId");
+
                     b.ToTable("DatasComemorativas");
                 });
 
@@ -395,6 +764,9 @@ namespace AgenciaOS.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Categoria")
                         .HasColumnType("integer");
@@ -451,6 +823,8 @@ namespace AgenciaOS.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AgenciaId");
+
                     b.HasIndex("ClienteId");
 
                     b.HasIndex("CriadoPorId");
@@ -497,6 +871,161 @@ namespace AgenciaOS.Migrations
                     b.ToTable("HistoricosConteudo");
                 });
 
+            modelBuilder.Entity("AgenciaOS.Models.HistoricoSincronizacao", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ContaMarketingId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("FinalizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("IniciadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Mensagem")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Plataforma")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<int>("RegistrosGravados")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Sucesso")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Tentativa")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContaMarketingId");
+
+                    b.HasIndex("ClienteId", "IniciadoEm");
+
+                    b.ToTable("HistoricosSincronizacao");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.MetricaDiaria", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ColetadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ContaMarketingId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly>("Data")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Fonte")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Metrica")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Plataforma")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<decimal>("Valor")
+                        .HasPrecision(20, 4)
+                        .HasColumnType("numeric(20,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId", "Plataforma", "Data");
+
+                    b.HasIndex("ContaMarketingId", "Data", "Metrica")
+                        .IsUnique();
+
+                    b.ToTable("MetricasDiarias");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.MetricaDimensao", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ColetadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ContaMarketingId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly>("Data")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Dimensao")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Metrica")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Plataforma")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<decimal>("Valor")
+                        .HasPrecision(20, 4)
+                        .HasColumnType("numeric(20,4)");
+
+                    b.Property<string>("ValorDimensao")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId", "Dimensao", "Data");
+
+                    b.HasIndex("ContaMarketingId", "Data", "Dimensao", "ValorDimensao", "Metrica")
+                        .IsUnique();
+
+                    b.ToTable("MetricasDimensao");
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.Notificacao", b =>
                 {
                     b.Property<int>("Id")
@@ -536,6 +1065,140 @@ namespace AgenciaOS.Migrations
                     b.ToTable("Notificacoes");
                 });
 
+            modelBuilder.Entity("AgenciaOS.Models.PublicacaoMarketing", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("Alcance")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<long?>("Cliques")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("Comentarios")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("Compartilhamentos")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("ContaMarketingId")
+                        .HasColumnType("integer");
+
+                    b.Property<long?>("Curtidas")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("IdExterno")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<long?>("Interacoes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Legenda")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Link")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Plataforma")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime>("PublicadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("Salvamentos")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Tipo")
+                        .HasColumnType("text");
+
+                    b.Property<long?>("Visualizacoes")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId", "PublicadoEm");
+
+                    b.HasIndex("ContaMarketingId", "IdExterno")
+                        .IsUnique();
+
+                    b.ToTable("PublicacoesMarketing");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.RelatorioMarketing", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("CompararPeriodoAnterior")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("EmailsDestino")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("GeradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GeradoPorId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Indicadores")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Periodicidade")
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly>("PeriodoFim")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("PeriodoInicio")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Plataformas")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgenciaId");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("GeradoPorId");
+
+                    b.ToTable("RelatoriosMarketing");
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.Tarefa", b =>
                 {
                     b.Property<int>("Id")
@@ -543,6 +1206,9 @@ namespace AgenciaOS.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("AtualizadoEm")
                         .HasColumnType("timestamp with time zone");
@@ -589,6 +1255,8 @@ namespace AgenciaOS.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AgenciaId");
+
                     b.HasIndex("ClienteId");
 
                     b.HasIndex("CriadoPorId");
@@ -607,6 +1275,9 @@ namespace AgenciaOS.Migrations
                         .HasColumnType("text");
 
                     b.Property<int>("AccessFailedCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("AgenciaId")
                         .HasColumnType("integer");
 
                     b.Property<bool>("Ativo")
@@ -678,6 +1349,8 @@ namespace AgenciaOS.Migrations
                         .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AgenciaId");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -842,6 +1515,12 @@ namespace AgenciaOS.Migrations
 
             modelBuilder.Entity("AgenciaOS.Models.Arquivo", b =>
                 {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("AgenciaOS.Models.Cliente", "Cliente")
                         .WithMany("Arquivos")
                         .HasForeignKey("ClienteId")
@@ -860,6 +1539,12 @@ namespace AgenciaOS.Migrations
 
             modelBuilder.Entity("AgenciaOS.Models.Cliente", b =>
                 {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("AgenciaOS.Models.Usuario", "UsuarioCliente")
                         .WithMany()
                         .HasForeignKey("UsuarioClienteId")
@@ -887,8 +1572,88 @@ namespace AgenciaOS.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("AgenciaOS.Models.ConexaoMarketing", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgenciaOS.Models.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AgenciaOS.Models.Usuario", "ConectadoPor")
+                        .WithMany()
+                        .HasForeignKey("ConectadoPorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("ConectadoPor");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.Configuracao", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.ConsentimentoTermos", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AgenciaOS.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.ContaMarketing", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgenciaOS.Models.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AgenciaOS.Models.ConexaoMarketing", "Conexao")
+                        .WithMany("Contas")
+                        .HasForeignKey("ConexaoMarketingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("Conexao");
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.Conteudo", b =>
                 {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("AgenciaOS.Models.Cliente", "Cliente")
                         .WithMany("Conteudos")
                         .HasForeignKey("ClienteId")
@@ -907,6 +1672,12 @@ namespace AgenciaOS.Migrations
 
             modelBuilder.Entity("AgenciaOS.Models.Contrato", b =>
                 {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("AgenciaOS.Models.Cliente", "Cliente")
                         .WithMany()
                         .HasForeignKey("ClienteId")
@@ -923,8 +1694,39 @@ namespace AgenciaOS.Migrations
                     b.Navigation("CriadoPor");
                 });
 
+            modelBuilder.Entity("AgenciaOS.Models.ConviteUsuario", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgenciaOS.Models.Usuario", "CriadoPor")
+                        .WithMany()
+                        .HasForeignKey("CriadoPorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CriadoPor");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.DataComemorativa", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.Financeiro", b =>
                 {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("AgenciaOS.Models.Cliente", "Cliente")
                         .WithMany("Financeiros")
                         .HasForeignKey("ClienteId");
@@ -965,6 +1767,39 @@ namespace AgenciaOS.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("AgenciaOS.Models.HistoricoSincronizacao", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.ContaMarketing", "Conta")
+                        .WithMany()
+                        .HasForeignKey("ContaMarketingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conta");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.MetricaDiaria", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.ContaMarketing", "Conta")
+                        .WithMany("Metricas")
+                        .HasForeignKey("ContaMarketingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conta");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.MetricaDimensao", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.ContaMarketing", "Conta")
+                        .WithMany()
+                        .HasForeignKey("ContaMarketingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conta");
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.Notificacao", b =>
                 {
                     b.HasOne("AgenciaOS.Models.Usuario", "Usuario")
@@ -976,8 +1811,49 @@ namespace AgenciaOS.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("AgenciaOS.Models.PublicacaoMarketing", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.ContaMarketing", "Conta")
+                        .WithMany("Publicacoes")
+                        .HasForeignKey("ContaMarketingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conta");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.RelatorioMarketing", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgenciaOS.Models.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AgenciaOS.Models.Usuario", "GeradoPor")
+                        .WithMany()
+                        .HasForeignKey("GeradoPorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("GeradoPor");
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.Tarefa", b =>
                 {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("AgenciaOS.Models.Cliente", "Cliente")
                         .WithMany("Tarefas")
                         .HasForeignKey("ClienteId");
@@ -997,6 +1873,16 @@ namespace AgenciaOS.Migrations
                     b.Navigation("CriadoPor");
 
                     b.Navigation("Responsavel");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.Usuario", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.Agencia", "Agencia")
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Agencia");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -1059,6 +1945,18 @@ namespace AgenciaOS.Migrations
                     b.Navigation("Financeiros");
 
                     b.Navigation("Tarefas");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.ConexaoMarketing", b =>
+                {
+                    b.Navigation("Contas");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.ContaMarketing", b =>
+                {
+                    b.Navigation("Metricas");
+
+                    b.Navigation("Publicacoes");
                 });
 
             modelBuilder.Entity("AgenciaOS.Models.Conteudo", b =>

@@ -1,0 +1,25 @@
+@model AgenciaOS.ViewModels.GraficoMarketing
+@{
+    var opcoes = new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+}
+<div class="card">
+    <div class="card-header"><span class="card-title">@Model.Titulo</span></div>
+    <div class="card-body">
+        @if (Model.Vazio)
+        {
+            <div class="empty-state py-4">
+                <i class="bi bi-bar-chart empty-state-icon" style="font-size:40px;"></i>
+                <p class="mb-0">Sem dados sincronizados para este gráfico no período.</p>
+            </div>
+        }
+        else
+        {
+            <div class="chart-box"><canvas id="chart-@Model.Id"></canvas></div>
+            <script type="application/json" data-chart="@Model.Id">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model, opcoes))</script>
+        }
+        @if (Model.Nota != null)
+        {
+            <div class="chart-nota"><i class="bi bi-info-circle me-1"></i>@Model.Nota</div>
+        }
+    </div>
+</div>

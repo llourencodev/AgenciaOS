@@ -1,0 +1,23 @@
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = "Esqueci minha senha";
+}
+<div class="login-form-title">Esqueceu a senha?</div>
+@if (TempData["EmailEnviado"] is true)
+{
+    <div class="alert alert-success mt-3" style="font-size:13px;">
+        Se houver uma conta com esse e-mail, enviamos um link para redefinir a senha. Ele vale por 3 horas.
+    </div>
+}
+else
+{
+    <div class="login-form-sub mb-3">Enviaremos um link para você criar uma nova senha.</div>
+    <form asp-action="EsqueciSenha" method="post">
+        <div class="mb-3">
+            <label class="form-label">E-mail</label>
+            <input type="email" name="email" class="form-control" required autocomplete="email" />
+        </div>
+        <button type="submit" class="btn btn-primary w-100 py-2" style="font-weight:600;border-radius:10px;">Enviar link</button>
+    </form>
+}
+<div class="text-center mt-4 auth-link"><a asp-action="Login">Voltar para o login</a></div>

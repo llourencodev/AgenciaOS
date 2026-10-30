@@ -11,8 +11,6 @@
 <form asp-action="Edit" method="post">
     @Html.AntiForgeryToken()
     <input asp-for="Id" type="hidden" />
-    <input asp-for="CriadoEm" type="hidden" />
-    <input asp-for="UsuarioClienteId" type="hidden" />
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
         <div class="card">
             <div class="card-header"><span class="card-title">Dados da Empresa</span></div>
@@ -78,6 +76,7 @@
                     </div>
                 </div>
             </div>
+            <partial name="_AcessoCliente" model="Model" />
             <button type="submit" class="btn btn-primary w-100" style="justify-content:center;padding:12px;">
                 <i class="bi bi-check-lg"></i> Salvar Alterações
             </button>

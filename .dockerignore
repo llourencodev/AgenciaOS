@@ -7,3 +7,6 @@ wwwroot/uploads/
 .git/
 .claude/
 **/*.md
+tests/
+
+App_Data/

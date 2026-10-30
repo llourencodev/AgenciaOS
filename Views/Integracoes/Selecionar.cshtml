@@ -1,0 +1,58 @@
+@model AgenciaOS.ViewModels.SelecionarContasViewModel
+@using AgenciaOS.Services.Marketing
+@{
+    ViewData["Title"] = "Escolher contas";
+    var p = Model.Plataforma;
+    var multiplas = PlataformaInfo.PermiteMultiplas(p);
+    var conexaoId = Model.ConexaoId;
+}
+@section Styles { <link rel="stylesheet" href="~/css/marketing.css" asp-append-version="true" /> }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi @PlataformaInfo.Icone(p) me-2" style="color:@PlataformaInfo.Cor(p)"></i>@PlataformaInfo.Nome(p): escolha @(multiplas ? "as contas" : "a conta")</h1>
+        <p>Cliente: <b>@Model.Cliente.NomeEmpresa</b>. Somente os itens que você autorizou na plataforma aparecem aqui.</p>
+    </div>
+    <a asp-action="Index" asp-route-clienteId="@Model.Cliente.Id" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+</div>
+
+@if (Model.Erro != null)
+{
+    <div class="integ-erro mb-3"><i class="bi bi-exclamation-octagon-fill me-1"></i>@Model.Erro</div>
+}
+
+@if (Model.Disponiveis.Count > 0)
+{
+    <form asp-action="Selecionar" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="conexaoId" value="@conexaoId" />
+        <div class="card">
+            <div class="card-body d-flex flex-column gap-2">
+                @foreach (var d in Model.Disponiveis)
+                {
+                    var marcado = Model.JaVinculadas.Contains(d.IdExterno) || (Model.Disponiveis.Count == 1);
+                    <label class="integ-conta" style="cursor:pointer;">
+                        <input type="@(multiplas ? "checkbox" : "radio")" name="contas" value="@d.IdExterno" class="form-check-input mt-0" checked="@marcado" />
+                        @if (!string.IsNullOrEmpty(d.FotoUrl) && d.FotoUrl.StartsWith("https://"))
+                        {
+                            <img src="@d.FotoUrl" alt="" referrerpolicy="no-referrer" />
+                        }
+                        else
+                        {
+                            <div class="integ-avatar"><i class="bi @PlataformaInfo.Icone(p)"></i></div>
+                        }
+                        <div class="flex-grow-1">
+                            <div class="fw-600 text-sm">@d.Nome</div>
+                            <div class="text-xs text-muted">@(d.NomeUsuario != null ? (p == AgenciaOS.Models.PlataformaMarketing.GoogleAnalytics ? "Conta: " + d.NomeUsuario : "@" + d.NomeUsuario) : "") @d.TipoConta</div>
+                            @if (d.Aviso != null) { <div class="integ-aviso mt-1">@d.Aviso</div> }
+                        </div>
+                    </label>
+                }
+            </div>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <span class="text-xs text-muted">Depois de vincular, a primeira sincronização começa automaticamente.</span>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle me-1"></i>Vincular e sincronizar</button>
+            </div>
+        </div>
+    </form>
+}

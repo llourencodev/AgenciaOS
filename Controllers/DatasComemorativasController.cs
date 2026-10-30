@@ -23,6 +23,7 @@ public class DatasComemorativasController(ApplicationDbContext db) : Controller
     [Authorize(Roles = "Admin,Equipe")]
     public async Task<IActionResult> Create(DataComemorativa model)
     {
+        model.Id = 0; model.AgenciaId = 0; // nunca vêm do formulário
         model.CriadoEm = DateTime.UtcNow;
         db.DatasComemorativas.Add(model);
         await db.SaveChangesAsync();

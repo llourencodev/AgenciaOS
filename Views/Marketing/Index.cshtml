@@ -1,0 +1,142 @@
+@model AgenciaOS.ViewModels.PainelMarketingViewModel
+@using AgenciaOS.Services.Marketing
+@using AgenciaOS.ViewModels
+@{
+    ViewData["Title"] = "Visão Geral de Marketing";
+    ViewData["MktSecao"] = "geral";
+    ViewData["MktAgencia"] = Model.EhAgencia;
+    ViewData["MktClienteId"] = Model.Filtro.ClienteId;
+    var f = Model.Filtro;
+    var abas = new (string Codigo, string Nome, string Icone)[]
+    {
+        ("geral", "Visão Geral", "bi-grid-1x2-fill"), ("instagram", "Instagram", "bi-instagram"), ("facebook", "Facebook", "bi-facebook"),
+        ("tiktok", "TikTok", "bi-tiktok"), ("website", "Website", "bi-globe2"), ("seo", "SEO", "bi-search")
+    };
+    var nomeCliente = Model.Clientes.FirstOrDefault(c => c.Id == f.ClienteId)?.NomeEmpresa;
+    var filtrosPartial = new FiltrosMarketingPartial { Filtro = f, Clientes = Model.Clientes, Contas = Model.Contas, EhAgencia = Model.EhAgencia, Acao = "Index", MostrarPlataforma = false };
+}
+@section Styles { <link rel="stylesheet" href="~/css/marketing.css" asp-append-version="true" /> }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-rocket-takeoff-fill me-2 text-primary"></i>Central de Inteligência de Marketing</h1>
+        <p>
+            @(nomeCliente ?? (Model.EhAgencia ? "Todos os clientes" : "")) · @Model.Periodo.Rotulo
+            (@Model.Periodo.Inicio.ToString("dd/MM/yyyy") a @Model.Periodo.Fim.ToString("dd/MM/yyyy")) · comparado a
+            @Model.PeriodoAnterior.Inicio.ToString("dd/MM") – @Model.PeriodoAnterior.Fim.ToString("dd/MM")
+            @if (Model.UltimaAtualizacao != null)
+            {
+                <span> · última sincronização @Model.UltimaAtualizacao.Value.AddHours(-3).ToString("dd/MM HH:mm")</span>
+            }
+        </p>
+    </div>
+</div>
+
+<partial name="_MarketingNav" />
+
+<partial name="_MarketingFiltros" model="filtrosPartial" />
+
+<div class="mkt-tabs">
+    @foreach (var a in abas)
+    {
+        <a asp-action="Index" asp-route-aba="@a.Codigo" asp-route-clienteId="@f.ClienteId" asp-route-periodo="@f.Periodo"
+           asp-route-de="@f.De?.ToString("yyyy-MM-dd")" asp-route-ate="@f.Ate?.ToString("yyyy-MM-dd")"
+           class="mkt-tab @(f.Aba == a.Codigo ? "active" : "")"><i class="bi @a.Icone"></i> @a.Nome</a>
+    }
+</div>
+
+@if (Model.Contas.Count == 0)
+{
+    <div class="card">
+        <div class="empty-state">
+            <i class="bi bi-plug empty-state-icon"></i>
+            <h5>Nenhuma conta conectada@(f.Aba != "geral" ? " nesta plataforma" : "")</h5>
+            <p>Conecte as redes sociais e o site do cliente para acompanhar os resultados com dados reais das plataformas.</p>
+            <a asp-controller="Integracoes" asp-action="Index" asp-route-clienteId="@f.ClienteId" class="btn btn-primary"><i class="bi bi-plug-fill me-1"></i>Ir para Contas e Integrações</a>
+        </div>
+    </div>
+}
+else
+{
+    @foreach (var aviso in Model.Avisos.Distinct())
+    {
+        <div class="integ-aviso mb-2"><i class="bi bi-info-circle-fill me-1"></i>@aviso</div>
+    }
+    @if (Model.Contas.Any(c => c.UltimaSincronizacao == null))
+    {
+        <div class="integ-aviso mb-3"><i class="bi bi-arrow-repeat me-1"></i>Algumas contas ainda estão na primeira sincronização. Os números aparecem assim que ela terminar.</div>
+    }
+
+    <div class="kpi-grid mt-3">
+        @foreach (var k in Model.Kpis)
+        {
+            <partial name="_MarketingKpi" model="k" />
+        }
+    </div>
+
+    <div class="chart-grid">
+        @foreach (var g in Model.Graficos)
+        {
+            <partial name="_MarketingGrafico" model="g" />
+        }
+    </div>
+
+    @if (Model.Tabelas.Count > 0)
+    {
+        <div class="row g-4 mb-4">
+            @foreach (var t in Model.Tabelas)
+            {
+                <div class="col-xl-6">
+                    <div class="card h-100">
+                        <div class="card-header"><span class="card-title">@t.Titulo</span></div>
+                        @if (t.Linhas.Count == 0)
+                        {
+                            <div class="card-body text-muted text-sm">Sem dados no período.</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead><tr>@foreach (var c in t.Colunas) { <th>@c</th> }</tr></thead>
+                                    <tbody>
+                                        @foreach (var l in t.Linhas)
+                                        {
+                                            <tr>
+                                                <td class="text-sm text-break" style="max-width:320px;">@l[0]</td>
+                                                @for (var i = 1; i < l.Length; i++) { <td class="text-sm">@l[i]</td> }
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @if (Model.MelhoresPublicacoes.Count > 0)
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <span class="card-title"><i class="bi bi-star-fill text-warning me-1"></i>Melhores conteúdos do período</span>
+                <a asp-action="Conteudo" asp-route-clienteId="@f.ClienteId" asp-route-periodo="@f.Periodo" asp-route-ordem="interacoes" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+            </div>
+            <div class="card-body">
+                <div class="post-grid">
+                    @foreach (var p in Model.MelhoresPublicacoes)
+                    {
+                        <partial name="_MarketingPost" model="p" />
+                    }
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="~/js/marketing.js" asp-append-version="true"></script>
+    <script>document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));</script>
+}

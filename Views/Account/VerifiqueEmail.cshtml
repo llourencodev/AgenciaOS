@@ -1,0 +1,11 @@
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = "Verifique seu e-mail";
+}
+<div class="text-center">
+    <div style="font-size:48px;color:#6366f1;"><i class="bi bi-envelope-check"></i></div>
+    <div class="login-form-title">Verifique seu e-mail</div>
+    <p class="text-muted">Se os dados estiverem corretos, você vai receber um e-mail com o link de confirmação em instantes. O link vale por 3 horas.</p>
+    <p class="text-muted small">Não chegou? Confira a caixa de spam ou <a asp-action="ReenviarConfirmacao">peça um novo link</a>.</p>
+    <a asp-action="Login" class="btn btn-outline-secondary mt-2">Voltar para o login</a>
+</div>

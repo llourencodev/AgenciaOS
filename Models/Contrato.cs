@@ -1,8 +1,9 @@
 namespace AgenciaOS.Models;
 
-public class Contrato
+public class Contrato : IPertenceAgencia
 {
     public int Id { get; set; }
+    public int AgenciaId { get; set; }
     public string Titulo { get; set; } = "";
     public string Conteudo { get; set; } = "";
     public string? Observacoes { get; set; }

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — AgenciaOS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <style>
+        .auth-link { font-size:13px; }
+        .auth-hp { position:absolute; left:-10000px; width:1px; height:1px; overflow:hidden; }
+        .auth-doc { max-width:760px; margin:0 auto; padding:48px 20px; font-size:14.5px; line-height:1.7; }
+        .auth-doc h2 { font-size:18px; font-weight:700; margin-top:28px; }
+    </style>
+</head>
+<body style="font-family:'Inter',sans-serif;">
+@if (ViewData["Documento"] is true)
+{
+    <div class="auth-doc">@RenderBody()</div>
+}
+else
+{
+<div class="login-wrap">
+    <div class="login-left">
+        <div class="login-left-content">
+            <div class="login-logo-big"><i class="bi bi-lightning-charge-fill"></i></div>
+            <div class="login-tagline">Gerencie sua agência<br>em um só lugar</div>
+            <div class="login-sub">Plataforma completa para agências de marketing digital</div>
+            <ul class="login-features">
+                <li><i class="bi bi-check-circle-fill"></i> Calendário de conteúdo visual</li>
+                <li><i class="bi bi-check-circle-fill"></i> Aprovação de materiais pelo cliente</li>
+                <li><i class="bi bi-check-circle-fill"></i> Gestão de tarefas no estilo Kanban</li>
+                <li><i class="bi bi-check-circle-fill"></i> Controle financeiro integrado</li>
+                <li><i class="bi bi-check-circle-fill"></i> Arquivos organizados por cliente</li>
+            </ul>
+        </div>
+    </div>
+    <div class="login-right">
+        <div class="login-form-wrap">
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger py-2 px-3 mb-3" style="font-size:13px;border-radius:8px;">
+                    <div asp-validation-summary="All" class="mb-0"></div>
+                </div>
+            }
+            @RenderBody()
+        </div>
+    </div>
+</div>
+}
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

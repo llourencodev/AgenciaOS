@@ -1,0 +1,37 @@
+@model AgenciaOS.ViewModels.InsightsViewModel
+@using AgenciaOS.ViewModels
+@{
+    var filtrosPartial = new FiltrosMarketingPartial { Filtro = Model.Filtro, Clientes = Model.Clientes, EhAgencia = Model.EhAgencia, Acao = "Insights", MostrarConta = false };
+    ViewData["Title"] = "Insights de Marketing";
+    ViewData["MktSecao"] = "insights";
+    ViewData["MktAgencia"] = Model.EhAgencia;
+    ViewData["MktClienteId"] = Model.Filtro.ClienteId;
+}
+@section Styles { <link rel="stylesheet" href="~/css/marketing.css" asp-append-version="true" /> }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-lightbulb-fill me-2 text-primary"></i>Insights de Marketing</h1>
+        <p>Análises calculadas a partir dos dados reais sincronizados · @Model.Periodo.Rotulo</p>
+    </div>
+</div>
+
+<partial name="_MarketingNav" />
+<partial name="_MarketingFiltros" model="filtrosPartial" />
+
+<div class="d-flex flex-column gap-3">
+    @foreach (var i in Model.Insights)
+    {
+        <div class="insight @i.Tom">
+            <div class="insight-icon"><i class="bi @i.Icone"></i></div>
+            <div>
+                <div class="fw-700">@i.Titulo</div>
+                <div class="text-sm text-muted mt-1">@i.Texto</div>
+                @if (i.Fonte != null) { <div class="text-xs text-muted mt-1">Fonte: @i.Fonte</div> }
+            </div>
+        </div>
+    }
+</div>
+<p class="text-xs text-muted mt-3"><i class="bi bi-info-circle me-1"></i>As análises são regras sobre os números sincronizados; nenhuma recomendação é inventada. A estrutura já está preparada para receber relatórios gerados por IA no futuro.</p>
+
+@section Scripts { <script src="~/js/marketing.js" asp-append-version="true"></script> }

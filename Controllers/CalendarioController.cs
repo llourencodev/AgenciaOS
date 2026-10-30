@@ -1,5 +1,6 @@
 using AgenciaOS.Data;
 using AgenciaOS.Models;
+using AgenciaOS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -8,25 +9,24 @@ using Microsoft.EntityFrameworkCore;
 namespace AgenciaOS.Controllers;
 
 [Authorize]
-public class CalendarioController(ApplicationDbContext db, UserManager<Usuario> userManager) : Controller
+public class CalendarioController(ApplicationDbContext db, UserManager<Usuario> userManager, AcessoService acesso) : Controller
 {
+    /// <summary>Conteúdos dos clientes que o usuário pode ver (a agência já é filtrada pelo DbContext).</summary>
+    private IQueryable<Conteudo> ConteudosVisiveis(AcessoService.Escopo? escopo)
+    {
+        var clientes = acesso.Clientes(escopo).Select(c => c.Id);
+        return db.Conteudos.Where(c => clientes.Contains(c.ClienteId));
+    }
+
     public async Task<IActionResult> Index(int? clienteId, int? mes, int? ano)
     {
         mes ??= DateTime.Now.Month;
         ano ??= DateTime.Now.Year;
 
-        var usuario = await userManager.GetUserAsync(User);
-        var query = db.Conteudos.Include(c => c.Cliente).AsQueryable();
-
-        if (usuario?.Tipo == TipoUsuario.Cliente)
-        {
-            var cliente = await db.Clientes.FirstOrDefaultAsync(c => c.UsuarioClienteId == usuario.Id);
-            if (cliente != null) query = query.Where(c => c.ClienteId == cliente.Id);
-        }
-        else if (clienteId.HasValue)
-        {
+        var escopo = await acesso.ObterAsync(User);
+        var query = ConteudosVisiveis(escopo).Include(c => c.Cliente).AsQueryable();
+        if (clienteId.HasValue)
             query = query.Where(c => c.ClienteId == clienteId);
-        }
 
         var conteudos = await query
             .Where(c => c.DataPrevista.Month == mes && c.DataPrevista.Year == ano)
@@ -36,7 +36,7 @@ public class CalendarioController(ApplicationDbContext db, UserManager<Usuario> 
         ViewData["Mes"] = mes;
         ViewData["Ano"] = ano;
         ViewData["ClienteId"] = clienteId;
-        ViewData["Clientes"] = await db.Clientes.Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
+        ViewData["Clientes"] = await acesso.Clientes(escopo).Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
 
         return View(conteudos);
     }
@@ -53,7 +53,12 @@ public class CalendarioController(ApplicationDbContext db, UserManager<Usuario> 
     [Authorize(Roles = "Admin,Equipe")]
     public async Task<IActionResult> Create(Conteudo model)
     {
+        // Cliente precisa ser da agência atual (filtro global); a guarda do DbContext verifica de novo
+        if (!await db.Clientes.AnyAsync(c => c.Id == model.ClienteId)) return NotFound();
+
         var usuario = await userManager.GetUserAsync(User);
+        model.Id = 0;
+        model.AgenciaId = 0;
         model.CriadoPorId = usuario?.Id;
         model.CriadoEm = DateTime.UtcNow;
         model.AtualizadoEm = DateTime.UtcNow;
@@ -66,7 +71,8 @@ public class CalendarioController(ApplicationDbContext db, UserManager<Usuario> 
 
     public async Task<IActionResult> Details(int id)
     {
-        var conteudo = await db.Conteudos
+        var escopo = await acesso.ObterAsync(User);
+        var conteudo = await ConteudosVisiveis(escopo)
             .Include(c => c.Cliente)
             .Include(c => c.Comentarios).ThenInclude(co => co.Usuario)
             .Include(c => c.Historicos).ThenInclude(h => h.Usuario)
@@ -106,14 +112,16 @@ public class CalendarioController(ApplicationDbContext db, UserManager<Usuario> 
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Comentar(int conteudoId, string texto)
     {
+        var escopo = await acesso.ObterAsync(User);
+        if (escopo == null || !await ConteudosVisiveis(escopo).AnyAsync(c => c.Id == conteudoId)) return NotFound();
+
         if (string.IsNullOrWhiteSpace(texto))
             return RedirectToAction(nameof(Details), new { id = conteudoId });
 
-        var usuario = await userManager.GetUserAsync(User);
         db.ComentariosConteudo.Add(new ComentarioConteudo
         {
             ConteudoId = conteudoId,
-            UsuarioId = usuario!.Id,
+            UsuarioId = escopo.Usuario.Id,
             Texto = texto.Trim()
         });
         await db.SaveChangesAsync();
@@ -123,7 +131,8 @@ public class CalendarioController(ApplicationDbContext db, UserManager<Usuario> 
     [HttpGet]
     public async Task<IActionResult> Eventos(int? clienteId, int mes, int ano)
     {
-        var query = db.Conteudos.Include(c => c.Cliente).AsQueryable();
+        var escopo = await acesso.ObterAsync(User);
+        var query = ConteudosVisiveis(escopo).Include(c => c.Cliente).AsQueryable();
         if (clienteId.HasValue) query = query.Where(c => c.ClienteId == clienteId);
 
         var conteudos = await query

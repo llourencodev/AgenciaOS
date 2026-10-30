@@ -175,6 +175,41 @@
                 }
             </div>
 
+            @if (!User.IsInRole("ColaboradorExterno") && TemAcesso("Marketing"))
+            {
+                var mktAcao = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+                <div class="nav-group">
+                    <div class="nav-group-label">Marketing</div>
+                    <a asp-controller="Marketing" asp-action="Index" class="nav-link-item @(ctrl=="Marketing" && mktAcao=="Index"?"active":"")">
+                        <span class="nav-icon ni-violet"><i class="bi bi-rocket-takeoff-fill"></i></span>
+                        <span class="nav-label">Visão Geral</span>
+                    </a>
+                    <a asp-controller="Marketing" asp-action="Conteudo" class="nav-link-item @(ctrl=="Marketing" && mktAcao=="Conteudo"?"active":"")">
+                        <span class="nav-icon ni-rose"><i class="bi bi-images"></i></span>
+                        <span class="nav-label">Desempenho de Conteúdo</span>
+                    </a>
+                    <a asp-controller="Marketing" asp-action="Insights" class="nav-link-item @(ctrl=="Marketing" && mktAcao=="Insights"?"active":"")">
+                        <span class="nav-icon ni-amber"><i class="bi bi-lightbulb-fill"></i></span>
+                        <span class="nav-label">Insights</span>
+                    </a>
+                    <a asp-controller="Marketing" asp-action="Relatorios" class="nav-link-item @(ctrl=="Marketing" && mktAcao=="Relatorios"?"active":"")">
+                        <span class="nav-icon ni-red"><i class="bi bi-file-earmark-pdf-fill"></i></span>
+                        <span class="nav-label">Relatórios</span>
+                    </a>
+                    <a asp-controller="Integracoes" asp-action="Index" class="nav-link-item @(ctrl=="Integracoes"?"active":"")">
+                        <span class="nav-icon ni-cyan"><i class="bi bi-plug-fill"></i></span>
+                        <span class="nav-label">Contas e Integrações</span>
+                    </a>
+                    @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+                    {
+                        <a asp-controller="Marketing" asp-action="Agencia" class="nav-link-item @(ctrl=="Marketing" && mktAcao=="Agencia"?"active":"")">
+                            <span class="nav-icon ni-indigo"><i class="bi bi-buildings-fill"></i></span>
+                            <span class="nav-label">Carteira da Agência</span>
+                        </a>
+                    }
+                </div>
+            }
+
             @if (User.IsInRole("Admin"))
             {
                 <div class="nav-group">
@@ -252,6 +287,12 @@
                         <li class="px-3 py-2 border-bottom">
                             <div class="fw-600 small">@(_currentUser?.NomeCompleto ?? User.Identity?.Name?.Split('@')[0])</div>
                             <div class="text-muted" style="font-size:11px;">@User.Identity?.Name</div>
+                            <div class="text-muted" style="font-size:11px;"><i class="bi bi-building me-1"></i>@_cfg.NomeAgencia</div>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" asp-controller="Conta" asp-action="Seguranca">
+                                <i class="bi bi-shield-lock me-2"></i>Segurança da conta
+                            </a>
                         </li>
                         <li>
                             <form asp-controller="Account" asp-action="Logout" method="post">

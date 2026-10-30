@@ -7,6 +7,9 @@ public class Usuario : IdentityUser
     public string Nome { get; set; } = "";
     public string? Sobrenome { get; set; }
     public string? Foto { get; set; }
+    /// <summary>Agência do usuário. null = usuário da plataforma (superadministrador).</summary>
+    public int? AgenciaId { get; set; }
+    public Agencia? Agencia { get; set; }
     public TipoUsuario Tipo { get; set; } = TipoUsuario.Equipe;
     public bool Ativo { get; set; } = true;
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;

@@ -1,5 +1,6 @@
 using AgenciaOS.Data;
 using AgenciaOS.Models;
+using AgenciaOS.Services.Tenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AgenciaOS.Controllers;
 
 [Authorize(Roles = "Admin,Equipe")]
-public class FinanceiroController(ApplicationDbContext db, UserManager<Usuario> userManager) : Controller
+public class FinanceiroController(ApplicationDbContext db, UserManager<Usuario> userManager, ITenantContext tenant) : Controller
 {
     private async Task CarregarViewData(int mes, int ano)
     {
@@ -25,7 +26,7 @@ public class FinanceiroController(ApplicationDbContext db, UserManager<Usuario> 
         ViewData["AReceber"] = todos.Where(f => f.Tipo == TipoFinanceiro.Entrada && !f.Pago).Sum(f => f.Valor);
         ViewData["APagar"]   = todos.Where(f => f.Tipo == TipoFinanceiro.Saida && !f.Pago).Sum(f => f.Valor);
         ViewData["Clientes"] = await db.Clientes.Where(c => c.Ativo).OrderBy(c => c.NomeEmpresa).ToListAsync();
-        ViewData["Usuarios"] = await userManager.Users.Where(u => u.Ativo).OrderBy(u => u.Nome).ToListAsync();
+        ViewData["Usuarios"] = await userManager.Users.DaAgencia(tenant).Where(u => u.Ativo).OrderBy(u => u.Nome).ToListAsync();
     }
 
     public async Task<IActionResult> Index(int? mes, int? ano)
@@ -98,6 +99,7 @@ public class FinanceiroController(ApplicationDbContext db, UserManager<Usuario> 
 
         var usuario = await userManager.GetUserAsync(User);
         model.CriadoPorId = usuario?.Id;
+        model.Id = 0; model.AgenciaId = 0; // nunca vêm do formulário
         model.CriadoEm = DateTime.UtcNow;
 
         if (model.Parcelado && numeroParcelas is > 1)

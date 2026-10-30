@@ -1,0 +1,58 @@
+@model AgenciaOS.Models.Usuario
+@{
+    ViewData["Title"] = "Segurança da conta";
+    if (ViewData["Layout"] is string layout) { Layout = layout; }
+}
+
+<div class="page-header">
+    <div>
+        <h1>Segurança da conta</h1>
+        <p>@Model.Email</p>
+    </div>
+</div>
+
+@if (Layout?.Contains("Plataforma") == true)
+{
+    @if (TempData["Sucesso"] is string ok) { <div class="alert alert-success">@ok</div> }
+    @if (TempData["Erro"] is string erro) { <div class="alert alert-danger">@erro</div> }
+}
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><span class="card-title">Alterar senha</span></div>
+            <div class="card-body">
+                <form asp-action="AlterarSenha" method="post">
+                    <div class="mb-3">
+                        <label class="form-label">Senha atual</label>
+                        <input type="password" name="senhaAtual" class="form-control" required autocomplete="current-password" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nova senha</label>
+                        <input type="password" name="novaSenha" class="form-control" required minlength="10" autocomplete="new-password" />
+                        <div class="form-text">10+ caracteres, com letra maiúscula, minúscula e número.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirmar nova senha</label>
+                        <input type="password" name="confirmarSenha" class="form-control" required autocomplete="new-password" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Salvar nova senha</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><span class="card-title">Sessões</span></div>
+            <div class="card-body">
+                <p class="text-sm text-muted">Último acesso: @(Model.UltimoAcesso?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—")</p>
+                <p class="text-sm">Esqueceu a conta aberta em outro computador ou celular? Encerre todas as outras sessões. Esta continua ativa.</p>
+                <form asp-action="EncerrarOutrasSessoes" method="post">
+                    <button type="submit" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right me-1"></i> Encerrar outras sessões</button>
+                </form>
+                <hr />
+                <p class="text-sm text-muted mb-0"><i class="bi bi-shield-lock me-1"></i>Autenticação em duas etapas (aplicativo autenticador) em breve.</p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -58,11 +58,11 @@
                 <div class="file-thumb">
                     @if (a.EImagem)
                     {
-                        <img src="@a.Url" alt="@a.NomeOriginal" loading="lazy" />
+                        <img src="@Url.Action("Baixar", "Arquivos", new { id = a.Id, inline = true })" alt="@a.NomeOriginal" loading="lazy" />
                     }
                     else if (a.EVideo)
                     {
-                        <video src="@a.Url" muted preload="none"></video>
+                        <video src="@Url.Action("Baixar", "Arquivos", new { id = a.Id, inline = true })" muted preload="none"></video>
                         <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);">
                             <i class="bi bi-play-circle-fill text-white" style="font-size:36px;"></i>
                         </div>
@@ -73,7 +73,7 @@
                     }
                     <div class="file-overlay">
                         <div class="d-flex gap-2">
-                            <a href="@a.Url" download="@a.NomeOriginal" class="btn btn-sm btn-light" title="Download">
+                            <a href="@Url.Action("Baixar", "Arquivos", new { id = a.Id })" class="btn btn-sm btn-light" title="Download">
                                 <i class="bi bi-download"></i>
                             </a>
                             @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
@@ -123,7 +123,7 @@
                             <td class="text-sm">@(a.UploadPor?.Nome ?? "—")</td>
                             <td class="text-end">
                                 <div class="d-flex justify-content-end gap-1">
-                                    <a href="@a.Url" download="@a.NomeOriginal" class="btn btn-xs btn-outline-secondary"><i class="bi bi-download"></i></a>
+                                    <a href="@Url.Action("Baixar", "Arquivos", new { id = a.Id })" class="btn btn-xs btn-outline-secondary"><i class="bi bi-download"></i></a>
                                     @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
                                     {
                                         <button class="btn btn-xs btn-outline-danger" onclick="excluirArquivo(@a.Id, this)"><i class="bi bi-trash"></i></button>

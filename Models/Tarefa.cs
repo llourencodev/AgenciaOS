@@ -1,8 +1,9 @@
 namespace AgenciaOS.Models;
 
-public class Tarefa
+public class Tarefa : IPertenceAgencia
 {
     public int Id { get; set; }
+    public int AgenciaId { get; set; }
     public string Titulo { get; set; } = "";
     public string? Descricao { get; set; }
     public TipoTarefa Tipo { get; set; } = TipoTarefa.Outro;

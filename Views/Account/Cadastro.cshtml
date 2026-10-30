@@ -1,0 +1,63 @@
+@model AgenciaOS.Services.Contas.CadastroAgenciaInput
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = "Criar conta da agência";
+}
+<div class="mb-4">
+    <div class="login-form-title">Crie a conta da sua agência</div>
+    <div class="login-form-sub mb-3">@AgenciaOS.Services.Contas.ContasService.DiasTeste dias grátis para testar. Sem cartão de crédito.</div>
+</div>
+
+<form asp-action="Cadastro" method="post" novalidate>
+    <div class="auth-hp" aria-hidden="true">
+        <label for="Website">Não preencha este campo</label>
+        <input asp-for="Website" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Nome da agência *</label>
+        <input asp-for="NomeAgencia" class="form-control" autocomplete="organization" />
+        <span asp-validation-for="NomeAgencia" class="text-danger small"></span>
+    </div>
+    <div class="row g-2 mb-3">
+        <div class="col-6">
+            <label class="form-label">CNPJ</label>
+            <input asp-for="Cnpj" class="form-control" placeholder="opcional" />
+        </div>
+        <div class="col-6">
+            <label class="form-label">Telefone</label>
+            <input asp-for="Telefone" class="form-control" autocomplete="tel" />
+        </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Seu nome *</label>
+        <input asp-for="NomeAdmin" class="form-control" autocomplete="name" />
+        <span asp-validation-for="NomeAdmin" class="text-danger small"></span>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">E-mail *</label>
+        <input asp-for="Email" type="email" class="form-control" autocomplete="email" />
+        <span asp-validation-for="Email" class="text-danger small"></span>
+    </div>
+    <div class="row g-2 mb-1">
+        <div class="col-6">
+            <label class="form-label">Senha *</label>
+            <input asp-for="Senha" class="form-control" autocomplete="new-password" />
+        </div>
+        <div class="col-6">
+            <label class="form-label">Confirmar *</label>
+            <input asp-for="ConfirmarSenha" class="form-control" autocomplete="new-password" />
+        </div>
+    </div>
+    <div class="form-text mb-3">10+ caracteres, com letra maiúscula, minúscula e número.</div>
+    <div class="form-check mb-4">
+        <input asp-for="AceitaTermos" class="form-check-input" />
+        <label asp-for="AceitaTermos" class="form-check-label" style="font-size:13px;">
+            Li e aceito os <a asp-action="Termos" target="_blank">Termos de Uso</a> e a <a asp-action="Privacidade" target="_blank">Política de Privacidade</a>.
+        </label>
+    </div>
+    <button type="submit" class="btn btn-primary w-100 py-2" style="font-weight:600;border-radius:10px;">
+        <i class="bi bi-rocket-takeoff me-2"></i>Criar conta
+    </button>
+</form>
+<div class="text-center mt-4 auth-link">Já tem conta? <a asp-action="Login">Entrar</a></div>

@@ -1,0 +1,21 @@
+@model AgenciaOS.Models.Cliente
+@{
+    var usuariosCliente = ViewData["UsuariosCliente"] as IEnumerable<AgenciaOS.Models.Usuario> ?? [];
+}
+<div class="card">
+    <div class="card-header"><span class="card-title">Acesso do cliente</span></div>
+    <div class="card-body">
+        <div class="form-group">
+            <label class="form-label">Usuário de login</label>
+            <select asp-for="UsuarioClienteId" class="form-select">
+                <option value="">Sem acesso ao portal</option>
+                @foreach (var u in usuariosCliente)
+                {
+                    <option value="@u.Id">@u.NomeCompleto (@u.Email)</option>
+                }
+            </select>
+            <span asp-validation-for="UsuarioClienteId" class="text-danger text-xs"></span>
+            <div class="text-xs text-muted mt-1">O usuário vê somente os dados deste cliente. Crie usuários do tipo Cliente em Usuários.</div>
+        </div>
+    </div>
+</div>

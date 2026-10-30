@@ -1,11 +1,17 @@
 namespace AgenciaOS.Models;
 
-public class Arquivo
+public class Arquivo : IPertenceAgencia
 {
     public int Id { get; set; }
+    public int AgenciaId { get; set; }
     public string Nome { get; set; } = "";
     public string NomeOriginal { get; set; } = "";
+    /// <summary>Legado: caminho público em wwwroot/uploads (antes da Fase 2). Arquivos novos usam ChaveArmazenamento.</summary>
     public string Url { get; set; } = "";
+    /// <summary>Chave no armazenamento privado: agencies/{agenciaId}/clients/{clienteId}/...</summary>
+    public string? ChaveArmazenamento { get; set; }
+    public string? Provedor { get; set; }
+    public string? HashSha256 { get; set; }
     public string? Thumbnail { get; set; }
     public long TamanhoBytes { get; set; }
     public string TipoMime { get; set; } = "";

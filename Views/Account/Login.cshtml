@@ -41,11 +41,23 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
 
+                @if (TempData["Sucesso"] is string sucesso)
+                {
+                    <div class="alert alert-success d-flex align-items-center gap-2 mb-3 py-2 px-3" style="font-size:13px;border-radius:8px;">
+                        <i class="bi bi-check-circle-fill"></i> @sucesso
+                    </div>
+                }
                 @if (!ViewData.ModelState.IsValid)
                 {
                     <div class="alert alert-danger d-flex align-items-center gap-2 mb-3 py-2 px-3" style="font-size:13px;border-radius:8px;">
                         <i class="bi bi-exclamation-circle-fill"></i>
-                        <div asp-validation-summary="All" class="mb-0"></div>
+                        <div>
+                            <div asp-validation-summary="All" class="mb-0"></div>
+                            @if (ViewData["EmailNaoConfirmado"] is string pendente)
+                            {
+                                <a asp-action="ReenviarConfirmacao" asp-route-email="@pendente">Reenviar e-mail de confirmação</a>
+                            }
+                        </div>
                     </div>
                 }
 
@@ -73,6 +85,7 @@
                         <input asp-for="LembrarMe" class="form-check-input" type="checkbox" id="lembrarMe" />
                         <label class="form-check-label" for="lembrarMe" style="font-size:13px;">Lembrar-me por 7 dias</label>
                     </div>
+                    <a asp-action="EsqueciSenha" style="font-size:13px;">Esqueci minha senha</a>
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100 py-2" style="font-size:14px;font-weight:600;border-radius:10px;">
@@ -80,8 +93,13 @@
                 </button>
             </form>
 
-            <div class="text-center mt-4" style="font-size:12px;color:#9ca3af;">
-                <i class="bi bi-shield-check me-1"></i> Acesso protegido · Problemas? Contate o administrador.
+            <div class="text-center mt-4" style="font-size:13px;">
+                Sua agência ainda não usa o AgenciaOS? <a asp-action="Cadastro">Crie uma conta grátis</a>
+            </div>
+            <div class="text-center mt-3" style="font-size:12px;color:#9ca3af;">
+                <i class="bi bi-shield-check me-1"></i> Acesso protegido ·
+                <a asp-action="Termos" class="text-reset">Termos</a> ·
+                <a asp-action="Privacidade" class="text-reset">Privacidade</a>
             </div>
         </div>
     </div>
