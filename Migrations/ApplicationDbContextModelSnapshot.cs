@@ -44,6 +44,13 @@ namespace AgenciaOS.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<bool>("Isenta")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("MotivoSuspensao")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -475,6 +482,40 @@ namespace AgenciaOS.Migrations
                     b.HasIndex("AgenciaId");
 
                     b.ToTable("Configuracoes");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.ConfiguracaoPlataforma", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DiasTeste")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DiasTolerancia")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EmailSuporte")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("EncarregadoEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("EncarregadoNome")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<bool>("ExigirAceiteTermos")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ConfiguracoesPlataforma");
                 });
 
             modelBuilder.Entity("AgenciaOS.Models.ConsentimentoTermos", b =>
@@ -1398,6 +1439,58 @@ namespace AgenciaOS.Migrations
                     b.ToTable("PublicacoesMarketing");
                 });
 
+            modelBuilder.Entity("AgenciaOS.Models.RegistroAuditoria", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Acao")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<int?>("AgenciaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Detalhes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("Entidade")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("EntidadeId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Ip")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("Quando")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UsuarioEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("UsuarioId")
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Quando");
+
+                    b.HasIndex("AgenciaId", "Quando");
+
+                    b.ToTable("RegistrosAuditoria");
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.RelatorioMarketing", b =>
                 {
                     b.Property<int>("Id")
@@ -1454,6 +1547,83 @@ namespace AgenciaOS.Migrations
                     b.HasIndex("GeradoPorId");
 
                     b.ToTable("RelatoriosMarketing");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.SolicitacaoPrivacidade", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AgenciaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("AtendidaPorId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ConcluidaEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CriadaEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("EmailTitular")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Ip")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("NomeTitular")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTime>("PrazoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Protocolo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Resposta")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("UsuarioId")
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgenciaId");
+
+                    b.HasIndex("Protocolo")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "PrazoEm");
+
+                    b.ToTable("SolicitacoesPrivacidade");
                 });
 
             modelBuilder.Entity("AgenciaOS.Models.Tarefa", b =>
@@ -2135,6 +2305,14 @@ namespace AgenciaOS.Migrations
                     b.Navigation("Cliente");
 
                     b.Navigation("GeradoPor");
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.SolicitacaoPrivacidade", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("AgenciaOS.Models.Tarefa", b =>

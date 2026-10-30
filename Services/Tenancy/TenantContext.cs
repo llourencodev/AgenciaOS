@@ -51,7 +51,7 @@ public sealed class TenantContext : ITenantContext
     }
 }
 
-public record SituacaoAgenciaAtual(StatusAgencia Status, SituacaoAssinatura Assinatura, DateTime? TesteExpiraEm, string? PlanoCodigo);
+public record SituacaoAgenciaAtual(StatusAgencia Status, SituacaoAssinatura Assinatura, DateTime? TesteExpiraEm, string? PlanoCodigo, bool Isenta = false);
 
 /// <summary>Tentativa de ler/gravar dados fora da agência do usuário.</summary>
 public class AcessoEntreAgenciasException(string mensagem) : InvalidOperationException(mensagem);
@@ -73,7 +73,7 @@ public class TenantMiddleware(RequestDelegate next)
                 {
                     u.AgenciaId,
                     Situacao = u.Agencia == null ? (SituacaoAgenciaAtual?)null : new SituacaoAgenciaAtual(
-                        u.Agencia.Status, u.Agencia.SituacaoAssinatura, u.Agencia.TesteExpiraEm, u.Agencia.PlanoCodigo)
+                        u.Agencia.Status, u.Agencia.SituacaoAssinatura, u.Agencia.TesteExpiraEm, u.Agencia.PlanoCodigo, u.Agencia.Isenta)
                 })
                 .FirstOrDefaultAsync();
             if (dados?.AgenciaId is int id)

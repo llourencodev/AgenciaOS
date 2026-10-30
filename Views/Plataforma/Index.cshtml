@@ -3,15 +3,15 @@
 @{
     Layout = "_LayoutPlataforma";
     ViewData["Title"] = "Agências";
-    var total = Model.Count;
-    var ativas = Model.Count(l => l.Agencia.Status == StatusAgencia.Ativa);
-    var emTeste = Model.Count(l => l.Agencia.SituacaoAssinatura == SituacaoAssinatura.Teste);
+    var i = (AgenciaOS.Services.Plataforma.IndicadoresPlataforma)ViewData["Indicadores"]!;
+    var br = new System.Globalization.CultureInfo("pt-BR");
+    var pendentesLgpd = (int)(ViewData["PrivacidadePendentes"] ?? 0);
 }
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
     <div>
-        <h1 class="h3 fw-bold mb-0">Agências</h1>
-        <p class="text-muted mb-0">Agências assinantes da plataforma</p>
+        <h1 class="h3 fw-bold mb-0">Visão geral</h1>
+        <p class="text-muted mb-0">Indicadores dos últimos 30 dias (desde @i.Desde.ToLocalTime().ToString("dd/MM/yyyy"))</p>
     </div>
     <div class="d-flex gap-2">
         <a asp-action="Planos" class="btn btn-outline-secondary"><i class="bi bi-tags"></i> Planos</a>
@@ -19,11 +19,27 @@
     </div>
 </div>
 
+@if (pendentesLgpd > 0)
+{
+    <div class="alert alert-warning d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-shield-exclamation me-1"></i> @pendentesLgpd pedido(s) de titulares de dados em aberto.</span>
+        <a asp-action="Privacidade" class="btn btn-sm btn-warning">Ver pedidos</a>
+    </div>
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="text-muted small">Receita recorrente mensal (MRR)</div><div class="fs-4 fw-bold">@i.Mrr.ToString("C", br)</div></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="text-muted small">Receita recorrente anual (ARR)</div><div class="fs-4 fw-bold">@i.Arr.ToString("C", br)</div></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="text-muted small">Taxa de cancelamento (30 dias)</div><div class="fs-4 fw-bold">@i.TaxaCancelamento.ToString("0.0", br)%</div><div class="small text-muted">@i.CanceladasNoPeriodo cancelamento(s)</div></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="text-muted small">Novas agências (30 dias)</div><div class="fs-4 fw-bold">@i.NovasNoPeriodo</div></div></div>
+</div>
 <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3"><div class="card p-3"><div class="text-muted small">Cadastradas</div><div class="fs-3 fw-bold">@total</div></div></div>
-    <div class="col-6 col-md-3"><div class="card p-3"><div class="text-muted small">Ativas</div><div class="fs-3 fw-bold">@ativas</div></div></div>
-    <div class="col-6 col-md-3"><div class="card p-3"><div class="text-muted small">Em teste</div><div class="fs-3 fw-bold">@emTeste</div></div></div>
-    <div class="col-6 col-md-3"><div class="card p-3"><div class="text-muted small">Usuários</div><div class="fs-3 fw-bold">@Model.Sum(l => l.Usuarios)</div></div></div>
+    <div class="col-4 col-md-2"><div class="card p-3"><div class="text-muted small">Cadastradas</div><div class="fs-4 fw-bold">@i.TotalAgencias</div></div></div>
+    <div class="col-4 col-md-2"><div class="card p-3"><div class="text-muted small">Ativas</div><div class="fs-4 fw-bold">@i.Ativas</div></div></div>
+    <div class="col-4 col-md-2"><div class="card p-3"><div class="text-muted small">Em teste</div><div class="fs-4 fw-bold">@i.EmTeste</div></div></div>
+    <div class="col-4 col-md-2"><div class="card p-3"><div class="text-muted small">Inadimplentes</div><div class="fs-4 fw-bold text-warning">@i.Inadimplentes</div></div></div>
+    <div class="col-4 col-md-2"><div class="card p-3"><div class="text-muted small">Suspensas / canceladas</div><div class="fs-4 fw-bold text-danger">@i.Suspensas / @i.Canceladas</div></div></div>
+    <div class="col-4 col-md-2"><div class="card p-3"><div class="text-muted small">Usuários ativos</div><div class="fs-4 fw-bold">@i.TotalUsuarios</div><div class="small text-muted">@i.Isentas isenta(s)</div></div></div>
 </div>
 
 <div class="card">
@@ -36,7 +52,7 @@
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead>
-                <tr><th>Agência</th><th>Identificador</th><th>Status</th><th>Assinatura</th><th class="text-end">Usuários</th><th class="text-end">Clientes</th><th>Criada em</th></tr>
+                <tr><th>Agência</th><th>Identificador</th><th>Status</th><th>Assinatura</th><th class="text-end">Usuários</th><th class="text-end">Clientes</th><th>Criada em</th><th></th></tr>
             </thead>
             <tbody>
                 @foreach (var l in Model)
@@ -44,16 +60,17 @@
                     <tr>
                         <td><div class="fw-semibold">@l.Agencia.NomeExibicao</div><div class="small text-muted">@l.Agencia.EmailPrincipal</div></td>
                         <td><code>@l.Agencia.Slug</code></td>
-                        <td><span class="badge @(l.Agencia.Status == StatusAgencia.Ativa ? "text-bg-success" : "text-bg-secondary")">@l.Agencia.Status</span></td>
-                        <td>@l.Agencia.SituacaoAssinatura</td>
+                        <td><span class="badge @(l.Agencia.Status == StatusAgencia.Ativa ? "text-bg-success" : "text-bg-danger")">@l.Agencia.Status</span></td>
+                        <td>@(l.Agencia.Isenta ? "Isenta" : l.Agencia.SituacaoAssinatura.ToString())</td>
                         <td class="text-end">@l.Usuarios</td>
                         <td class="text-end">@l.Clientes</td>
                         <td class="small text-muted">@l.Agencia.CriadoEm.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                        <td class="text-end"><a asp-action="Agencia" asp-route-id="@l.Agencia.Id" class="btn btn-sm btn-outline-secondary">Detalhes</a></td>
                     </tr>
                 }
                 @if (Model.Count == 0)
                 {
-                    <tr><td colspan="7" class="text-center text-muted py-4">Nenhuma agência encontrada.</td></tr>
+                    <tr><td colspan="8" class="text-center text-muted py-4">Nenhuma agência encontrada.</td></tr>
                 }
             </tbody>
         </table>

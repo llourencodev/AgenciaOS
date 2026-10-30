@@ -9,7 +9,7 @@ Cada fase termina com entrega verificável e testes. Nada vai para produção se
 | 2 | Armazenamento seguro (R2/S3) | Concluída localmente (não publicada) |
 | 3 | Cadastro público, confirmação de e-mail, recuperação de senha, convites | Concluída localmente (não publicada) |
 | 4 | E-mail transacional, planos, assinaturas, gateway, bloqueio | Concluída localmente (gateway real ainda não configurado) |
-| 5 | LGPD e painel administrativo global com auditoria | Pendente |
+| 5 | LGPD e painel administrativo global com auditoria | Concluída localmente (não publicada) |
 | 6 | 2FA, backups testados, homologação, monitoramento, CI/CD | Pendente |
 | 7 | Domínios personalizados e aprovação Meta/TikTok/Google | Pendente |
 
@@ -162,7 +162,26 @@ Sem essas variáveis o app registra erro no log e cadastro/convites/recuperaçã
 - Pix Automático (autorização recorrente) não foi usado: as assinaturas PIX geram uma cobrança por ciclo que o cliente paga pela fatura.
 
 ## Fase 5 — LGPD e administração global
-Termos/Política versionados, registro de aceite, solicitações de titulares (exportação, exclusão/anonimização com exceções legais), DPA plataforma↔agência, painel global com métricas (MRR, ARR, churn), gestão de planos e agências, trilha de auditoria.
+
+### O que foi entregue (30/10/2026)
+
+- **Isenção:** `Agencia.Isenta` (sem cobrança, sem bloqueio comercial, sem limites de plano). Decisão do proprietário: a agência fundadora (Id 1, Social Unânime) é isenta (aplicado pela migration `LgpdAuditoriaPlataforma`). Pode ser alterado em `/Plataforma/Agencia/{id}`.
+- **Painel global** (`/Plataforma`, só SuperAdmin, navegação própria): MRR, ARR (anual normalizado ÷ 12), taxa de cancelamento de 30 dias, novas agências, ativas/teste/inadimplentes/suspensas/canceladas/isentas, usuários. Detalhes da agência com usuários, assinatura, pagamentos e atividades; suspender (com motivo, derruba sessões) e reativar; isentar; alterar plano; estender teste.
+- **Configurações globais** (`/Plataforma/Configuracoes`): dias de teste, dias de tolerância, encarregado de dados (aparece na Política), e-mail de suporte, exigir novo aceite.
+- **Auditoria** (`RegistroAuditoria`, `/Plataforma/Auditoria` com filtros): logins (sucesso e falha), criação/ativação/permissões de usuários, convites, assinatura (assinar, trocar, cancelar), todas as ações do painel global, exportações e ações de privacidade. Guarda quem, quando, IP, agência e alvo; nunca senhas ou tokens.
+- **LGPD:**
+  - Novo aceite obrigatório quando a versão dos Termos/Política muda (`AceiteTermosFilter`; histórico em "Minha privacidade").
+  - "Minha privacidade" para todo usuário: baixar os próprios dados (JSON, sem segredos), fazer pedidos, ver aceites.
+  - Formulário público `/Privacidade/Solicitar` para qualquer titular (com protocolo, prazo de 15 dias, e-mail de confirmação, anti-robô e limite por IP).
+  - Gestão dos pedidos no painel global (responder, recusar, encaminhar à agência controladora, exportar dados do titular, anonimizar titular) e na agência (`/Privacidade`, só os pedidos encaminhados a ela).
+  - Área "Dados e LGPD" da agência: exportação completa em ZIP (JSON por módulo, só os dados da agência, sem senhas/tokens), exclusão de dados pessoais de um cliente (mantém financeiro/contratos/tarefas sem identificação, apaga conexões de marketing) e anonimização de usuário.
+  - Minutas para revisão jurídica: `docs/legal/ACORDO_TRATAMENTO_DADOS.md` (controladora × operador, suboperadores, incidentes) e `docs/legal/POLITICA_RETENCAO.md`.
+- **Correção encontrada pelos testes:** a versão texto dos e-mails saía com acentos como entidades HTML (`exclu&#xED;dos`); agora é decodificada.
+- **Testes:** 115 passando. Novos: indicadores (MRR/ARR/churn), isenta nunca bloqueada, suspensão/reativação com queda de sessão e auditoria, painel inacessível para agências, exportação só com dados da própria agência e sem segredos, exportação do titular, pedido público encaminhado só à agência certa, anonimização preservando aceites, exclusão de cliente mantendo financeiro e sem afetar outra agência, novo aceite obrigatório, dias de teste configuráveis.
+
+### Observações
+- No primeiro acesso depois da migration, todos os usuários existentes passam pela tela de aceite (ainda não havia registro de aceite).
+- Retenção automática (apagar dados de canceladas após o prazo, limpar logs antigos) fica para a Fase 6.
 
 ## Fase 6 — Operação
 TOTP + códigos de recuperação, backups automáticos com teste de restauração agendado, ambiente de homologação no Railway, Sentry + logs estruturados (Serilog) sem dados sensíveis, uptime/status page, GitHub Actions rodando testes (inclusive os de isolamento com Postgres em service container) e bloqueando deploy em falha.

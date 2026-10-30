@@ -26,6 +26,9 @@ public partial class ApplicationDbContext : IdentityDbContext<Usuario>, IDataPro
     public DbSet<Assinatura> Assinaturas => Set<Assinatura>();
     public DbSet<Pagamento> Pagamentos => Set<Pagamento>();
     public DbSet<EventoWebhook> EventosWebhook => Set<EventoWebhook>();
+    public DbSet<RegistroAuditoria> RegistrosAuditoria => Set<RegistroAuditoria>();
+    public DbSet<ConfiguracaoPlataforma> ConfiguracoesPlataforma => Set<ConfiguracaoPlataforma>();
+    public DbSet<SolicitacaoPrivacidade> SolicitacoesPrivacidade => Set<SolicitacaoPrivacidade>();
 
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Conteudo> Conteudos => Set<Conteudo>();
@@ -265,6 +268,46 @@ public partial class ApplicationDbContext : IdentityDbContext<Usuario>, IDataPro
             e.Property(w => w.Erro).HasMaxLength(2000);
             e.HasIndex(w => new { w.Gateway, w.EventoId }).IsUnique();
         });
+
+        // ── Plataforma e LGPD (Fase 5) ───────────────────────────────────
+        builder.Entity<RegistroAuditoria>(e =>
+        {
+            e.Property(r => r.UsuarioId).HasMaxLength(450);
+            e.Property(r => r.UsuarioEmail).HasMaxLength(256);
+            e.Property(r => r.Acao).HasMaxLength(80);
+            e.Property(r => r.Entidade).HasMaxLength(60);
+            e.Property(r => r.EntidadeId).HasMaxLength(100);
+            e.Property(r => r.Detalhes).HasMaxLength(4000);
+            e.Property(r => r.Ip).HasMaxLength(64);
+            e.HasIndex(r => r.Quando);
+            e.HasIndex(r => new { r.AgenciaId, r.Quando });
+        });
+
+        builder.Entity<ConfiguracaoPlataforma>(e =>
+        {
+            e.Property(c => c.Id).ValueGeneratedNever();
+            e.Property(c => c.EmailSuporte).HasMaxLength(256);
+            e.Property(c => c.EncarregadoNome).HasMaxLength(150);
+            e.Property(c => c.EncarregadoEmail).HasMaxLength(256);
+        });
+
+        builder.Entity<SolicitacaoPrivacidade>(e =>
+        {
+            e.Property(s => s.Protocolo).HasMaxLength(20);
+            e.HasIndex(s => s.Protocolo).IsUnique();
+            e.HasOne<Agencia>().WithMany().HasForeignKey(s => s.AgenciaId).OnDelete(DeleteBehavior.Restrict);
+            e.Property(s => s.UsuarioId).HasMaxLength(450);
+            e.Property(s => s.NomeTitular).HasMaxLength(150);
+            e.Property(s => s.EmailTitular).HasMaxLength(256);
+            e.Property(s => s.Descricao).HasMaxLength(4000);
+            e.Property(s => s.Resposta).HasMaxLength(4000);
+            e.Property(s => s.Tipo).HasConversion<string>().HasMaxLength(40);
+            e.Property(s => s.Status).HasConversion<string>().HasMaxLength(30);
+            e.Property(s => s.Ip).HasMaxLength(64);
+            e.HasIndex(s => new { s.Status, s.PrazoEm });
+        });
+
+        builder.Entity<Agencia>().Property(a => a.MotivoSuspensao).HasMaxLength(500);
 
         ConfigurarMultiTenancy(builder);
     }

@@ -12,7 +12,8 @@ using Microsoft.EntityFrameworkCore;
 namespace AgenciaOS.Controllers;
 
 [Authorize(Roles = "Admin")]
-public class UsuariosController(UserManager<Usuario> userManager, ITenantContext tenant, ApplicationDbContext db, ContasService contas, LimitesPlanoService limites) : Controller
+public class UsuariosController(UserManager<Usuario> userManager, ITenantContext tenant, ApplicationDbContext db, ContasService contas,
+    LimitesPlanoService limites, Services.Plataforma.AuditoriaService auditoria) : Controller
 {
     static readonly string[] TodasAbas = ["Dashboard", "Clientes", "Calendario", "Arquivos", "Tarefas", "Financeiro", "Contratos", "DatasComemorativas", "Marketing"];
 
@@ -50,7 +51,11 @@ public class UsuariosController(UserManager<Usuario> userManager, ITenantContext
         var admin = await userManager.GetUserAsync(User);
         var abas = abasPermitidas.Length > 0 ? string.Join(",", abasPermitidas.Where(a => TodasAbas.Contains(a))) : null;
         var (ok, erro) = await contas.ConvidarAsync(email ?? "", nome, tipo, abas, admin!, Request, ct);
-        if (ok) TempData["Sucesso"] = $"Convite enviado para {email}. O link vale 7 dias.";
+        if (ok)
+        {
+            TempData["Sucesso"] = $"Convite enviado para {email}. O link vale 7 dias.";
+            await auditoria.RegistrarAsync("usuarios.convidar", tenant.AgenciaId, "Convite", email, new { tipo = tipo.ToString(), abas }, ct);
+        }
         else TempData["Erro"] = erro;
         return RedirectToAction(nameof(Index));
     }
@@ -63,6 +68,7 @@ public class UsuariosController(UserManager<Usuario> userManager, ITenantContext
         if (convite == null) return NotFound();
         convite.RevogadoEm ??= DateTime.UtcNow;
         await db.SaveChangesAsync();
+        await auditoria.RegistrarAsync("usuarios.revogar-convite", tenant.AgenciaId, "Convite", convite.Email);
         TempData["Sucesso"] = "Convite revogado.";
         return RedirectToAction(nameof(Index));
     }
@@ -106,6 +112,7 @@ public class UsuariosController(UserManager<Usuario> userManager, ITenantContext
             _                              => "Equipe"
         };
         await userManager.AddToRoleAsync(usuario, role);
+        await auditoria.RegistrarAsync("usuarios.criar", tenant.AgenciaId, "Usuario", usuario.Id, new { usuario.Email, perfil = role, usuario.AbasPermitidas });
 
         TempData["Sucesso"] = "Usuário criado com sucesso!";
         return RedirectToAction(nameof(Index));
@@ -122,6 +129,7 @@ public class UsuariosController(UserManager<Usuario> userManager, ITenantContext
         await userManager.UpdateAsync(u);
         // Encerra sessões abertas do usuário desativado
         if (!u.Ativo) await userManager.UpdateSecurityStampAsync(u);
+        await auditoria.RegistrarAsync(u.Ativo ? "usuarios.ativar" : "usuarios.desativar", tenant.AgenciaId, "Usuario", u.Id, new { u.Email });
         return Ok(new { ativo = u.Ativo });
     }
 
@@ -133,6 +141,7 @@ public class UsuariosController(UserManager<Usuario> userManager, ITenantContext
         if (u == null) return NotFound();
         u.AbasPermitidas = abasPermitidas.Length > 0 ? string.Join(",", abasPermitidas.Where(a => TodasAbas.Contains(a))) : null;
         await userManager.UpdateAsync(u);
+        await auditoria.RegistrarAsync("usuarios.alterar-permissoes", tenant.AgenciaId, "Usuario", u.Id, new { u.Email, u.AbasPermitidas });
         TempData["Sucesso"] = "Permissões atualizadas!";
         return RedirectToAction(nameof(Index));
     }

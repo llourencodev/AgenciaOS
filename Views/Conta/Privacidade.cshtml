@@ -1,0 +1,73 @@
+@model AgenciaOS.Models.Usuario
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Minha privacidade";
+    if (ViewData["Layout"] is string layout) { Layout = layout; }
+    var aceites = ViewData["Aceites"] as List<ConsentimentoTermos> ?? [];
+    var solicitacoes = ViewData["Solicitacoes"] as List<SolicitacaoPrivacidade> ?? [];
+}
+<div class="page-header">
+    <div>
+        <h1>Minha privacidade</h1>
+        <p>Seus direitos como titular de dados (LGPD)</p>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><span class="card-title">Baixar meus dados</span></div>
+            <div class="card-body">
+                <p class="text-sm">Arquivo JSON com seus dados de cadastro, aceites de termos, notificações e pedidos de privacidade. Senhas e tokens nunca são incluídos.</p>
+                <form asp-action="ExportarMeusDados" method="post">
+                    <button class="btn btn-outline-primary"><i class="bi bi-download me-1"></i> Baixar meus dados</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><span class="card-title">Fazer um pedido</span></div>
+            <div class="card-body">
+                <form asp-action="SolicitarPrivacidade" method="post">
+                    <select name="tipo" class="form-select mb-2" asp-items="Html.GetEnumSelectList<TipoSolicitacaoPrivacidade>()"></select>
+                    <textarea name="descricao" class="form-control mb-2" rows="3" required placeholder="Descreva o que você precisa"></textarea>
+                    <button class="btn btn-primary">Enviar pedido</button>
+                </form>
+                <div class="text-xs text-muted mt-2">Respondemos em até 15 dias. Pedidos sobre dados que a sua agência inseriu podem ser encaminhados a ela.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header"><span class="card-title">Meus pedidos</span></div>
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead><tr><th>Protocolo</th><th>Tipo</th><th>Situação</th><th>Prazo</th></tr></thead>
+            <tbody>
+                @foreach (var s in solicitacoes)
+                {
+                    <tr><td><code>@s.Protocolo</code></td><td>@s.Tipo</td><td>@s.Status</td><td>@s.PrazoEm.ToLocalTime().ToString("dd/MM/yyyy")</td></tr>
+                }
+                @if (solicitacoes.Count == 0) { <tr><td colspan="4" class="text-muted text-center">Nenhum pedido.</td></tr> }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header"><span class="card-title">Aceites registrados</span></div>
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead><tr><th>Documento</th><th>Versão</th><th>Data</th><th>IP</th></tr></thead>
+            <tbody>
+                @foreach (var c in aceites)
+                {
+                    <tr><td>@c.Documento</td><td>@c.Versao</td><td>@c.AceitoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td><td class="text-muted">@c.Ip</td></tr>
+                }
+                @if (aceites.Count == 0) { <tr><td colspan="4" class="text-muted text-center">Nenhum aceite registrado.</td></tr> }
+            </tbody>
+        </table>
+    </div>
+</div>

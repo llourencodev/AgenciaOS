@@ -18,6 +18,10 @@ public class Agencia
     public SituacaoAssinatura SituacaoAssinatura { get; set; } = SituacaoAssinatura.Teste;
     public string? PlanoCodigo { get; set; }
     public DateTime? TesteExpiraEm { get; set; }
+    /// <summary>Isenta de assinatura (cortesia decidida pelo proprietário): nunca é bloqueada por cobrança e não tem limites de plano.</summary>
+    public bool Isenta { get; set; }
+    /// <summary>Motivo da suspensão administrativa (Status = Suspensa).</summary>
+    public string? MotivoSuspensao { get; set; }
 
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
     public DateTime AtualizadoEm { get; set; } = DateTime.UtcNow;

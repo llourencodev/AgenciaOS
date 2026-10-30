@@ -15,6 +15,7 @@ public class AccountController(
     UserManager<Usuario> userManager,
     ApplicationDbContext db,
     ContasService contas,
+    Services.Plataforma.AuditoriaService auditoria,
     ILogger<AccountController> logger) : Controller
 {
     // ── Login ────────────────────────────────────────────────────────────
@@ -50,6 +51,7 @@ public class AccountController(
             {
                 user.UltimoAcesso = DateTime.UtcNow;
                 await userManager.UpdateAsync(user);
+                await auditoria.RegistrarAsync("conta.login", user.AgenciaId, "Usuario", user.Id);
             }
             if (user?.AgenciaId == null && user != null && await userManager.IsInRoleAsync(user, "SuperAdmin"))
                 return RedirectToAction("Index", "Plataforma");
@@ -70,6 +72,7 @@ public class AccountController(
             return View(model);
         }
 
+        await auditoria.RegistrarAsync(result.IsLockedOut ? "conta.login-bloqueado" : "conta.login-falhou", user?.AgenciaId, "Usuario", user?.Id, new { email = model.Email });
         ModelState.AddModelError("", "E-mail ou senha inválidos.");
         return View(model);
     }

@@ -1,0 +1,21 @@
+@{
+    Layout = "~/Views/Account/_LayoutAuth.cshtml";
+    ViewData["Title"] = "Documentos atualizados";
+}
+<div class="login-form-title">Atualizamos nossos documentos</div>
+<div class="login-form-sub mb-3">Para continuar, leia e aceite a versão atual dos documentos abaixo.</div>
+<ul class="mb-4" style="font-size:14px;">
+    <li><a asp-controller="Account" asp-action="Termos" target="_blank">Termos de Uso</a> (versão @AgenciaOS.Models.DocumentosLegais.VersaoTermos)</li>
+    <li><a asp-controller="Account" asp-action="Privacidade" target="_blank">Política de Privacidade</a> (versão @AgenciaOS.Models.DocumentosLegais.VersaoPrivacidade)</li>
+</ul>
+<form asp-action="AceitarTermos" method="post">
+    <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+    <div class="form-check mb-4">
+        <input type="checkbox" name="aceita" value="true" id="aceita" class="form-check-input" />
+        <label for="aceita" class="form-check-label" style="font-size:13px;">Li e aceito os Termos de Uso e a Política de Privacidade.</label>
+    </div>
+    <button type="submit" class="btn btn-primary w-100 py-2" style="font-weight:600;border-radius:10px;">Continuar</button>
+</form>
+<form asp-controller="Account" asp-action="Logout" method="post" class="text-center mt-3">
+    <button class="btn btn-link btn-sm text-muted">Sair</button>
+</form>

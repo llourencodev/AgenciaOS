@@ -65,6 +65,18 @@ O convidado ainda não tem usuário, então o token do Identity não serve. Toke
 ## D21 — Rate limiting por IP com limites configuráveis
 Login 20 por 5 min e ações que enviam e-mail ou criam contas 5 por 15 min, por IP, além do bloqueio por conta do Identity. Limites lidos a cada requisição (`RATE_LIMIT_LOGIN`, `RATE_LIMIT_CONTA`), o que permite ajustar sem novo deploy de código.
 
+## D26 — Agência isenta em vez de "plano gratuito"
+A isenção é um atributo da agência (`Isenta`), não um plano de R$ 0: assim não entra no MRR, não gera cobrança no gateway, não sofre limites e fica explícita no painel e na auditoria. Primeira isenta: Social Unânime (decisão do proprietário em 30/10/2026).
+
+## D27 — Anonimizar em vez de apagar
+Usuários e clientes não são apagados fisicamente: os dados pessoais são substituídos e o acesso é encerrado. Isso preserva a integridade de tarefas, comentários, lançamentos financeiros (guarda fiscal) e aceites (prova legal), atendendo a exclusão de dados pessoais com as exceções do art. 16 da LGPD.
+
+## D28 — Pedidos de titulares passam pela plataforma e são encaminhados à agência
+O AgenciaOS recebe qualquer pedido (canal único, prazo de 15 dias). Quando os dados foram inseridos por uma agência (controladora), o superadmin encaminha e só aquela agência vê o pedido. Ferramentas de exportação e anonimização ficam disponíveis para os dois lados.
+
+## D29 — Auditoria gravada na hora, em tabela própria
+`RegistroAuditoria` grava a cada ação (SaveChanges próprio), mesmo que algo falhe depois. Detalhes em JSON curto, sem segredos. Retenção sugerida: 5 anos (ver `docs/legal/POLITICA_RETENCAO.md`).
+
 ## D16 — Escrita direta no destino (armazenamento local)
 O provedor local grava direto no caminho final (chaves com GUID nunca colidem) em vez de gravar `.tmp` e renomear: no Windows o antivírus segura o arquivo recém-criado e o `Move` falha com "Access denied" (visto no teste local). Em caso de erro, o arquivo parcial é apagado.
 

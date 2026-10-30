@@ -1,0 +1,33 @@
+@model List<AgenciaOS.Models.RegistroAuditoria>
+@{
+    Layout = "_LayoutPlataforma";
+    ViewData["Title"] = "Auditoria";
+}
+<h1 class="h3 fw-bold mb-3">Auditoria</h1>
+<form method="get" class="d-flex flex-wrap gap-2 mb-3">
+    <input name="agenciaId" type="number" value="@ViewData["AgenciaId"]" class="form-control" style="width:140px;" placeholder="Agência (Id)" />
+    <input name="acao" value="@ViewData["Acao"]" class="form-control" style="width:240px;" placeholder="Ação (ex.: plataforma, login)" />
+    <button class="btn btn-outline-secondary">Filtrar</button>
+</form>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+            <thead><tr><th>Quando</th><th>Ação</th><th>Agência</th><th>Usuário</th><th>Alvo</th><th>Detalhes</th><th>IP</th></tr></thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td class="text-nowrap small">@r.Quando.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</td>
+                        <td><code>@r.Acao</code></td>
+                        <td>@if (r.AgenciaId is int ag) { <a asp-action="Agencia" asp-route-id="@ag">@ag</a> }</td>
+                        <td class="small">@r.UsuarioEmail</td>
+                        <td class="small">@r.Entidade @r.EntidadeId</td>
+                        <td class="small text-muted" style="max-width:360px;word-break:break-all;">@r.Detalhes</td>
+                        <td class="small text-muted">@r.Ip</td>
+                    </tr>
+                }
+                @if (Model.Count == 0) { <tr><td colspan="7" class="text-center text-muted py-3">Nenhum registro.</td></tr> }
+            </tbody>
+        </table>
+    </div>
+</div>

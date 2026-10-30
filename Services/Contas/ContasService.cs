@@ -93,7 +93,7 @@ public class ContasService(
             EmailPrincipal = emailNormalizado,
             Status = StatusAgencia.Ativa,
             SituacaoAssinatura = SituacaoAssinatura.Teste,
-            TesteExpiraEm = DateTime.UtcNow.AddDays(DiasTeste)
+            TesteExpiraEm = DateTime.UtcNow.AddDays(await db.ConfiguracoesPlataforma.Where(c => c.Id == 1).Select(c => (int?)c.DiasTeste).FirstOrDefaultAsync(ct) ?? DiasTeste)
         };
         db.Agencias.Add(agencia);
         await db.SaveChangesAsync(ct);

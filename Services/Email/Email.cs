@@ -103,7 +103,8 @@ public static class TemplatesEmail
             </td></tr></table></body></html>
             """;
 
-        var texto = $"{titulo}\n\n{System.Text.RegularExpressions.Regex.Replace(paragrafoHtmlSeguro, "<[^>]+>", "")}\n\n{(link != null ? $"{textoBotao}: {link}\n\n" : "")}{rodape}";
+        // Versão texto: sem tags e sem entidades HTML (acentos codificados viram caracteres de novo)
+        var texto = $"{titulo}\n\n{System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(paragrafoHtmlSeguro, "<[^>]+>", ""))}\n\n{(link != null ? $"{textoBotao}: {link}\n\n" : "")}{rodape}";
         return new MensagemEmail(para, assunto, html, texto, categoria);
     }
 

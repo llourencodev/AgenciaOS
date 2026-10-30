@@ -55,7 +55,7 @@ public class PermissaoModuloFilter(TenantContext tenant, AcessoAbas acessoAbas, 
         // Bloqueio comercial por agência (assinatura suspensa/cancelada, teste vencido, agência suspensa).
         // Só a tela de assinatura continua acessível; nenhum dado é apagado e as outras agências não são afetadas.
         if (tenant.Situacao is { } s
-            && (s.Status != Models.StatusAgencia.Ativa || Cobranca.CobrancaService.Bloqueada(s.Assinatura, s.TesteExpiraEm, DateTime.UtcNow))
+            && (s.Status != Models.StatusAgencia.Ativa || (!s.Isenta && Cobranca.CobrancaService.Bloqueada(s.Assinatura, s.TesteExpiraEm, DateTime.UtcNow)))
             && !LiberadoQuandoBloqueado.Contains(controller))
         {
             ctx.Result = new RedirectToActionResult("Bloqueada", "Assinatura", null);

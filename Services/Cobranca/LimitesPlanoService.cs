@@ -14,6 +14,7 @@ public class LimitesPlanoService(ApplicationDbContext db, TenantContext tenant, 
 {
     public async Task<Plano?> PlanoAtualAsync(CancellationToken ct = default)
     {
+        if (tenant.Situacao?.Isenta == true) return null; // isenta: sem limites nem restrição de módulos
         var codigo = tenant.Situacao?.PlanoCodigo;
         if (string.IsNullOrEmpty(codigo)) return null;
         return await cache.GetOrCreateAsync($"plano:{codigo}", async e =>

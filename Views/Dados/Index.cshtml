@@ -1,0 +1,60 @@
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Dados e privacidade";
+    var clientes = ViewData["Clientes"] as List<Cliente> ?? [];
+    var usuarios = ViewData["Usuarios"] as List<Usuario> ?? [];
+}
+<div class="page-header">
+    <div>
+        <h1>Dados e privacidade</h1>
+        <p>Exportação dos dados da agência e exclusão de dados pessoais (LGPD)</p>
+    </div>
+    <a asp-controller="Privacidade" asp-action="Index" class="btn btn-outline"><i class="bi bi-shield-check me-1"></i> Pedidos de titulares</a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header"><span class="card-title">Exportar todos os dados da agência</span></div>
+    <div class="card-body">
+        <p class="text-sm">Arquivo ZIP com clientes, conteúdos, tarefas, financeiro, contratos, usuários, lista de arquivos e métricas de marketing, em JSON. Senhas e tokens de integração não são incluídos. A exportação fica registrada na auditoria.</p>
+        <form asp-action="Exportar" method="post"><button class="btn btn-primary"><i class="bi bi-file-earmark-zip me-1"></i> Gerar exportação</button></form>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><span class="card-title">Excluir dados pessoais de um cliente</span></div>
+            <div class="card-body">
+                <p class="text-sm">Remove nome, contatos, observações, estratégia e conexões de marketing, e anonimiza o login do cliente. Lançamentos financeiros, contratos e tarefas ficam no histórico sem identificação (obrigações legais). <strong>Não pode ser desfeito.</strong></p>
+                <form asp-action="AnonimizarCliente" method="post" class="d-flex flex-wrap gap-2">
+                    <select name="id" class="form-select form-select-sm" style="flex:1;min-width:180px;">
+                        @foreach (var c in clientes.Where(c => !c.NomeEmpresa.StartsWith("Cliente removido")))
+                        {
+                            <option value="@c.Id">@c.NomeEmpresa</option>
+                        }
+                    </select>
+                    <input name="confirmacao" class="form-control form-control-sm" style="width:130px;" placeholder="digite EXCLUIR" />
+                    <button class="btn btn-sm btn-outline-danger">Excluir dados</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><span class="card-title">Anonimizar um usuário da agência</span></div>
+            <div class="card-body">
+                <p class="text-sm">Para ex-colaboradores ou pedidos de exclusão: remove nome, e-mail e telefone, encerra o acesso e mantém o histórico de tarefas sem identificação. <strong>Não pode ser desfeito.</strong></p>
+                <form asp-action="AnonimizarUsuario" method="post" class="d-flex flex-wrap gap-2">
+                    <select name="id" class="form-select form-select-sm" style="flex:1;min-width:180px;">
+                        @foreach (var u in usuarios)
+                        {
+                            <option value="@u.Id">@u.NomeCompleto (@u.Email)</option>
+                        }
+                    </select>
+                    <input name="confirmacao" class="form-control form-control-sm" style="width:130px;" placeholder="digite EXCLUIR" />
+                    <button class="btn btn-sm btn-outline-danger">Anonimizar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

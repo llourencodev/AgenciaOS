@@ -1,0 +1,57 @@
+@model List<AgenciaOS.Models.SolicitacaoPrivacidade>
+@using AgenciaOS.Models
+@{
+    Layout = "_LayoutPlataforma";
+    ViewData["Title"] = "Privacidade";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h3 fw-bold mb-0">Pedidos de titulares (LGPD)</h1>
+        <p class="text-muted mb-0">Prazo padrão: 15 dias. Pedidos sobre dados inseridos por uma agência devem ser encaminhados a ela (controladora).</p>
+    </div>
+    <a href="/Privacidade/Solicitar" target="_blank" class="btn btn-outline-secondary btn-sm">Formulário público</a>
+</div>
+@foreach (var s in Model)
+{
+    var aberta = s.Status is not (StatusSolicitacaoPrivacidade.Concluida or StatusSolicitacaoPrivacidade.Recusada);
+    <div class="card mb-3 @(s.Atrasada ? "border border-danger" : "")">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between gap-2">
+                <div><code>@s.Protocolo</code> · <strong>@s.Tipo</strong> · @s.NomeTitular (@s.EmailTitular)
+                    @if (s.UsuarioId != null) { <span class="badge text-bg-light border">usuário da plataforma</span> }
+                    @if (s.AgenciaId is int ag) { <a asp-action="Agencia" asp-route-id="@ag" class="badge text-bg-light border text-decoration-none">agência @ag</a> }</div>
+                <div class="small">@s.Status · prazo @s.PrazoEm.ToLocalTime().ToString("dd/MM/yyyy") @if (s.Atrasada) { <span class="badge text-bg-danger">atrasado</span> }</div>
+            </div>
+            <p class="small mt-2 mb-2" style="white-space:pre-wrap;">@s.Descricao</p>
+            @if (!string.IsNullOrEmpty(s.Resposta)) { <p class="small text-muted mb-2">Resposta: @s.Resposta</p> }
+            @if (aberta)
+            {
+                <form asp-action="ResponderPrivacidade" method="post" class="d-flex flex-wrap gap-2 mb-2">
+                    <input type="hidden" name="id" value="@s.Id" />
+                    <input name="resposta" class="form-control form-control-sm" style="flex:1;min-width:220px;" placeholder="Resposta ao titular" />
+                    <select name="status" class="form-select form-select-sm" style="width:auto;">
+                        <option value="EmAnalise">Em análise</option>
+                        <option value="EncaminhadaAgencia">Encaminhar à agência</option>
+                        <option value="Concluida">Concluída</option>
+                        <option value="Recusada">Recusada</option>
+                    </select>
+                    <input name="agenciaId" type="number" class="form-control form-control-sm" style="width:110px;" placeholder="Agência" value="@s.AgenciaId" />
+                    <button class="btn btn-sm btn-primary">Salvar</button>
+                </form>
+                @if (s.UsuarioId != null)
+                {
+                    <div class="d-flex flex-wrap gap-2">
+                        <form asp-action="ExportarDadosTitular" method="post"><input type="hidden" name="id" value="@s.Id" /><button class="btn btn-sm btn-outline-secondary">Exportar dados do titular</button></form>
+                        <form asp-action="AnonimizarTitular" method="post" class="d-flex gap-2"><input type="hidden" name="id" value="@s.Id" />
+                            <input name="confirmacao" class="form-control form-control-sm" style="width:130px;" placeholder="digite EXCLUIR" />
+                            <button class="btn btn-sm btn-outline-danger">Anonimizar titular</button></form>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+@if (Model.Count == 0)
+{
+    <div class="card"><div class="card-body text-center text-muted">Nenhum pedido.</div></div>
+}

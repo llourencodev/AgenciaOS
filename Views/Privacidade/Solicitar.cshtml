@@ -1,0 +1,18 @@
+@using AgenciaOS.Models
+@{
+    Layout = "~/Views/Account/_LayoutAuth.cshtml";
+    ViewData["Title"] = "Solicitação de privacidade";
+}
+<div class="login-form-title">Seus dados, seus direitos</div>
+<div class="login-form-sub mb-3">Peça acesso, correção, portabilidade, anonimização ou exclusão dos seus dados pessoais (LGPD, art. 18). Respondemos em até 15 dias.</div>
+<form asp-action="Solicitar" method="post">
+    <div class="auth-hp" aria-hidden="true"><label for="empresa">Não preencha</label><input name="empresa" id="empresa" tabindex="-1" autocomplete="off" /></div>
+    <div class="mb-3"><label class="form-label">Seu nome</label><input name="nome" class="form-control" required autocomplete="name" /></div>
+    <div class="mb-3"><label class="form-label">E-mail para resposta</label><input name="email" type="email" class="form-control" required autocomplete="email" /></div>
+    <div class="mb-3"><label class="form-label">Tipo de pedido</label>
+        <select name="tipo" class="form-select" asp-items="Html.GetEnumSelectList<TipoSolicitacaoPrivacidade>()"></select></div>
+    <div class="mb-3"><label class="form-label">Descreva o pedido</label>
+        <textarea name="descricao" class="form-control" rows="4" required placeholder="Ex.: sou cliente da agência X e quero saber quais dados meus estão no sistema."></textarea></div>
+    <button type="submit" class="btn btn-primary w-100 py-2" style="font-weight:600;border-radius:10px;">Enviar pedido</button>
+</form>
+<div class="text-center mt-3 auth-link"><a asp-controller="Account" asp-action="Privacidade">Política de Privacidade</a></div>

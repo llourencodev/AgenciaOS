@@ -18,9 +18,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews(o =>
 {
     o.Filters.Add<PermissaoModuloFilter>();
+    o.Filters.Add<AgenciaOS.Services.Plataforma.AceiteTermosFilter>();
     o.Filters.Add<AcessoEntreAgenciasExceptionFilter>();
 });
 builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
+
+// Plataforma e LGPD (Fase 5)
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<AgenciaOS.Services.Plataforma.AuditoriaService>();
+builder.Services.AddScoped<AgenciaOS.Services.Plataforma.ConfiguracaoPlataformaService>();
+builder.Services.AddScoped<AgenciaOS.Services.Plataforma.MetricasPlataformaService>();
+builder.Services.AddScoped<AgenciaOS.Services.Plataforma.PrivacidadeService>();
 
 var conn = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("DATABASE_URL")

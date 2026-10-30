@@ -14,7 +14,7 @@ namespace AgenciaOS.Controllers;
 /// </summary>
 [Authorize]
 public class AssinaturaController(ApplicationDbContext db, CobrancaService servico, TenantContext tenant,
-    CobrancaOptions opt, IWebHostEnvironment env) : Controller
+    CobrancaOptions opt, IWebHostEnvironment env, Services.Plataforma.AuditoriaService auditoria) : Controller
 {
     public record Painel(Agencia Agencia, Assinatura? Assinatura, List<Pagamento> Pagamentos, List<Plano> Planos, bool Bloqueada);
 
@@ -25,7 +25,7 @@ public class AssinaturaController(ApplicationDbContext db, CobrancaService servi
         var assinatura = await servico.VigenteAsync(agenciaId, ct);
         var pagamentos = await db.Pagamentos.OrderByDescending(p => p.Vencimento).ThenByDescending(p => p.Id).Take(24).ToListAsync(ct);
         var planos = await db.Planos.Where(p => p.Ativo).OrderBy(p => p.Ordem).ThenBy(p => p.Preco).ToListAsync(ct);
-        var bloqueada = agencia.Status != StatusAgencia.Ativa || CobrancaService.Bloqueada(agencia.SituacaoAssinatura, agencia.TesteExpiraEm, DateTime.UtcNow);
+        var bloqueada = agencia.Status != StatusAgencia.Ativa || !agencia.Isenta && CobrancaService.Bloqueada(agencia.SituacaoAssinatura, agencia.TesteExpiraEm, DateTime.UtcNow);
         return new Painel(agencia, assinatura, pagamentos, planos, bloqueada);
     }
 
@@ -56,6 +56,7 @@ public class AssinaturaController(ApplicationDbContext db, CobrancaService servi
         try
         {
             var url = await servico.AssinarAsync(tenant.AgenciaId!.Value, planoId, forma, cpfCnpj, ct);
+            await auditoria.RegistrarAsync("assinatura.assinar", tenant.AgenciaId, "Plano", planoId.ToString(), new { forma = forma.ToString() }, ct);
             // Checkout hospedado no gateway (Asaas). Só aceita URL do próprio app ou HTTPS externa.
             return url.StartsWith('/') || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ? Redirect(url) : RedirectToAction(nameof(Index));
         }
@@ -74,6 +75,7 @@ public class AssinaturaController(ApplicationDbContext db, CobrancaService servi
         try
         {
             await servico.AlterarPlanoAsync(tenant.AgenciaId!.Value, planoId, ct);
+            await auditoria.RegistrarAsync("assinatura.alterar-plano", tenant.AgenciaId, "Plano", planoId.ToString(), ct: ct);
             TempData["Sucesso"] = "Plano alterado. O novo valor vale a partir da próxima cobrança.";
         }
         catch (ErroGateway e) { TempData["Erro"] = e.Message; }
@@ -88,6 +90,7 @@ public class AssinaturaController(ApplicationDbContext db, CobrancaService servi
         try
         {
             await servico.CancelarAsync(tenant.AgenciaId!.Value, ct);
+            await auditoria.RegistrarAsync("assinatura.cancelar", tenant.AgenciaId, ct: ct);
             TempData["Sucesso"] = "Assinatura cancelada. Os dados ficam preservados e você pode reativar quando quiser.";
         }
         catch (ErroGateway e) { TempData["Erro"] = e.Message; }

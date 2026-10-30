@@ -1,0 +1,25 @@
+@model AgenciaOS.Models.ConfiguracaoPlataforma
+@{
+    Layout = "_LayoutPlataforma";
+    ViewData["Title"] = "Configurações";
+}
+<h1 class="h3 fw-bold mb-3">Configurações globais</h1>
+<form asp-action="Configuracoes" method="post" style="max-width:640px;">
+    <div class="card mb-3"><div class="card-body">
+        <h2 class="h6 fw-bold">Assinaturas</h2>
+        <div class="row g-3">
+            <div class="col-6"><label class="form-label">Dias de teste grátis (novas agências)</label><input asp-for="DiasTeste" type="number" min="0" max="90" class="form-control" /></div>
+            <div class="col-6"><label class="form-label">Dias de tolerância após atraso</label><input asp-for="DiasTolerancia" type="number" min="0" max="60" class="form-control" /></div>
+        </div>
+    </div></div>
+    <div class="card mb-3"><div class="card-body">
+        <h2 class="h6 fw-bold">Privacidade (LGPD)</h2>
+        <div class="row g-3">
+            <div class="col-6"><label class="form-label">Encarregado de dados (nome)</label><input asp-for="EncarregadoNome" class="form-control" /></div>
+            <div class="col-6"><label class="form-label">E-mail do encarregado</label><input asp-for="EncarregadoEmail" type="email" class="form-control" /></div>
+            <div class="col-12"><label class="form-label">E-mail de suporte</label><input asp-for="EmailSuporte" type="email" class="form-control" /></div>
+            <div class="col-12 form-check ms-2"><input asp-for="ExigirAceiteTermos" class="form-check-input" /><label asp-for="ExigirAceiteTermos" class="form-check-label">Exigir novo aceite quando os Termos ou a Política mudarem de versão</label></div>
+        </div>
+    </div></div>
+    <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Salvar</button>
+</form>

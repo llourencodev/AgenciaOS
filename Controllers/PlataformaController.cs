@@ -2,6 +2,8 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using AgenciaOS.Data;
 using AgenciaOS.Models;
+using AgenciaOS.Services.Cobranca;
+using AgenciaOS.Services.Plataforma;
 using AgenciaOS.Services.Tenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -11,12 +13,207 @@ using Microsoft.EntityFrameworkCore;
 namespace AgenciaOS.Controllers;
 
 /// <summary>
-/// Painel do proprietário da plataforma (Fase 1: mínimo para operar várias agências).
-/// Separado da navegação das agências; métricas, planos e auditoria entram na Fase 5.
+/// Painel exclusivo do proprietário da plataforma, separado da navegação das agências.
+/// Toda ação que altera dados gera registro de auditoria.
 /// </summary>
 [Authorize(Roles = "SuperAdmin")]
-public class PlataformaController(ApplicationDbContext db, UserManager<Usuario> userManager, TenantContext tenant) : Controller
+public class PlataformaController(ApplicationDbContext db, UserManager<Usuario> userManager, TenantContext tenant,
+    MetricasPlataformaService metricas, AuditoriaService auditoria, ConfiguracaoPlataformaService configuracao,
+    PrivacidadeService privacidade, CobrancaService cobranca) : Controller
 {
+    /// <summary>Somente SuperAdmin chega aqui ([Authorize]); o painel lê e administra todas as agências.</summary>
+    public override void OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext context)
+    {
+        tenant.UsarSistema();
+        base.OnActionExecuting(context);
+    }
+
+    // ── Detalhes e administração de uma agência ──────────────────────────
+    public record DetalhesAgencia(Agencia Agencia, List<Usuario> Usuarios, Assinatura? Assinatura, List<Pagamento> Pagamentos,
+        List<RegistroAuditoria> Atividades, int Clientes, List<Plano> Planos);
+
+    public async Task<IActionResult> Agencia(int id, CancellationToken ct)
+    {
+        var ag = await db.Agencias.FirstOrDefaultAsync(a => a.Id == id, ct);
+        if (ag == null) return NotFound();
+        return View(new DetalhesAgencia(ag,
+            await db.Users.Where(u => u.AgenciaId == id).OrderBy(u => u.Nome).ToListAsync(ct),
+            await cobranca.VigenteAsync(id, ct),
+            await db.Pagamentos.Where(p => p.AgenciaId == id).OrderByDescending(p => p.Vencimento).Take(24).ToListAsync(ct),
+            await db.RegistrosAuditoria.Where(r => r.AgenciaId == id).OrderByDescending(r => r.Quando).Take(50).ToListAsync(ct),
+            await db.Clientes.CountAsync(c => c.AgenciaId == id, ct),
+            await db.Planos.OrderBy(p => p.Ordem).ToListAsync(ct)));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Suspender(int id, string motivo, CancellationToken ct)
+    {
+        var ag = await db.Agencias.FirstOrDefaultAsync(a => a.Id == id, ct);
+        if (ag == null) return NotFound();
+        if (string.IsNullOrWhiteSpace(motivo)) { TempData["Erro"] = "Informe o motivo da suspensão."; return RedirectToAction(nameof(Agencia), new { id }); }
+        ag.Status = StatusAgencia.Suspensa;
+        ag.MotivoSuspensao = motivo.Trim();
+        ag.AtualizadoEm = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        // Derruba as sessões abertas da agência
+        foreach (var u in await db.Users.Where(u => u.AgenciaId == id).ToListAsync(ct))
+            await userManager.UpdateSecurityStampAsync(u);
+        await auditoria.RegistrarAsync("plataforma.suspender-agencia", id, "Agencia", id.ToString(), new { motivo }, ct);
+        TempData["Sucesso"] = "Agência suspensa. Os dados foram preservados.";
+        return RedirectToAction(nameof(Agencia), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Reativar(int id, CancellationToken ct)
+    {
+        var ag = await db.Agencias.FirstOrDefaultAsync(a => a.Id == id, ct);
+        if (ag == null) return NotFound();
+        ag.Status = StatusAgencia.Ativa;
+        ag.MotivoSuspensao = null;
+        ag.AtualizadoEm = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        await auditoria.RegistrarAsync("plataforma.reativar-agencia", id, "Agencia", id.ToString(), ct: ct);
+        TempData["Sucesso"] = "Agência reativada.";
+        return RedirectToAction(nameof(Agencia), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Isencao(int id, bool isenta, CancellationToken ct)
+    {
+        var ag = await db.Agencias.FirstOrDefaultAsync(a => a.Id == id, ct);
+        if (ag == null) return NotFound();
+        ag.Isenta = isenta;
+        if (isenta && ag.SituacaoAssinatura != SituacaoAssinatura.Ativa) ag.SituacaoAssinatura = SituacaoAssinatura.Ativa;
+        ag.AtualizadoEm = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        await auditoria.RegistrarAsync(isenta ? "plataforma.isentar-agencia" : "plataforma.remover-isencao", id, "Agencia", id.ToString(), ct: ct);
+        TempData["Sucesso"] = isenta ? "Agência isenta de assinatura." : "Isenção removida: a agência passa a seguir as regras de assinatura.";
+        return RedirectToAction(nameof(Agencia), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AlterarPlanoAgencia(int id, int planoId, CancellationToken ct)
+    {
+        var ag = await db.Agencias.FirstOrDefaultAsync(a => a.Id == id, ct);
+        var plano = await db.Planos.FirstOrDefaultAsync(p => p.Id == planoId, ct);
+        if (ag == null || plano == null) return NotFound();
+        try
+        {
+            if (await cobranca.VigenteAsync(id, ct) is { CanceladaEm: null })
+                await cobranca.AlterarPlanoAsync(id, planoId, ct); // assinatura paga: atualiza o valor no gateway
+            else
+            {
+                ag.PlanoCodigo = plano.Codigo; // isenta/teste: só define limites e módulos
+                ag.AtualizadoEm = DateTime.UtcNow;
+                await db.SaveChangesAsync(ct);
+            }
+            await auditoria.RegistrarAsync("plataforma.alterar-plano", id, "Agencia", id.ToString(), new { plano = plano.Codigo }, ct);
+            TempData["Sucesso"] = $"Plano alterado para {plano.Nome}.";
+        }
+        catch (Services.Cobranca.ErroGateway e) { TempData["Erro"] = e.Message; }
+        return RedirectToAction(nameof(Agencia), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EstenderTeste(int id, int dias, CancellationToken ct)
+    {
+        var ag = await db.Agencias.FirstOrDefaultAsync(a => a.Id == id, ct);
+        if (ag == null || dias is < 1 or > 90) return NotFound();
+        var base_ = ag.TesteExpiraEm is { } fim && fim > DateTime.UtcNow ? fim : DateTime.UtcNow;
+        ag.TesteExpiraEm = base_.AddDays(dias);
+        if (ag.SituacaoAssinatura == SituacaoAssinatura.Suspensa && !await db.Assinaturas.AnyAsync(a => a.AgenciaId == id && a.Vigente, ct))
+            ag.SituacaoAssinatura = SituacaoAssinatura.Teste;
+        ag.AtualizadoEm = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        await auditoria.RegistrarAsync("plataforma.estender-teste", id, "Agencia", id.ToString(), new { dias, ate = ag.TesteExpiraEm }, ct);
+        TempData["Sucesso"] = $"Teste estendido até {ag.TesteExpiraEm:dd/MM/yyyy}.";
+        return RedirectToAction(nameof(Agencia), new { id });
+    }
+
+    // ── Auditoria ────────────────────────────────────────────────────────
+    public async Task<IActionResult> Auditoria(int? agenciaId, string? acao, CancellationToken ct)
+    {
+        var q = db.RegistrosAuditoria.AsQueryable();
+        if (agenciaId.HasValue) q = q.Where(r => r.AgenciaId == agenciaId);
+        if (!string.IsNullOrWhiteSpace(acao)) q = q.Where(r => r.Acao.Contains(acao));
+        ViewData["AgenciaId"] = agenciaId;
+        ViewData["Acao"] = acao;
+        return View(await q.OrderByDescending(r => r.Quando).Take(300).ToListAsync(ct));
+    }
+
+    // ── Configurações globais ────────────────────────────────────────────
+    public async Task<IActionResult> Configuracoes() => View(await configuracao.ObterAsync());
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Configuracoes(ConfiguracaoPlataforma input, CancellationToken ct)
+    {
+        await configuracao.SalvarAsync(input, ct);
+        await auditoria.RegistrarAsync("plataforma.configuracoes", null, "ConfiguracaoPlataforma", "1",
+            new { input.DiasTeste, input.DiasTolerancia, input.ExigirAceiteTermos }, ct);
+        TempData["Sucesso"] = "Configurações salvas.";
+        return RedirectToAction(nameof(Configuracoes));
+    }
+
+    // ── Solicitações de titulares (LGPD) ─────────────────────────────────
+    public async Task<IActionResult> Privacidade(CancellationToken ct) =>
+        View(await db.SolicitacoesPrivacidade
+            .OrderBy(s => s.Status == StatusSolicitacaoPrivacidade.Concluida || s.Status == StatusSolicitacaoPrivacidade.Recusada)
+            .ThenBy(s => s.PrazoEm).Take(300).ToListAsync(ct));
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResponderPrivacidade(int id, StatusSolicitacaoPrivacidade status, string? resposta, int? agenciaId, CancellationToken ct)
+    {
+        var s = await db.SolicitacoesPrivacidade.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (s == null) return NotFound();
+        if (status == StatusSolicitacaoPrivacidade.EncaminhadaAgencia)
+        {
+            if (agenciaId is not int ag || !await db.Agencias.AnyAsync(a => a.Id == ag, ct))
+            {
+                TempData["Erro"] = "Escolha a agência para encaminhar.";
+                return RedirectToAction(nameof(Privacidade));
+            }
+            s.AgenciaId = ag;
+        }
+        await privacidade.ResponderAsync(s, status, resposta, userManager.GetUserId(User)!, ct);
+        await auditoria.RegistrarAsync("privacidade.responder", s.AgenciaId, "SolicitacaoPrivacidade", s.Protocolo, new { status = status.ToString() }, ct);
+        TempData["Sucesso"] = $"Solicitação {s.Protocolo} atualizada.";
+        return RedirectToAction(nameof(Privacidade));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ExportarDadosTitular(int id, CancellationToken ct)
+    {
+        var s = await db.SolicitacoesPrivacidade.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (s?.UsuarioId == null) return NotFound();
+        var bytes = await privacidade.ExportarUsuarioAsync(s.UsuarioId, ct);
+        await auditoria.RegistrarAsync("privacidade.exportar-titular", s.AgenciaId, "SolicitacaoPrivacidade", s.Protocolo, ct: ct);
+        return File(bytes, "application/json", $"dados-{s.Protocolo}.json");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AnonimizarTitular(int id, string confirmacao, CancellationToken ct)
+    {
+        var s = await db.SolicitacoesPrivacidade.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (s?.UsuarioId == null) return NotFound();
+        if (confirmacao != "EXCLUIR") { TempData["Erro"] = "Digite EXCLUIR para confirmar."; return RedirectToAction(nameof(Privacidade)); }
+        try
+        {
+            await privacidade.AnonimizarUsuarioAsync(s.UsuarioId, ct);
+            await auditoria.RegistrarAsync("privacidade.anonimizar-titular", s.AgenciaId, "SolicitacaoPrivacidade", s.Protocolo, ct: ct);
+            TempData["Sucesso"] = "Dados do titular anonimizados e acesso encerrado. Registros de aceite foram mantidos (obrigação legal).";
+        }
+        catch (InvalidOperationException e) { TempData["Erro"] = e.Message; }
+        return RedirectToAction(nameof(Privacidade));
+    }
     public class NovaAgenciaInput
     {
         [Required, StringLength(150)] public string Nome { get; set; } = "";
@@ -35,7 +232,9 @@ public class PlataformaController(ApplicationDbContext db, UserManager<Usuario> 
 
     public async Task<IActionResult> Index(string? busca)
     {
-        tenant.UsarSistema(); // leitura agregada de todas as agências (somente SuperAdmin chega aqui)
+        ViewData["Indicadores"] = await metricas.CalcularAsync(DateTime.UtcNow);
+        ViewData["PrivacidadePendentes"] = await db.SolicitacoesPrivacidade.CountAsync(s =>
+            s.Status != StatusSolicitacaoPrivacidade.Concluida && s.Status != StatusSolicitacaoPrivacidade.Recusada);
 
         var query = db.Agencias.AsQueryable();
         if (!string.IsNullOrWhiteSpace(busca))
@@ -94,6 +293,7 @@ public class PlataformaController(ApplicationDbContext db, UserManager<Usuario> 
         await userManager.AddToRoleAsync(admin, "Admin");
         await tx.CommitAsync();
 
+        await auditoria.RegistrarAsync("plataforma.criar-agencia", agencia.Id, "Agencia", agencia.Id.ToString(), new { agencia.Slug, admin = admin.Email });
         TempData["Sucesso"] = $"Agência {agencia.NomeExibicao} criada. Administrador: {admin.Email}.";
         return RedirectToAction(nameof(Index));
     }
@@ -143,6 +343,7 @@ public class PlataformaController(ApplicationDbContext db, UserManager<Usuario> 
         plano.AtualizadoEm = DateTime.UtcNow;
         if (plano.Id == 0) db.Planos.Add(plano);
         await db.SaveChangesAsync();
+        await auditoria.RegistrarAsync("plataforma.salvar-plano", null, "Plano", plano.Codigo, new { plano.Preco, plano.Ativo, plano.LimiteUsuarios, plano.LimiteClientes, plano.LimiteArmazenamentoMb, plano.Modulos });
         TempData["Sucesso"] = $"Plano {plano.Nome} salvo.";
         return RedirectToAction(nameof(Planos));
     }

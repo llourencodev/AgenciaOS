@@ -45,6 +45,7 @@ public class CobrancaService(
         var agencia = await db.Agencias.SingleAsync(a => a.Id == agenciaId, ct);
         var plano = await db.Planos.SingleOrDefaultAsync(p => p.Id == planoId && p.Ativo, ct)
                     ?? throw new ErroGateway("Plano indisponível.");
+        if (agencia.Isenta) throw new ErroGateway("Esta agência é isenta de assinatura.");
         var digitos = GatewayAsaas.SoDigitos(cpfCnpj ?? "");
         if (digitos.Length is not (11 or 14)) throw new ErroGateway("Informe um CPF ou CNPJ válido para a cobrança.");
 
@@ -220,7 +221,7 @@ public class CobrancaService(
                 // Cobrança mais antiga ainda aberta manda; atraso de uma cobrança já quitada não vale (eventos fora de ordem)
                 if (assinatura.Situacao is SituacaoAssinatura.Ativa or SituacaoAssinatura.PagamentoPendente or SituacaoAssinatura.Teste)
                 {
-                    assinatura.ToleranciaAte = agora.AddDays(opt.DiasTolerancia);
+                    assinatura.ToleranciaAte = agora.AddDays(await DiasToleranciaAsync(ct));
                     await MudarSituacaoAsync(assinatura, SituacaoAssinatura.Tolerancia, ct);
                     await AvisarAsync(assinatura.AgenciaId, "Pagamento em atraso",
                         $"A cobrança de {pagamento.Valor:C} venceu. Regularize até {assinatura.ToleranciaAte:dd/MM/yyyy} para evitar a suspensão do acesso. Os dados não serão apagados.",
@@ -231,7 +232,7 @@ public class CobrancaService(
             case StatusPagamento.Estornado or StatusPagamento.Contestado:
                 if (assinatura.Situacao == SituacaoAssinatura.Ativa)
                 {
-                    assinatura.ToleranciaAte = agora.AddDays(opt.DiasTolerancia);
+                    assinatura.ToleranciaAte = agora.AddDays(await DiasToleranciaAsync(ct));
                     await MudarSituacaoAsync(assinatura, SituacaoAssinatura.Atrasada, ct);
                 }
                 logger.LogWarning("Pagamento {Pagamento} da agência {Agencia} estornado/contestado ({Tipo})", pagamento.GatewayPagamentoId, assinatura.AgenciaId, ev.Tipo);
@@ -275,7 +276,7 @@ public class CobrancaService(
         var mudancas = 0;
 
         var testesVencidos = await db.Agencias
-            .Where(a => a.SituacaoAssinatura == SituacaoAssinatura.Teste && a.TesteExpiraEm != null && a.TesteExpiraEm < agora)
+            .Where(a => !a.Isenta && a.SituacaoAssinatura == SituacaoAssinatura.Teste && a.TesteExpiraEm != null && a.TesteExpiraEm < agora)
             .ToListAsync(ct);
         foreach (var ag in testesVencidos)
         {
@@ -306,6 +307,10 @@ public class CobrancaService(
         await db.SaveChangesAsync(ct);
         return mudancas;
     }
+
+    /// <summary>Configuração global do painel; na falta dela, BILLING_TOLERANCIA_DIAS.</summary>
+    private async Task<int> DiasToleranciaAsync(CancellationToken ct) =>
+        await db.ConfiguracoesPlataforma.Where(c => c.Id == 1).Select(c => (int?)c.DiasTolerancia).FirstOrDefaultAsync(ct) ?? opt.DiasTolerancia;
 
     private async Task MudarSituacaoAsync(Assinatura a, SituacaoAssinatura nova, CancellationToken ct)
     {

@@ -1,0 +1,13 @@
+@{
+    Layout = "~/Views/Account/_LayoutAuth.cshtml";
+    ViewData["Title"] = "Pedido recebido";
+}
+<div class="text-center">
+    <div style="font-size:48px;color:#10b981;"><i class="bi bi-shield-check"></i></div>
+    <div class="login-form-title">Pedido recebido</div>
+    @if (TempData["Protocolo"] is string p)
+    {
+        <p class="text-muted">Protocolo <strong>@p</strong>. Enviamos a confirmação para o seu e-mail.</p>
+    }
+    <p class="text-muted">Podemos pedir informações para confirmar sua identidade antes de atender.</p>
+</div>

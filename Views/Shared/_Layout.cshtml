@@ -227,6 +227,10 @@
                         <span class="nav-icon ni-slate"><i class="bi bi-credit-card-fill"></i></span>
                         <span class="nav-label">Assinatura</span>
                     </a>
+                    <a asp-controller="Dados" asp-action="Index" class="nav-link-item @(ctrl=="Dados" || ctrl=="Privacidade" ?"active":"")">
+                        <span class="nav-icon ni-slate"><i class="bi bi-shield-lock-fill"></i></span>
+                        <span class="nav-label">Dados e LGPD</span>
+                    </a>
                 </div>
             }
         </nav>
@@ -300,6 +304,11 @@
                             </a>
                         </li>
                         <li>
+                            <a class="dropdown-item" asp-controller="Conta" asp-action="Privacidade">
+                                <i class="bi bi-person-lock me-2"></i>Minha privacidade
+                            </a>
+                        </li>
+                        <li>
                             <form asp-controller="Account" asp-action="Logout" method="post">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" class="dropdown-item text-danger">
@@ -313,7 +322,7 @@
         </header>
 
         <main class="page-main">
-            @if (_tenant.Situacao is { } _sit && User.IsInRole("Admin") && ctrl != "Assinatura")
+            @if (_tenant.Situacao is { Isenta: false } _sit && User.IsInRole("Admin") && ctrl != "Assinatura")
             {
                 var _aviso = _sit.Assinatura switch
                 {

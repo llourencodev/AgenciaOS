@@ -1,0 +1,45 @@
+@model List<AgenciaOS.Models.SolicitacaoPrivacidade>
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Pedidos de titulares";
+}
+<div class="page-header">
+    <div>
+        <h1>Pedidos de titulares (LGPD)</h1>
+        <p>Pedidos sobre dados que a sua agência inseriu no sistema. A agência é a controladora desses dados e deve responder em até 15 dias.</p>
+    </div>
+    <a asp-controller="Dados" asp-action="Index" class="btn btn-outline"><i class="bi bi-database me-1"></i> Dados e exclusões</a>
+</div>
+@foreach (var s in Model)
+{
+    <div class="card mb-3 @(s.Atrasada ? "border-danger" : "")">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between gap-2">
+                <div><code>@s.Protocolo</code> · <strong>@s.Tipo</strong> · @s.NomeTitular (@s.EmailTitular)</div>
+                <div class="text-sm">@s.Status · prazo @s.PrazoEm.ToLocalTime().ToString("dd/MM/yyyy") @if (s.Atrasada) { <span class="badge text-bg-danger">atrasado</span> }</div>
+            </div>
+            <p class="text-sm mt-2 mb-2" style="white-space:pre-wrap;">@s.Descricao</p>
+            @if (s.Status is not (StatusSolicitacaoPrivacidade.Concluida or StatusSolicitacaoPrivacidade.Recusada))
+            {
+                <form asp-action="Responder" method="post" class="d-flex flex-wrap gap-2">
+                    <input type="hidden" name="id" value="@s.Id" />
+                    <input name="resposta" class="form-control form-control-sm" style="flex:1;min-width:220px;" placeholder="Resposta ao titular (enviada por e-mail ao concluir/recusar)" />
+                    <select name="status" class="form-select form-select-sm" style="width:auto;">
+                        <option value="EmAnalise">Em análise</option>
+                        <option value="Concluida">Concluída</option>
+                        <option value="Recusada">Recusada</option>
+                    </select>
+                    <button class="btn btn-sm btn-primary">Salvar</button>
+                </form>
+            }
+            else if (!string.IsNullOrEmpty(s.Resposta))
+            {
+                <div class="text-sm text-muted">Resposta: @s.Resposta</div>
+            }
+        </div>
+    </div>
+}
+@if (Model.Count == 0)
+{
+    <div class="card"><div class="card-body text-muted text-center">Nenhum pedido encaminhado à sua agência.</div></div>
+}

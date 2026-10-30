@@ -2,7 +2,7 @@
 @using AgenciaOS.Models
 @{
     var a = Model.Agencia;
-    var (cor, texto) = a.SituacaoAssinatura switch
+    var (cor, texto) = a.Isenta ? ("text-bg-success", "Isenta de assinatura (cortesia da plataforma)") : a.SituacaoAssinatura switch
     {
         SituacaoAssinatura.Teste => ("text-bg-info", a.TesteExpiraEm is { } fim
             ? $"Período de teste até {fim.ToLocalTime():dd/MM/yyyy}" : "Período de teste"),

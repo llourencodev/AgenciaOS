@@ -1,7 +1,9 @@
+@inject AgenciaOS.Services.Plataforma.ConfiguracaoPlataformaService _configPlataforma
 @{
     Layout = "_LayoutAuth";
     ViewData["Title"] = "Política de Privacidade";
     ViewData["Documento"] = true;
+    var cfgPlataforma = await _configPlataforma.ObterAsync();
 }
 <div class="alert alert-warning small"><strong>Minuta</strong> — texto preliminar preparado para revisão jurídica antes da publicação comercial.</div>
 <h1 class="h3 fw-bold">Política de Privacidade do AgenciaOS</h1>
@@ -31,5 +33,6 @@
 <h2>6. Direitos do titular</h2>
 <p>Você pode solicitar confirmação de tratamento, acesso, correção, portabilidade, anonimização ou exclusão, e informações sobre compartilhamento. Pedidos sobre dados inseridos por uma agência devem ser feitos primeiro a ela (controladora); ajudaremos a agência a atendê-los.</p>
 
-<h2>7. Contato do encarregado</h2>
-<p>Encarregado de dados: [a definir] — e-mail: [a definir].</p>
+<h2>7. Como exercer seus direitos e contato do encarregado</h2>
+<p>Faça seu pedido pelo <a asp-controller="Privacidade" asp-action="Solicitar">formulário de privacidade</a> (ou, se tiver conta, em "Minha privacidade").
+    Encarregado de dados: @(cfgPlataforma.EncarregadoNome ?? "[a definir]") — e-mail: @(cfgPlataforma.EncarregadoEmail ?? "[a definir]").</p>
