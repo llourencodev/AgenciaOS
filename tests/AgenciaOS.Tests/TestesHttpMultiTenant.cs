@@ -52,6 +52,8 @@ public sealed class AppMultiTenant : WebApplicationFactory<Program>, IAsyncLifet
         Environment.SetEnvironmentVariable("ASAAS_WEBHOOK_TOKEN", TokenWebhook);
         Environment.SetEnvironmentVariable("BILLING_WORKER_ENABLED", "false");
         Environment.SetEnvironmentVariable("LGPD_EXIGIR_ACEITE", "false"); // ligado só no teste específico (usuários de teste não têm aceite)
+        Environment.SetEnvironmentVariable("SUPERADMIN_EXIGIR_2FA", "false"); // ligado só no teste específico
+        Environment.SetEnvironmentVariable("RETENCAO_WORKER_ENABLED", "false");
     }
 
     public const string TokenWebhook = "token-webhook-de-teste-123";

@@ -48,7 +48,7 @@ public class ContasService(
     public string UrlBase(HttpRequest req)
     {
         if (!string.IsNullOrEmpty(emailOpt.UrlBase)) return emailOpt.UrlBase;
-        if (env.IsProduction()) throw new InvalidOperationException("Defina APP_BASE_URL para enviar links por e-mail em produção.");
+        if (Operacao.AmbienteExtensions.EhProducaoOuHomologacao(env)) throw new InvalidOperationException("Defina APP_BASE_URL para enviar links por e-mail em produção.");
         return $"{req.Scheme}://{req.Host}";
     }
 

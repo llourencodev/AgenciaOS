@@ -1,0 +1,62 @@
+# Backup diário do banco de produção + teste de restauração em banco separado (descartável).
+# Um backup só conta como válido se a restauração passar. Falha neste workflow = alerta por e-mail do GitHub.
+#
+# Segredos necessários (Settings → Secrets and variables → Actions):
+#   PROD_DATABASE_URL            URL pública do Postgres do Railway (somente leitura é suficiente)
+#   BACKUP_S3_ENDPOINT           ex.: https://<account-id>.r2.cloudflarestorage.com
+#   BACKUP_S3_BUCKET             bucket PRIVADO só para backups (separado do bucket de arquivos)
+#   BACKUP_AWS_ACCESS_KEY_ID / BACKUP_AWS_SECRET_ACCESS_KEY   token R2 com acesso só a esse bucket
+name: Backup do banco
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # 03:00 em Brasília
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      restauracao:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: restauracao
+          POSTGRES_PASSWORD: restauracao
+          POSTGRES_DB: restauracao
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U restauracao"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cliente PostgreSQL 17 (pg_dump precisa ser igual ou mais novo que o servidor)
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Backup e envio ao bucket (retenção 30 dias)
+        id: backup
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+          S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          BACKUP_DIR: ${{ runner.temp }}/backup
+          BACKUP_RETENCAO_DIAS: "30"
+        run: echo "dump=$(sh scripts/backup/backup-postgres.sh | tail -1)" >> "$GITHUB_OUTPUT"
+
+      - name: Teste de restauração em banco separado
+        env:
+          RESTORE_DATABASE_URL: postgresql://restauracao:restauracao@localhost:5432/restauracao
+        run: sh scripts/backup/testar-restauracao.sh "${{ steps.backup.outputs.dump }}"
+
+      - name: Remover cópia local
+        if: always()
+        run: rm -rf "${{ runner.temp }}/backup"

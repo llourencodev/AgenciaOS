@@ -19,7 +19,8 @@ namespace AgenciaOS.Controllers;
 [Authorize(Roles = "SuperAdmin")]
 public class PlataformaController(ApplicationDbContext db, UserManager<Usuario> userManager, TenantContext tenant,
     MetricasPlataformaService metricas, AuditoriaService auditoria, ConfiguracaoPlataformaService configuracao,
-    PrivacidadeService privacidade, CobrancaService cobranca) : Controller
+    PrivacidadeService privacidade, CobrancaService cobranca,
+    Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckService saude) : Controller
 {
     /// <summary>Somente SuperAdmin chega aqui ([Authorize]); o painel lê e administra todas as agências.</summary>
     public override void OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext context)
@@ -134,6 +135,18 @@ public class PlataformaController(ApplicationDbContext db, UserManager<Usuario> 
         TempData["Sucesso"] = $"Teste estendido até {ag.TesteExpiraEm:dd/MM/yyyy}.";
         return RedirectToAction(nameof(Agencia), new { id });
     }
+
+    // ── Saúde da operação (detalhes que a página pública não mostra) ─────
+    public record PainelSaude(Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport Relatorio, int ContasMarketingComErro,
+        int WebhooksComFalha, int PedidosPrivacidadeAtrasados);
+
+    public async Task<IActionResult> Saude(CancellationToken ct) => View(new PainelSaude(
+        await saude.CheckHealthAsync(ct),
+        await db.ContasMarketing.CountAsync(c => c.Ativa && (c.Status == StatusIntegracao.ErroSincronizacao
+            || c.Status == StatusIntegracao.TokenExpirado || c.Status == StatusIntegracao.PermissaoRevogada), ct),
+        await db.EventosWebhook.CountAsync(e => e.ProcessadoEm == null && e.Erro != null, ct),
+        await db.SolicitacoesPrivacidade.CountAsync(s => s.Status != StatusSolicitacaoPrivacidade.Concluida
+            && s.Status != StatusSolicitacaoPrivacidade.Recusada && s.PrazoEm < DateTime.UtcNow, ct)));
 
     // ── Auditoria ────────────────────────────────────────────────────────
     public async Task<IActionResult> Auditoria(int? agenciaId, string? acao, CancellationToken ct)

@@ -10,7 +10,7 @@ namespace AgenciaOS.Services.Tenancy;
 /// 3) aplica Usuario.AbasPermitidas, que antes só escondia itens do menu;
 /// 4) aplica o bloqueio por assinatura e os módulos do plano (Fase 4).
 /// </summary>
-public class PermissaoModuloFilter(TenantContext tenant, AcessoAbas acessoAbas, Cobranca.LimitesPlanoService limites) : IAsyncActionFilter
+public class PermissaoModuloFilter(TenantContext tenant, AcessoAbas acessoAbas, Cobranca.LimitesPlanoService limites, IConfiguration cfg) : IAsyncActionFilter
 {
     // Controller → aba (mesmos nomes usados em UsuariosController.TodasAbas e no menu)
     private static readonly Dictionary<string, string> Abas = new(StringComparer.OrdinalIgnoreCase)
@@ -27,12 +27,21 @@ public class PermissaoModuloFilter(TenantContext tenant, AcessoAbas acessoAbas, 
     };
 
     // Acessíveis sem agência (login, erro, painel da plataforma)
-    private static readonly HashSet<string> SemAgencia = new(StringComparer.OrdinalIgnoreCase) { "Account", "Home", "Plataforma", "Marca", "Conta" };
+    private static readonly HashSet<string> SemAgencia = new(StringComparer.OrdinalIgnoreCase) { "Account", "Home", "Plataforma", "Marca", "Conta", "Status" };
 
     public async Task OnActionExecutionAsync(ActionExecutingContext ctx, ActionExecutionDelegate next)
     {
         var user = ctx.HttpContext.User;
         var controller = ctx.RouteData.Values["controller"]?.ToString() ?? "";
+
+        // Painel global só com 2FA ativo (desligável por SUPERADMIN_EXIGIR_2FA=false, ex.: testes)
+        if (string.Equals(controller, "Plataforma", StringComparison.OrdinalIgnoreCase) && user.IsInRole("SuperAdmin")
+            && !string.Equals(cfg["SUPERADMIN_EXIGIR_2FA"], "false", StringComparison.OrdinalIgnoreCase)
+            && !await acessoAbas.DoisFatoresAtivoAsync(user))
+        {
+            ctx.Result = new RedirectToActionResult("DoisFatores", "Conta", null);
+            return;
+        }
 
         if (user.Identity?.IsAuthenticated != true || SemAgencia.Contains(controller))
         {
@@ -105,4 +114,7 @@ public class AcessoAbas(Microsoft.AspNetCore.Identity.UserManager<Models.Usuario
         var abas = u.AbasPermitidas?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? [];
         return abas.Length == 0 || abas.Contains(aba);
     }
+
+    public async Task<bool> DoisFatoresAtivoAsync(System.Security.Claims.ClaimsPrincipal user) =>
+        await userManager.GetUserAsync(user) is { TwoFactorEnabled: true };
 }

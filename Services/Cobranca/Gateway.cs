@@ -253,7 +253,7 @@ public static class CobrancaServiceCollectionExtensions
                 // Sem loggers do HttpClient: não registrar cabeçalhos/corpos de cobrança
                 services.AddHttpClient<IGatewayPagamento, GatewayAsaas>(GatewayAsaas.NomeCliente, c => c.Timeout = TimeSpan.FromSeconds(30)).RemoveAllLoggers();
                 break;
-            case "simulado" when !env.IsProduction():
+            case "simulado" when !Operacao.AmbienteExtensions.EhProducaoOuHomologacao(env):
                 services.AddSingleton<GatewaySimulado>();
                 services.AddSingleton<IGatewayPagamento>(sp => sp.GetRequiredService<GatewaySimulado>());
                 break;

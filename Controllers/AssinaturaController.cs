@@ -98,7 +98,7 @@ public class AssinaturaController(ApplicationDbContext db, CobrancaService servi
     }
 
     // ── Somente com o gateway simulado (desenvolvimento) ─────────────────
-    private bool SimuladoPermitido => opt.Gateway == "simulado" && !env.IsProduction();
+    private bool SimuladoPermitido => opt.Gateway == "simulado" && !Services.Operacao.AmbienteExtensions.EhProducaoOuHomologacao(env);
 
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> PagamentoSimulado(string cobranca, CancellationToken ct)

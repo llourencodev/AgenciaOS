@@ -281,6 +281,7 @@ public class SincronizacaoMarketingWorker(
     IServiceScopeFactory scopes,
     FilaSincronizacao fila,
     MarketingOptions opt,
+    Operacao.MonitorTarefas monitor,
     ILogger<SincronizacaoMarketingWorker> logger) : BackgroundService
 {
     private static readonly TimeSpan Varredura = TimeSpan.FromMinutes(5);
@@ -290,6 +291,7 @@ public class SincronizacaoMarketingWorker(
         if (!opt.SincronizacaoHabilitada)
         {
             logger.LogInformation("Sincronização automática de marketing desabilitada (MARKETING_SYNC_ENABLED=false).");
+            monitor.Desabilitada("sincronizacao-marketing");
             return;
         }
 
@@ -305,6 +307,7 @@ public class SincronizacaoMarketingWorker(
                     await ProcessarAsync(item.ContaId, item.Tipo, ct);
 
                 await ProcessarVencidasAsync(ct);
+                monitor.Registrar("sincronizacao-marketing", true, Varredura);
 
                 using var espera = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 espera.CancelAfter(Varredura);
@@ -315,6 +318,7 @@ public class SincronizacaoMarketingWorker(
             catch (Exception e)
             {
                 logger.LogError(e, "Erro no ciclo de sincronização de marketing");
+                monitor.Registrar("sincronizacao-marketing", false, Varredura, e.Message);
                 await Task.Delay(TimeSpan.FromMinutes(1), ct);
             }
         }

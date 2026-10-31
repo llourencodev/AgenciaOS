@@ -1,0 +1,79 @@
+# CI do AgenciaOS: compila e roda todos os testes (inclusive os de isolamento entre agências, com
+# Postgres e servidor S3 reais em containers) e confere se a imagem Docker do deploy compila.
+# No Railway, ative "Wait for CI" no serviço para que o deploy só aconteça com este workflow verde.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: agenciaos
+          POSTGRES_PASSWORD: agenciaos-ci
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U agenciaos"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      s3:
+        image: adobe/s3mock:latest
+        env:
+          COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: agenciaos-test
+        ports: ["9090:9090"]
+    env:
+      DOTNET_NOLOGO: "true"
+      AGENCIAOS_TEST_PG: "Host=localhost;Port=5432;Username=agenciaos;Password=agenciaos-ci"
+      AGENCIAOS_TEST_S3_ENDPOINT: "http://localhost:9090"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Aguardar servidor S3
+        run: |
+          for i in $(seq 1 30); do curl -sf http://localhost:9090/ >/dev/null && exit 0; sleep 2; done
+          echo "S3 de teste não respondeu" && exit 1
+
+      - name: Restaurar
+        run: dotnet restore tests/AgenciaOS.Tests/AgenciaOS.Tests.csproj
+
+      - name: Dependências sem vulnerabilidades conhecidas
+        run: |
+          dotnet list AgenciaOS.csproj package --vulnerable --include-transitive | tee vulneraveis.txt
+          if grep -q "^\s*>" vulneraveis.txt; then echo "Há pacotes vulneráveis" && exit 1; fi
+
+      - name: Compilar
+        run: dotnet build tests/AgenciaOS.Tests/AgenciaOS.Tests.csproj -c Release --no-restore
+
+      - name: Testes
+        run: dotnet test tests/AgenciaOS.Tests/AgenciaOS.Tests.csproj -c Release --no-build --results-directory TestResults --logger "trx;LogFileName=resultado.trx" --logger "console;verbosity=normal"
+
+      - name: Publicar resultado dos testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultado-testes
+          path: TestResults/*.trx
+
+  imagem-docker:
+    runs-on: ubuntu-latest
+    needs: testes
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compilar a imagem do deploy (sem publicar)
+        run: docker build -t agenciaos:ci .

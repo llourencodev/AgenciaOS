@@ -347,11 +347,11 @@ public class CobrancaService(
 }
 
 /// <summary>Atualiza situações vencidas a cada hora (teste, tolerância, cancelamentos).</summary>
-public class AssinaturasWorker(IServiceScopeFactory scopes, CobrancaOptions opt, ILogger<AssinaturasWorker> logger) : BackgroundService
+public class AssinaturasWorker(IServiceScopeFactory scopes, CobrancaOptions opt, Operacao.MonitorTarefas monitor, ILogger<AssinaturasWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
-        if (!opt.WorkerHabilitado) return;
+        if (!opt.WorkerHabilitado) { monitor.Desabilitada("assinaturas"); return; }
         await Task.Delay(TimeSpan.FromSeconds(30), ct);
         while (!ct.IsCancellationRequested)
         {
@@ -360,9 +360,14 @@ public class AssinaturasWorker(IServiceScopeFactory scopes, CobrancaOptions opt,
                 using var escopo = scopes.CriarEscopoSistema();
                 var n = await escopo.ServiceProvider.GetRequiredService<CobrancaService>().AtualizarSituacoesAsync(DateTime.UtcNow, ct);
                 if (n > 0) logger.LogInformation("Rotina de assinaturas: {N} mudanças de situação", n);
+                monitor.Registrar("assinaturas", true, TimeSpan.FromHours(1));
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { break; }
-            catch (Exception e) { logger.LogError(e, "Erro na rotina de assinaturas"); }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Erro na rotina de assinaturas");
+                monitor.Registrar("assinaturas", false, TimeSpan.FromHours(1), e.Message);
+            }
             await Task.Delay(TimeSpan.FromHours(1), ct);
         }
     }

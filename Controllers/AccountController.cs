@@ -58,8 +58,12 @@ public class AccountController(
             return LocalRedirect(Url.IsLocalUrl(returnUrl) ? returnUrl! : "/");
         }
 
+        if (result.RequiresTwoFactor)
+            return RedirectToAction(nameof(LoginDoisFatores), new { returnUrl, lembrarMe = model.LembrarMe });
+
         if (result.IsLockedOut)
         {
+            await auditoria.RegistrarAsync("conta.login-bloqueado", user?.AgenciaId, "Usuario", user?.Id, new { email = model.Email });
             ModelState.AddModelError("", "Conta bloqueada por excesso de tentativas. Tente novamente em 5 minutos.");
             return View(model);
         }
@@ -72,9 +76,51 @@ public class AccountController(
             return View(model);
         }
 
-        await auditoria.RegistrarAsync(result.IsLockedOut ? "conta.login-bloqueado" : "conta.login-falhou", user?.AgenciaId, "Usuario", user?.Id, new { email = model.Email });
+        await auditoria.RegistrarAsync("conta.login-falhou", user?.AgenciaId, "Usuario", user?.Id, new { email = model.Email });
         ModelState.AddModelError("", "E-mail ou senha inválidos.");
         return View(model);
+    }
+
+    // ── Segunda etapa (TOTP ou código de recuperação) ────────────────────
+    [HttpGet]
+    public async Task<IActionResult> LoginDoisFatores(string? returnUrl, bool lembrarMe)
+    {
+        // Só existe depois de senha correta (cookie temporário do Identity)
+        if (await signInManager.GetTwoFactorAuthenticationUserAsync() == null) return RedirectToAction(nameof(Login));
+        ViewData["ReturnUrl"] = returnUrl;
+        ViewData["LembrarMe"] = lembrarMe;
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [EnableRateLimiting(RateLimitingContas.Login)]
+    public async Task<IActionResult> LoginDoisFatores(string codigo, bool usarRecuperacao, bool lembrarDispositivo, bool lembrarMe, string? returnUrl)
+    {
+        var user = await signInManager.GetTwoFactorAuthenticationUserAsync();
+        if (user == null) return RedirectToAction(nameof(Login));
+        ViewData["ReturnUrl"] = returnUrl;
+        ViewData["LembrarMe"] = lembrarMe;
+
+        var result = usarRecuperacao
+            ? await signInManager.TwoFactorRecoveryCodeSignInAsync(CodigosDoisFatores.Recuperacao(codigo))
+            : await signInManager.TwoFactorAuthenticatorSignInAsync(CodigosDoisFatores.Totp(codigo), lembrarMe, lembrarDispositivo);
+
+        if (result.Succeeded)
+        {
+            user.UltimoAcesso = DateTime.UtcNow;
+            await userManager.UpdateAsync(user);
+            await auditoria.RegistrarAsync(usarRecuperacao ? "conta.login-2fa-recuperacao" : "conta.login-2fa", user.AgenciaId, "Usuario", user.Id);
+            if (user.AgenciaId == null && await userManager.IsInRoleAsync(user, "SuperAdmin"))
+                return RedirectToAction("Index", "Plataforma");
+            return LocalRedirect(Url.IsLocalUrl(returnUrl) ? returnUrl! : "/");
+        }
+
+        await auditoria.RegistrarAsync(result.IsLockedOut ? "conta.login-2fa-bloqueado" : "conta.login-2fa-falhou", user.AgenciaId, "Usuario", user.Id);
+        ModelState.AddModelError("", result.IsLockedOut
+            ? "Conta bloqueada por excesso de tentativas. Tente novamente em 5 minutos."
+            : "Código inválido.");
+        return View();
     }
 
     private async Task<bool> AgenciaAtivaAsync(Usuario user) =>

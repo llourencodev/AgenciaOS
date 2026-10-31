@@ -10,7 +10,7 @@ Cada fase termina com entrega verificável e testes. Nada vai para produção se
 | 3 | Cadastro público, confirmação de e-mail, recuperação de senha, convites | Concluída localmente (não publicada) |
 | 4 | E-mail transacional, planos, assinaturas, gateway, bloqueio | Concluída localmente (gateway real ainda não configurado) |
 | 5 | LGPD e painel administrativo global com auditoria | Concluída localmente (não publicada) |
-| 6 | 2FA, backups testados, homologação, monitoramento, CI/CD | Pendente |
+| 6 | 2FA, backups testados, homologação, monitoramento, CI/CD | Concluída localmente (ações no Railway/GitHub pendentes) |
 | 7 | Domínios personalizados e aprovação Meta/TikTok/Google | Pendente |
 
 ## Fase 1 — Multi-tenancy e isolamento
@@ -184,7 +184,22 @@ Sem essas variáveis o app registra erro no log e cadastro/convites/recuperaçã
 - Retenção automática (apagar dados de canceladas após o prazo, limpar logs antigos) fica para a Fase 6.
 
 ## Fase 6 — Operação
-TOTP + códigos de recuperação, backups automáticos com teste de restauração agendado, ambiente de homologação no Railway, Sentry + logs estruturados (Serilog) sem dados sensíveis, uptime/status page, GitHub Actions rodando testes (inclusive os de isolamento com Postgres em service container) e bloqueando deploy em falha.
+
+Guia completo: `docs/operations/OPERACAO.md` (ambientes, variáveis, monitoramento, backups, recuperação de desastre, CI/CD).
+
+### O que foi entregue (31/10/2026)
+- **2FA (TOTP)** com QR code, 10 códigos de recuperação, segunda etapa no login, desativação com senha + código, avisos por e-mail e auditoria. **Obrigatório para o superadmin** entrar no painel global.
+- **Monitoramento:** health checks (banco, armazenamento, rotinas em segundo plano, configuração de e-mail/pagamentos), `/health/live` e `/health/ready`, tela `/Plataforma/Saude` (detalhes + contas de marketing com erro, webhooks com falha, pedidos LGPD atrasados), logs JSON fora do desenvolvimento, Sentry opcional sem dados pessoais.
+- **Página pública de status:** `/status` e `/status.json`, sem detalhes internos.
+- **Retenção automática** diária (logins 6 meses, webhooks/sincronizações/notificações lidas 1 ano, auditoria 5 anos).
+- **Backups:** `scripts/backup/backup-postgres.sh` + `scripts/backup/testar-restauracao.sh` + workflow diário `.github/workflows/backup.yml` (R2, 30 dias, restauração conferida por SHA-256, versão de migration, contagens e integridade entre agências). Validado localmente: aprovado com backup real e reprovado com manifesto adulterado.
+- **Homologação:** `Staging` segue as regras de produção; `scripts/homologacao/anonimizar-copia.sql` (testado numa cópia local) + `--definir-senha` para testes (recusado em produção).
+- **CI:** `.github/workflows/ci.yml` (dependências vulneráveis, testes com Postgres e S3 reais, imagem Docker). Dependência vulnerável `System.Security.Cryptography.Pkcs` corrigida (10.0.14).
+- **Bugs encontrados pelos testes e corrigidos:** abrir a tela de 2FA derrubava a sessão do próprio usuário (troca de security stamp); códigos de recuperação eram recusados porque o hífen era removido.
+- **Testes:** 120 passando (2FA ponta a ponta, 2FA obrigatório do superadmin, health/status sem vazamento de detalhes, retenção, gateway simulado proibido em homologação/produção).
+
+### Ações do proprietário (fora do código)
+Monitor de uptime, projeto no Sentry, bucket e segredos de backup, ambiente `staging` no Railway, "Wait for CI" no Railway, proteção da branch `main`. Detalhes em `docs/operations/OPERACAO.md`.
 
 ## Fase 7 — Domínios e integrações
 `DominioAgencia` com verificação por TXT, SSL via Railway custom domains, resolução de marca por host sem trocar o tenant do usuário; revisão de OAuth/escopos/exclusão de dados/webhooks de Meta, TikTok e Google; dossiê de aprovação de cada plataforma.

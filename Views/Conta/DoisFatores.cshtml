@@ -1,0 +1,79 @@
+@model AgenciaOS.Controllers.ContaController.ConfiguracaoDoisFatores
+@{
+    ViewData["Title"] = "Autenticação em duas etapas";
+    if (ViewData["Layout"] is string layout) { Layout = layout; }
+    var plataforma = Layout?.Contains("Plataforma") == true;
+}
+<div class="page-header">
+    <div>
+        <h1>Autenticação em duas etapas</h1>
+        <p>Além da senha, um código do aplicativo autenticador (Google Authenticator, Microsoft Authenticator, Authy, 1Password...)</p>
+    </div>
+    <a asp-action="Seguranca" class="btn btn-outline">Voltar</a>
+</div>
+
+@if (plataforma)
+{
+    @if (TempData["Sucesso"] is string ok) { <div class="alert alert-success">@ok</div> }
+}
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger"><div asp-validation-summary="All" class="mb-0"></div></div>
+}
+
+@if (Model.NovosCodigos is { } codigos)
+{
+    <div class="card mb-3 border-warning">
+        <div class="card-body">
+            <h2 class="h6 fw-bold"><i class="bi bi-key me-1"></i> Guarde seus códigos de recuperação</h2>
+            <p class="text-sm">Cada código funciona uma vez, caso você perca o celular. <strong>Eles não serão mostrados de novo.</strong></p>
+            <div class="row g-2" style="font-family:monospace;font-size:15px;">
+                @foreach (var c in codigos) { <div class="col-6 col-md-4"><code>@c</code></div> }
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Ativo)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <p><span class="badge text-bg-success">Ativa</span> Códigos de recuperação restantes: <strong>@Model.CodigosRestantes</strong></p>
+            <form asp-action="NovosCodigosRecuperacao" method="post" class="d-flex flex-wrap gap-2 mb-3">
+                <input name="codigo" class="form-control form-control-sm" style="width:160px;" placeholder="código do app" autocomplete="one-time-code" inputmode="numeric" />
+                <button class="btn btn-sm btn-outline-primary">Gerar novos códigos de recuperação</button>
+            </form>
+            <form asp-action="DesativarDoisFatores" method="post" class="d-flex flex-wrap gap-2">
+                <input name="senha" type="password" class="form-control form-control-sm" style="width:200px;" placeholder="sua senha" autocomplete="current-password" />
+                <input name="codigo" class="form-control form-control-sm" style="width:160px;" placeholder="código ou recuperação" autocomplete="one-time-code" />
+                <button class="btn btn-sm btn-outline-danger">Desativar</button>
+            </form>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <ol class="text-sm">
+                <li>Abra o aplicativo autenticador e adicione uma conta lendo o QR code (ou digitando a chave).</li>
+                <li>Digite o código de 6 dígitos que aparecer.</li>
+            </ol>
+            <div class="d-flex flex-wrap gap-4 align-items-center">
+                <div id="qrcode" style="background:#fff;padding:8px;border-radius:8px;"></div>
+                <div>
+                    <div class="text-xs text-muted">Chave</div>
+                    <code style="font-size:15px;">@Model.Chave</code>
+                    <form asp-action="AtivarDoisFatores" method="post" class="d-flex gap-2 mt-3">
+                        <input name="codigo" class="form-control" style="width:160px;" placeholder="000000" autocomplete="one-time-code" inputmode="numeric" required />
+                        <button class="btn btn-primary">Ativar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    @section Scripts {
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script>new QRCode(document.getElementById('qrcode'), { text: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.UriAutenticador)), width: 180, height: 180 });</script>
+    }
+}

@@ -1,0 +1,24 @@
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = "Verificação em duas etapas";
+}
+<div class="login-form-title">Verificação em duas etapas</div>
+<div class="login-form-sub mb-3">Digite o código de 6 dígitos do seu aplicativo autenticador.</div>
+<form asp-action="LoginDoisFatores" method="post" id="form2fa">
+    <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+    <input type="hidden" name="lembrarMe" value="@(ViewData["LembrarMe"] is true ? "true" : "false")" />
+    <input type="hidden" name="usarRecuperacao" id="usarRecuperacao" value="false" />
+    <div class="mb-3">
+        <label class="form-label" id="rotuloCodigo">Código</label>
+        <input name="codigo" class="form-control form-control-lg text-center" autocomplete="one-time-code" inputmode="numeric" autofocus required style="letter-spacing:.3em;" />
+    </div>
+    <div class="form-check mb-4">
+        <input type="checkbox" name="lembrarDispositivo" value="true" id="lembrarDispositivo" class="form-check-input" />
+        <label for="lembrarDispositivo" class="form-check-label" style="font-size:13px;">Não pedir de novo neste dispositivo</label>
+    </div>
+    <button type="submit" class="btn btn-primary w-100 py-2" style="font-weight:600;border-radius:10px;">Verificar</button>
+</form>
+<div class="text-center mt-3 auth-link">
+    <a href="#" onclick="document.getElementById('usarRecuperacao').value='true';document.getElementById('rotuloCodigo').textContent='Código de recuperação';this.remove();return false;">Perdi o acesso ao aplicativo: usar código de recuperação</a>
+</div>
+<div class="text-center mt-2 auth-link"><a asp-action="Login">Voltar</a></div>
