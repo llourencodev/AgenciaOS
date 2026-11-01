@@ -30,6 +30,9 @@ public sealed class TenantContext : ITenantContext
     /// <summary>Situação comercial da agência da requisição (preenchida pelo TenantMiddleware).</summary>
     public SituacaoAgenciaAtual? Situacao { get; set; }
 
+    /// <summary>Agência dona do domínio acessado (só identidade visual e checagem de uso cruzado; null = domínio da plataforma).</summary>
+    public int? AgenciaDoDominio { get; set; }
+
     public void UsarAgencia(int agenciaId)
     {
         if (agenciaId <= 0) throw new ArgumentOutOfRangeException(nameof(agenciaId));
@@ -64,6 +67,7 @@ public class TenantMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(HttpContext http, TenantContext tenant, ApplicationDbContext db)
     {
+        tenant.AgenciaDoDominio = http.Items[Dominios.DominioMiddleware.ItemAgencia] as int?;
         if (http.User.Identity?.IsAuthenticated == true
             && http.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } usuarioId)
         {

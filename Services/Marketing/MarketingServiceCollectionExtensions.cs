@@ -33,6 +33,7 @@ public static class MarketingServiceCollectionExtensions
         services.AddScoped<AcessoMarketingService>();
         services.AddScoped<SincronizacaoMarketingService>();
         services.AddScoped<IntegracaoMarketingService>();
+        services.AddScoped<ExclusaoDadosPlataformasService>();
         services.AddScoped<PainelMarketingService>();
         services.AddScoped<IGeradorInsights, InsightsMarketingService>();
         services.AddScoped<RelatorioMarketingPdfService>();

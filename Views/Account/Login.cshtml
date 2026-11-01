@@ -1,5 +1,11 @@
 @model AgenciaOS.ViewModels.LoginViewModel
-@{ Layout = null; }
+@inject AgenciaOS.Services.Tenancy.TenantContext _tenantLogin
+@inject AgenciaOS.Services.Dominios.DominiosService _dominiosLogin
+@{
+    Layout = null;
+    // No domínio de uma agência, a tela de login mostra a marca dela
+    var _marca = _tenantLogin.AgenciaDoDominio is int _ag ? await _dominiosLogin.MarcaAsync(_ag) : null;
+}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -16,6 +22,17 @@
     <!-- LEFT PANEL -->
     <div class="login-left">
         <div class="login-left-content">
+            @if (_marca is { } m)
+            {
+                @if (!string.IsNullOrEmpty(m.LogoUrl))
+                {
+                    <img src="@m.LogoUrl" alt="@m.Nome" style="max-height:90px;max-width:260px;margin-bottom:24px;" />
+                }
+                <div class="login-tagline">@m.Nome</div>
+                <div class="login-sub">Acesso exclusivo da equipe e dos clientes da @m.Nome</div>
+            }
+            else
+            {
             <div class="login-logo-big"><i class="bi bi-lightning-charge-fill"></i></div>
             <div class="login-tagline">Gerencie sua agência<br>em um só lugar</div>
             <div class="login-sub">Plataforma completa para agências de marketing digital</div>
@@ -26,6 +43,7 @@
                 <li><i class="bi bi-check-circle-fill"></i> Controle financeiro integrado</li>
                 <li><i class="bi bi-check-circle-fill"></i> Arquivos organizados por cliente</li>
             </ul>
+            }
         </div>
     </div>
 

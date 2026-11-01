@@ -874,6 +874,62 @@ namespace AgenciaOS.Migrations
                     b.ToTable("DatasComemorativas");
                 });
 
+            modelBuilder.Entity("AgenciaOS.Models.DominioAgencia", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AgenciaId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPorId")
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasMaxLength(253)
+                        .HasColumnType("character varying(253)");
+
+                    b.Property<bool>("Principal")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("TokenVerificacao")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("UltimaTentativaEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UltimoErro")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("VerificadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgenciaId");
+
+                    b.HasIndex("Host")
+                        .IsUnique();
+
+                    b.ToTable("DominiosAgencia");
+                });
+
             modelBuilder.Entity("AgenciaOS.Models.EventoWebhook", b =>
                 {
                     b.Property<long>("Id")
@@ -2155,6 +2211,15 @@ namespace AgenciaOS.Migrations
                 });
 
             modelBuilder.Entity("AgenciaOS.Models.DataComemorativa", b =>
+                {
+                    b.HasOne("AgenciaOS.Models.Agencia", null)
+                        .WithMany()
+                        .HasForeignKey("AgenciaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AgenciaOS.Models.DominioAgencia", b =>
                 {
                     b.HasOne("AgenciaOS.Models.Agencia", null)
                         .WithMany()

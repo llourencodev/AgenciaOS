@@ -154,6 +154,11 @@ else
                             <input type="hidden" name="conexaoId" value="@card.Conexao.Id" />
                             <button type="submit" class="btn btn-sm btn-outline-secondary text-danger"><i class="bi bi-x-circle me-1"></i>Desconectar</button>
                         </form>
+                        <form asp-action="ExcluirDados" method="post" class="m-0" onsubmit="return confirm('Excluir TODOS os dados coletados do @PlataformaInfo.Nome(p) (métricas, publicações e histórico) e revogar o acesso? Não pode ser desfeito.');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="conexaoId" value="@card.Conexao.Id" />
+                            <button type="submit" class="btn btn-sm btn-link text-danger p-0 ms-2" title="Exclusão dos dados obtidos da plataforma">Excluir dados</button>
+                        </form>
                     }
                 </div>
             </div>

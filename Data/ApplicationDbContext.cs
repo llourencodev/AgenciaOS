@@ -29,6 +29,7 @@ public partial class ApplicationDbContext : IdentityDbContext<Usuario>, IDataPro
     public DbSet<RegistroAuditoria> RegistrosAuditoria => Set<RegistroAuditoria>();
     public DbSet<ConfiguracaoPlataforma> ConfiguracoesPlataforma => Set<ConfiguracaoPlataforma>();
     public DbSet<SolicitacaoPrivacidade> SolicitacoesPrivacidade => Set<SolicitacaoPrivacidade>();
+    public DbSet<DominioAgencia> DominiosAgencia => Set<DominioAgencia>();
 
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Conteudo> Conteudos => Set<Conteudo>();
@@ -308,6 +309,17 @@ public partial class ApplicationDbContext : IdentityDbContext<Usuario>, IDataPro
         });
 
         builder.Entity<Agencia>().Property(a => a.MotivoSuspensao).HasMaxLength(500);
+
+        // ── Domínios (Fase 7) ─────────────────────────────────────────────
+        builder.Entity<DominioAgencia>(e =>
+        {
+            e.Property(d => d.Host).HasMaxLength(253);
+            e.HasIndex(d => d.Host).IsUnique(); // um domínio pertence a uma única agência
+            e.Property(d => d.TokenVerificacao).HasMaxLength(64);
+            e.Property(d => d.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(d => d.UltimoErro).HasMaxLength(500);
+            e.Property(d => d.CriadoPorId).HasMaxLength(450);
+        });
 
         ConfigurarMultiTenancy(builder);
     }

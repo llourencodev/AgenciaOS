@@ -16,8 +16,13 @@ public class AccountController(
     ApplicationDbContext db,
     ContasService contas,
     Services.Plataforma.AuditoriaService auditoria,
+    Services.Tenancy.TenantContext tenant,
     ILogger<AccountController> logger) : Controller
 {
+    /// <summary>Usuário logado acessando o domínio de outra agência.</summary>
+    [HttpGet]
+    public IActionResult DominioIncorreto() => View();
+
     // ── Login ────────────────────────────────────────────────────────────
     [HttpGet]
     public IActionResult Login(string? returnUrl = null)
@@ -44,6 +49,15 @@ public class AccountController(
         }
 
         var result = await signInManager.PasswordSignInAsync(model.Email, model.Senha, model.LembrarMe, lockoutOnFailure: true);
+
+        // No domínio de uma agência só entram os usuários dela (a mensagem só aparece depois da senha correta)
+        if ((result.Succeeded || result.RequiresTwoFactor) && tenant.AgenciaDoDominio is int dono && user?.AgenciaId != dono)
+        {
+            await signInManager.SignOutAsync();
+            await auditoria.RegistrarAsync("conta.login-dominio-incorreto", user?.AgenciaId, "Usuario", user?.Id, new { host = Request.Host.Host });
+            ModelState.AddModelError("", "Este endereço é exclusivo de outra agência. Entre pelo endereço da sua agência ou pelo site do AgenciaOS.");
+            return View(model);
+        }
 
         if (result.Succeeded)
         {

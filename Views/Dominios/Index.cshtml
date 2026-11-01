@@ -1,0 +1,67 @@
+@model List<AgenciaOS.Models.DominioAgencia>
+@using AgenciaOS.Models
+@{
+    ViewData["Title"] = "Domínio próprio";
+    var cname = ViewData["CnameAlvo"] as string ?? "(endereço informado pelo suporte do AgenciaOS)";
+    var sub = ViewData["Subdominio"] as string;
+}
+<div class="page-header">
+    <div>
+        <h1>Domínio próprio</h1>
+        <p>Equipe e clientes acessam o AgenciaOS pelo endereço da sua agência, com a sua marca na tela de entrada.</p>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form asp-action="Adicionar" method="post" class="d-flex flex-wrap gap-2">
+            <input name="host" class="form-control" style="max-width:360px;" placeholder="painel.suaagencia.com.br" required />
+            <button class="btn btn-primary">Adicionar domínio</button>
+        </form>
+        @if (sub != null)
+        {
+            <div class="text-sm text-muted mt-2">Sem domínio próprio? Use o endereço gratuito <code>@sub</code> (já verificado: basta adicioná-lo).</div>
+        }
+    </div>
+</div>
+
+@foreach (var d in Model)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <strong style="font-size:16px;">@d.Host</strong>
+                    @if (d.Principal) { <span class="badge text-bg-primary ms-1">principal</span> }
+                    <span class="badge ms-1 @(d.Status == StatusDominio.Verificado ? "text-bg-success" : d.Status == StatusDominio.Falhou ? "text-bg-danger" : "text-bg-warning")">
+                        @(d.Status == StatusDominio.Verificado ? "Verificado" : d.Status == StatusDominio.Falhou ? "Verificação falhou" : "Aguardando DNS")
+                    </span>
+                </div>
+                <div class="d-flex gap-2">
+                    @if (d.Status != StatusDominio.Verificado)
+                    {
+                        <form asp-action="Verificar" asp-route-id="@d.Id" method="post"><button class="btn btn-sm btn-primary">Verificar</button></form>
+                    }
+                    else if (!d.Principal)
+                    {
+                        <form asp-action="Principal" asp-route-id="@d.Id" method="post"><button class="btn btn-sm btn-outline-primary">Tornar principal</button></form>
+                    }
+                    <form asp-action="Remover" asp-route-id="@d.Id" method="post" onsubmit="return confirm('Remover @d.Host?');"><button class="btn btn-sm btn-outline-danger">Remover</button></form>
+                </div>
+            </div>
+            @if (d.Status != StatusDominio.Verificado)
+            {
+                <p class="text-sm mt-3 mb-2">No painel de DNS do seu domínio, crie estes dois registros:</p>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-2">
+                        <thead><tr><th>Tipo</th><th>Nome</th><th>Valor</th></tr></thead>
+                        <tr><td>TXT</td><td><code>@d.NomeRegistroTxt</code></td><td><code>@d.TokenVerificacao</code></td></tr>
+                        <tr><td>CNAME</td><td><code>@d.Host</code></td><td><code>@cname</code></td></tr>
+                    </table>
+                </div>
+                @if (!string.IsNullOrEmpty(d.UltimoErro)) { <div class="text-sm text-danger">@d.UltimoErro</div> }
+                <div class="text-xs text-muted">O TXT prova que o domínio é seu (ninguém consegue usar o domínio de outra agência). A propagação pode levar algumas horas.</div>
+            }
+        </div>
+    </div>
+}

@@ -148,6 +148,13 @@ public class PlataformaController(ApplicationDbContext db, UserManager<Usuario> 
         await db.SolicitacoesPrivacidade.CountAsync(s => s.Status != StatusSolicitacaoPrivacidade.Concluida
             && s.Status != StatusSolicitacaoPrivacidade.Recusada && s.PrazoEm < DateTime.UtcNow, ct)));
 
+    // ── Domínios das agências (para configurar o domínio/HTTPS no Railway) ──
+    public async Task<IActionResult> Dominios(CancellationToken ct) =>
+        View(await db.DominiosAgencia.Join(db.Agencias, d => d.AgenciaId, a => a.Id, (d, a) => new LinhaDominio(d, a.Nome))
+            .OrderBy(x => x.Dominio.Status).ThenBy(x => x.Dominio.Host).ToListAsync(ct));
+
+    public record LinhaDominio(DominioAgencia Dominio, string Agencia);
+
     // ── Auditoria ────────────────────────────────────────────────────────
     public async Task<IActionResult> Auditoria(int? agenciaId, string? acao, CancellationToken ct)
     {

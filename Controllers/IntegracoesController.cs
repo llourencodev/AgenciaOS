@@ -21,6 +21,7 @@ public class IntegracoesController(
     RegistroProvedores provedores,
     OAuthStateService oauthState,
     MarketingOptions opt,
+    ExclusaoDadosPlataformasService exclusao,
     ILogger<IntegracoesController> logger) : MarketingControllerBase(userManager, acesso)
 {
     public async Task<IActionResult> Index(int? clienteId)
@@ -214,6 +215,20 @@ public class IntegracoesController(
         if (conexao == null) return Forbid();
         TempData["Sucesso"] = await integracao.DesconectarAsync(conexao, ct);
         return RedirectToAction(nameof(Index), new { clienteId = conexao.ClienteId });
+    }
+
+    /// <summary>Exclusão dos dados obtidos da plataforma (exigência de Meta, TikTok e Google): revoga e apaga tudo da conexão.</summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ExcluirDados(int conexaoId, CancellationToken ct)
+    {
+        var (_, conexao) = await ConexaoPermitidaAsync(conexaoId);
+        if (conexao == null) return Forbid();
+        var clienteId = conexao.ClienteId;
+        var plataforma = conexao.Plataforma;
+        await exclusao.ExcluirConexaoAsync(conexao, revogar: true, ct);
+        TempData["Sucesso"] = $"Dados do {PlataformaInfo.Nome(plataforma)} excluídos e acesso revogado.";
+        return RedirectToAction(nameof(Index), new { clienteId });
     }
 
     private async Task<(AcessoMarketingService.Contexto?, ConexaoMarketing?)> ConexaoPermitidaAsync(int conexaoId)

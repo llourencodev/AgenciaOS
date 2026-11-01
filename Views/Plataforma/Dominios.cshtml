@@ -1,0 +1,26 @@
+@model List<AgenciaOS.Controllers.PlataformaController.LinhaDominio>
+@using AgenciaOS.Models
+@{
+    Layout = "_LayoutPlataforma";
+    ViewData["Title"] = "Domínios";
+}
+<h1 class="h3 fw-bold mb-1">Domínios das agências</h1>
+<p class="text-muted">Domínios verificados por DNS precisam ser adicionados como <em>Custom Domain</em> no serviço do Railway para receber HTTPS (ver docs/operations/OPERACAO.md).</p>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Domínio</th><th>Agência</th><th>Situação</th><th>Verificado em</th><th>Último erro</th></tr></thead>
+            @foreach (var l in Model)
+            {
+                <tr>
+                    <td><code>@l.Dominio.Host</code> @if (l.Dominio.Principal) { <span class="badge text-bg-light border">principal</span> }</td>
+                    <td><a asp-action="Agencia" asp-route-id="@l.Dominio.AgenciaId">@l.Agencia</a></td>
+                    <td><span class="badge @(l.Dominio.Status == StatusDominio.Verificado ? "text-bg-success" : "text-bg-warning")">@l.Dominio.Status</span></td>
+                    <td class="small">@l.Dominio.VerificadoEm?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td class="small text-muted">@l.Dominio.UltimoErro</td>
+                </tr>
+            }
+            @if (Model.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-3">Nenhum domínio cadastrado.</td></tr> }
+        </table>
+    </div>
+</div>

@@ -27,7 +27,7 @@ public class PermissaoModuloFilter(TenantContext tenant, AcessoAbas acessoAbas, 
     };
 
     // Acessíveis sem agência (login, erro, painel da plataforma)
-    private static readonly HashSet<string> SemAgencia = new(StringComparer.OrdinalIgnoreCase) { "Account", "Home", "Plataforma", "Marca", "Conta", "Status" };
+    private static readonly HashSet<string> SemAgencia = new(StringComparer.OrdinalIgnoreCase) { "Account", "Home", "Plataforma", "Marca", "Conta", "Status", "IntegracoesPublicas" };
 
     public async Task OnActionExecutionAsync(ActionExecutingContext ctx, ActionExecutionDelegate next)
     {
@@ -40,6 +40,15 @@ public class PermissaoModuloFilter(TenantContext tenant, AcessoAbas acessoAbas, 
             && !await acessoAbas.DoisFatoresAtivoAsync(user))
         {
             ctx.Result = new RedirectToActionResult("DoisFatores", "Conta", null);
+            return;
+        }
+
+        // Domínio de uma agência só serve aos usuários dela (inclusive o superadmin usa o domínio da plataforma)
+        if (user.Identity?.IsAuthenticated == true && tenant.AgenciaDoDominio is int dono && tenant.AgenciaId != dono
+            && !string.Equals(controller, "Account", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(controller, "Status", StringComparison.OrdinalIgnoreCase))
+        {
+            ctx.Result = new RedirectToActionResult("DominioIncorreto", "Account", null);
             return;
         }
 

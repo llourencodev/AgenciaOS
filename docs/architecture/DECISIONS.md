@@ -77,6 +77,15 @@ O AgenciaOS recebe qualquer pedido (canal único, prazo de 15 dias). Quando os d
 ## D29 — Auditoria gravada na hora, em tabela própria
 `RegistroAuditoria` grava a cada ação (SaveChanges próprio), mesmo que algo falhe depois. Detalhes em JSON curto, sem segredos. Retenção sugerida: 5 anos (ver `docs/legal/POLITICA_RETENCAO.md`).
 
+## D30 — Domínio da agência nunca escolhe a agência dos dados
+O host só serve para a marca da tela de login e para recusar uso cruzado. A agência efetiva continua vindo do usuário autenticado (D03). Assim um domínio mal configurado, um cabeçalho Host forjado ou um cookie antigo não dão acesso a outra agência. Posse provada por registro TXT `_agenciaos.<host>` com token aleatório; host único na plataforma.
+
+## D31 — HTTPS dos domínios no Railway, não na aplicação
+O Railway emite e renova os certificados dos *Custom Domains*. O AgenciaOS verifica a posse por DNS e lista os domínios verificados em `/Plataforma/Dominios`; o proprietário adiciona cada um no Railway (ou, no futuro, via API do Railway). Para `{slug}.agenciaos.com.br`, um curinga de DNS + domínio curinga no Railway dispensa a verificação.
+
+## D32 — Exclusão de dados das plataformas apaga, desautorização só desliga
+Pedido de exclusão (Meta) ou o botão "Excluir dados" apagam conexão, contas, métricas e publicações. Remoção do app pela pessoa (desautorização Meta, `authorization.removed` do TikTok) apaga só os tokens e marca "permissão revogada", preservando o histórico que a agência já usou em relatórios até que a exclusão seja pedida. Revisar com o jurídico se alguma plataforma exigir exclusão também na desautorização.
+
 ## D16 — Escrita direta no destino (armazenamento local)
 O provedor local grava direto no caminho final (chaves com GUID nunca colidem) em vez de gravar `.tmp` e renomear: no Windows o antivírus segura o arquivo recém-criado e o `Move` falha com "Access denied" (visto no teste local). Em caso de erro, o arquivo parcial é apagado.
 

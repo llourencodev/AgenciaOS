@@ -1,0 +1,18 @@
+@{
+    Layout = "~/Views/Account/_LayoutAuth.cshtml";
+    ViewData["Title"] = "Exclusão de dados";
+}
+<div class="text-center">
+    <div style="font-size:48px;color:#10b981;"><i class="bi bi-shield-check"></i></div>
+    <div class="login-form-title">Pedido de exclusão de dados</div>
+    <p class="text-muted">Código de confirmação: <strong>@ViewData["Protocolo"]</strong></p>
+    @if (ViewData["Concluida"] is true)
+    {
+        <p>Os dados obtidos da sua conta foram excluídos do AgenciaOS em @(((DateTime?)ViewData["ConcluidaEm"])?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")).</p>
+    }
+    else
+    {
+        <p>O pedido está em processamento.</p>
+    }
+    <p class="text-muted small">Dúvidas: <a asp-controller="Privacidade" asp-action="Solicitar">canal de privacidade</a>.</p>
+</div>

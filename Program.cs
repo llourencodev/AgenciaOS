@@ -167,6 +167,11 @@ builder.Services.AddScoped<NotificacaoService>();
 builder.Services.AddCentralMarketing(builder.Configuration);
 builder.Services.AddArmazenamento(builder.Configuration, builder.Environment);
 builder.Services.AddCobranca(builder.Configuration, builder.Environment);
+
+// Domínios personalizados (Fase 7)
+builder.Services.AddSingleton(sp => AgenciaOS.Services.Dominios.DominiosOptions.Carregar(sp.GetRequiredService<IConfiguration>()));
+builder.Services.AddSingleton<AgenciaOS.Services.Dominios.IConsultaDns, AgenciaOS.Services.Dominios.ConsultaDnsReal>();
+builder.Services.AddScoped<AgenciaOS.Services.Dominios.DominiosService>();
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<AgenciaOS.Data.ApplicationDbContext>();
 
@@ -206,6 +211,8 @@ app.Use(async (ctx, next) =>
     }
     await next();
 });
+// Domínio de agência: só identidade visual e bloqueio de uso cruzado; hosts desconhecidos → 404 quando PLATAFORMA_HOSTS está definido
+app.UseMiddleware<AgenciaOS.Services.Dominios.DominioMiddleware>();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();

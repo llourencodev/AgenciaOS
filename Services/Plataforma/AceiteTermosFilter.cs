@@ -14,7 +14,7 @@ namespace AgenciaOS.Services.Plataforma;
 /// </summary>
 public class AceiteTermosFilter(ApplicationDbContext db, ConfiguracaoPlataformaService config, IConfiguration cfg, IMemoryCache cache) : IAsyncActionFilter
 {
-    private static readonly HashSet<string> Liberados = new(StringComparer.OrdinalIgnoreCase) { "Account", "Conta", "Home", "Marca", "Privacidade", "Webhooks", "Status" };
+    private static readonly HashSet<string> Liberados = new(StringComparer.OrdinalIgnoreCase) { "Account", "Conta", "Home", "Marca", "Privacidade", "Webhooks", "Status", "IntegracoesPublicas" };
 
     public static string ChaveCache(string usuarioId) => $"aceite:{usuarioId}:{DocumentosLegais.VersaoTermos}:{DocumentosLegais.VersaoPrivacidade}";
 

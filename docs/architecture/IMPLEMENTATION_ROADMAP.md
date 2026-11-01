@@ -11,7 +11,7 @@ Cada fase termina com entrega verificável e testes. Nada vai para produção se
 | 4 | E-mail transacional, planos, assinaturas, gateway, bloqueio | Concluída localmente (gateway real ainda não configurado) |
 | 5 | LGPD e painel administrativo global com auditoria | Concluída localmente (não publicada) |
 | 6 | 2FA, backups testados, homologação, monitoramento, CI/CD | Concluída localmente (ações no Railway/GitHub pendentes) |
-| 7 | Domínios personalizados e aprovação Meta/TikTok/Google | Pendente |
+| 7 | Domínios personalizados e aprovação Meta/TikTok/Google | Concluída localmente (aprovações das plataformas não submetidas) |
 
 ## Fase 1 — Multi-tenancy e isolamento
 
@@ -202,4 +202,17 @@ Guia completo: `docs/operations/OPERACAO.md` (ambientes, variáveis, monitoramen
 Monitor de uptime, projeto no Sentry, bucket e segredos de backup, ambiente `staging` no Railway, "Wait for CI" no Railway, proteção da branch `main`. Detalhes em `docs/operations/OPERACAO.md`.
 
 ## Fase 7 — Domínios e integrações
-`DominioAgencia` com verificação por TXT, SSL via Railway custom domains, resolução de marca por host sem trocar o tenant do usuário; revisão de OAuth/escopos/exclusão de dados/webhooks de Meta, TikTok e Google; dossiê de aprovação de cada plataforma.
+
+### O que foi entregue (01/11/2026)
+- **Domínio próprio da agência** (`/Dominios`, só Admin): cadastro com normalização (esquema, porta, maiúsculas, acentos → punycode), verificação de posse por TXT `_agenciaos.<host>`, instruções de CNAME, domínio principal, remoção. Subdomínio automático `{slug}.<PLATAFORMA_DOMINIO_BASE>` já verificado. Painel global `/Plataforma/Dominios` para configurar HTTPS no Railway.
+- **Resolução segura** (`DominioMiddleware`): o domínio só define a marca do login; usuário de outra agência é recusado no login e redirecionado se já estiver logado; com `PLATAFORMA_HOSTS`, hosts desconhecidos recebem 404 (exceto `/health`, webhooks e callbacks). Ver D30 e D31.
+- **Integrações revisadas:** escopos mínimos de leitura, OAuth com state + PKCE, tokens criptografados, revogação ao desconectar e tratamento de token revogado já estavam corretos (Central de Marketing).
+- **Exclusão de dados e desautorização:** callbacks da Meta (exclusão de dados com código de confirmação e página pública de situação; desautorização), webhook `authorization.removed` do TikTok, botão "Excluir dados" por integração (todas as plataformas, inclusive Google). Todos com verificação de assinatura.
+- **Política de Privacidade e Termos** com o uso dos dados de Meta, TikTok e Google, declaração de Uso Limitado do Google e como excluir.
+- **Dossiê de aprovação:** `docs/integracoes/APROVACAO_PLATAFORMAS.md` (URLs, escopos e justificativas, roteiro de vídeo, checklist). **Nenhuma plataforma foi submetida nem aprovada.**
+- **Testes:** 135 passando (normalização de domínios, verificação por DNS simulado, marca e bloqueio de uso cruzado no login, 404 de host desconhecido, assinatura Meta válida/inválida/algoritmo errado, isolamento da exclusão por usuário, assinatura e janela de tempo do TikTok, "Excluir dados" só na própria agência). Os testes acharam e corrigimos: código de confirmação da Meta maior que a coluna; login de domínio sem marca quando a agência não tinha identidade visual salva.
+
+### Para ativar (ações do proprietário)
+1. Variáveis: `PLATAFORMA_HOSTS=app.seudominio.com.br`, `PLATAFORMA_CNAME_ALVO=<domínio do serviço no Railway>`, opcional `PLATAFORMA_DOMINIO_BASE=agenciaos.com.br` (com DNS curinga `*.agenciaos.com.br` → Railway e domínio curinga no serviço).
+2. Para cada domínio verificado em `/Plataforma/Dominios`: Railway → serviço → Settings → Networking → Custom Domain.
+3. Seguir `docs/integracoes/APROVACAO_PLATAFORMAS.md` para criar os apps e submeter as revisões.

@@ -24,7 +24,7 @@
 | S17 | Média | `DashboardController` | Equipe vê receita/despesa do mês | Mantido (regra de negócio atual). Pode virar permissão na Fase 3 |
 | S18 | Baixa | `Program.cs` | Ramo `UseSqlServer` legado | Mantido; remover quando confirmado que não é usado |
 | S19 | Baixa | Deploy | Migrations no startup sem backup automático | Corrigido na Fase 6 (backup diário com restauração testada; ver docs/operations/OPERACAO.md) |
-| S20 | Baixa | `AllowedHosts: *` | Necessário hoje; com domínios personalizados, validar host na Fase 7 | Fase 7 |
+| S20 | Baixa | `AllowedHosts: *` | Necessário hoje; com domínios personalizados, validar host na Fase 7 | Corrigido na Fase 7: com `PLATAFORMA_HOSTS` definido, só hosts da plataforma e domínios verificados por DNS são atendidos (404 para os demais) |
 | S21 | Alta | Dependências | `System.Security.Cryptography.Pkcs` 9.0.4 (transitiva) com vulnerabilidades conhecidas (GHSA-846f-f764-76mx, GHSA-2fmv-rv2c-59x7), apontada pelo `dotnet restore` | Corrigido na Fase 6 (referência direta à 10.0.14, corrigida; o CI agora falha se houver pacote vulnerável) |
 | S22 | Média | `ConfiguracaoController.Tema` (anônimo) | Antes criava/gravava configuração; em multi-tenant isso falharia | Corrigido na Fase 1 (só leitura, campos de identidade visual) |
 | S23 | Média | `UsuariosController.Ativar` | Desativar usuário não encerrava sessões abertas; admin podia se desativar | Corrigido na Fase 1 (security stamp atualizado; auto-desativação bloqueada) |
@@ -35,6 +35,9 @@
 | S29 | Média | Links de e-mail | Risco de envenenamento do link de redefinição pelo cabeçalho Host | Corrigido na Fase 3 (`APP_BASE_URL` obrigatório em produção) |
 | S30 | Baixa | Convites | Admin que convida um e-mail já cadastrado em outra agência recebe "já tem acesso" (revela que o e-mail existe na plataforma) | Aceito (e-mail único global); reavaliar se e-mail passar a ser por agência |
 | S31 | Alta | Cobrança (Fase 4) | Riscos típicos: ativar plano pelo retorno do navegador, webhook forjado, reprocessamento duplicado, dados de cartão no servidor | Tratados: ativação só por webhook autenticado (token em tempo constante), idempotência por id do evento, checkout hospedado pelo gateway, gateway simulado bloqueado em produção |
+| S32 | Baixa | Projeto de testes | `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 (usado só pelos testes com SQLite em memória) tem alerta sem versão corrigida publicada | Aceito: não vai para a imagem de produção nem processa dados externos. Reavaliar quando houver correção. `System.Security.Cryptography.Xml` dos testes atualizado para 10.0.14 |
+| S33 | Alta | Integrações (Fase 7) | Exclusão de dados exigida por Meta/TikTok/Google não existia; callbacks públicos poderiam ser forjados | Implementado com verificação de assinatura (HMAC-SHA256 do signed_request da Meta; TikTok-Signature com janela de 5 min) e testes com assinatura inválida |
+| S34 | Média | Domínios (Fase 7) | Domínio personalizado mal implementado permitiria escolher a agência pelo navegador | O domínio só define a marca do login; a agência dos dados vem sempre do usuário; posse provada por TXT; usuário de outra agência é recusado no login e redirecionado se já logado; host único por agência |
 | S24 | Média | Dashboard | Colaborador externo via receita/despesa e tarefas de toda a agência | Corrigido na Fase 1 |
 
 ## Pontos positivos encontrados
