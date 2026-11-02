@@ -92,7 +92,7 @@
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
     <aside class="sidebar @(_cfg.SidebarClara ? "sidebar-light" : "")" id="sidebar">
-        <div class="sidebar-brand">
+        <a href="/" class="sidebar-brand" title="Ir para a página inicial" style="text-decoration:none;color:inherit;">
             @if (!string.IsNullOrEmpty(_cfg.LogoUrl))
             {
                 <img src="@_cfg.LogoUrl" alt="@_cfg.NomeAgencia" class="brand-logo-img" />
@@ -105,7 +105,7 @@
                 <span class="brand-name">@_cfg.NomeAgencia</span>
                 <span class="brand-tagline">@_cfg.Tagline</span>
             </div>
-        </div>
+        </a>
 
         <nav class="sidebar-nav">
             <div class="nav-group">
@@ -345,14 +345,17 @@
             }
             @if (TempData["Sucesso"] != null)
             {
-                <div class="toast-notification toast-success show" id="toastMsg">
-                    <i class="bi bi-check-circle-fill"></i> @TempData["Sucesso"]
+                <div class="toast-notification toast-success show" data-auto-hide="true" role="status">
+                    <i class="bi bi-check-circle-fill"></i> <span>@TempData["Sucesso"]</span>
+                    <button type="button" class="toast-fechar" aria-label="Fechar"><i class="bi bi-x-lg"></i></button>
                 </div>
             }
             @if (TempData["Erro"] != null)
             {
-                <div class="toast-notification toast-danger show" id="toastMsg">
-                    <i class="bi bi-exclamation-circle-fill"></i> @TempData["Erro"]
+                @* Erro não some sozinho: fica até o usuário fechar, para dar tempo de ler *@
+                <div class="toast-notification toast-danger show" role="alert">
+                    <i class="bi bi-exclamation-circle-fill"></i> <span><strong>Não foi possível concluir.</strong> @TempData["Erro"]</span>
+                    <button type="button" class="toast-fechar" aria-label="Fechar"><i class="bi bi-x-lg"></i></button>
                 </div>
             }
             @RenderBody()

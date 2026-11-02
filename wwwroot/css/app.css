@@ -584,6 +584,9 @@ textarea.form-control { min-height:90px; resize:vertical; }
 .toast-notification.show { transform:translateX(0); }
 .toast-success { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
 .toast-danger  { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+.toast-fechar { margin-left:auto; background:none; border:0; color:inherit; opacity:.6; cursor:pointer; padding:2px 4px; font-size:13px; }
+.toast-fechar:hover { opacity:1; }
+@media (max-width:576px) { .toast-notification { left:16px; right:16px; min-width:0; max-width:none; } }
 
 /* ══════════════════════════════════════════════════════════════
    LOGIN — Premium Split Screen

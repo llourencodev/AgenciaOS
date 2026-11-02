@@ -1,0 +1,30 @@
+# Publicação de TESTE (homologação) no Render, plano gratuito.
+# Banco: Postgres gratuito no Neon (cole a connection string em ConnectionStrings__DefaultConnection).
+# Produção continua no Railway (railway.toml); este arquivo não muda nada lá.
+services:
+  - type: web
+    name: agenciaos-teste
+    runtime: docker
+    plan: free
+    region: virginia
+    branch: feature/saas-multitenant
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Staging
+      - key: ConnectionStrings__DefaultConnection
+        sync: false            # postgresql://... do Neon (conexão direta, sem "-pooler")
+      - key: APP_BASE_URL
+        sync: false            # ex.: https://agenciaos-teste.onrender.com
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false            # 10+ caracteres, com maiúscula, minúscula e número
+      - key: SUPERADMIN_EMAIL
+        sync: false
+      - key: SUPERADMIN_PASSWORD
+        sync: false
+      - key: EMAIL_PROVIDER
+        value: log             # sem envio real de e-mail nos testes

@@ -18,7 +18,8 @@ namespace AgenciaOS.Controllers;
 /// </summary>
 [Authorize]
 public class ContaController(UserManager<Usuario> userManager, SignInManager<Usuario> signInManager, IEnviadorEmail email,
-    ContasService contas, PrivacidadeService privacidade, AuditoriaService auditoria, IMemoryCache cache, ApplicationDbContext db) : Controller
+    ContasService contas, PrivacidadeService privacidade, AuditoriaService auditoria, IMemoryCache cache, ApplicationDbContext db,
+    EmailOptions emailOpt) : Controller
 {
     // ── Privacidade ──────────────────────────────────────────────────────
     [HttpGet]
@@ -87,6 +88,7 @@ public class ContaController(UserManager<Usuario> userManager, SignInManager<Usu
         var u = await userManager.GetUserAsync(User);
         if (u == null) return Challenge();
         if (User.IsInRole("SuperAdmin") && u.AgenciaId == null) ViewData["Layout"] = "~/Views/Plataforma/_LayoutPlataforma.cshtml";
+        ViewData["TrocaEmailImediata"] = emailOpt.Provedor == "log";
         return View(u);
     }
 
@@ -113,6 +115,109 @@ public class ContaController(UserManager<Usuario> userManager, SignInManager<Usu
         try { await email.EnviarAsync(TemplatesEmail.SenhaAlterada(u.Email!, u.Nome), ct); }
         catch { /* o aviso por e-mail não pode impedir a troca de senha */ }
         TempData["Sucesso"] = "Senha alterada. As outras sessões foram encerradas.";
+        return RedirectToAction(nameof(Seguranca));
+    }
+
+    /// <summary>
+    /// Troca de e-mail (login): exige a senha atual e só vale depois que o link enviado ao novo endereço é aberto.
+    /// O endereço antigo recebe um aviso. Superadmin é definido por SUPERADMIN_EMAIL e não troca por aqui.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [EnableRateLimiting(RateLimitingContas.AcoesConta)]
+    public async Task<IActionResult> SolicitarTrocaEmail(string novoEmail, string senhaAtual, CancellationToken ct)
+    {
+        var u = await userManager.GetUserAsync(User);
+        if (u == null) return Challenge();
+        if (User.IsInRole("SuperAdmin") && u.AgenciaId == null)
+        {
+            TempData["Erro"] = "O e-mail do superadministrador é definido pela variável SUPERADMIN_EMAIL.";
+            return RedirectToAction(nameof(Seguranca));
+        }
+
+        novoEmail = (novoEmail ?? "").Trim();
+        if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(novoEmail) || novoEmail.Length > 256)
+        {
+            TempData["Erro"] = "Informe um e-mail válido.";
+            return RedirectToAction(nameof(Seguranca));
+        }
+        if (string.Equals(novoEmail, u.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Erro"] = "Este já é o seu e-mail atual.";
+            return RedirectToAction(nameof(Seguranca));
+        }
+        if (!await userManager.CheckPasswordAsync(u, senhaAtual ?? ""))
+        {
+            TempData["Erro"] = "Senha atual incorreta.";
+            return RedirectToAction(nameof(Seguranca));
+        }
+        var normalizado = userManager.NormalizeEmail(novoEmail);
+        if (await db.Users.IgnoreQueryFilters().AnyAsync(x => x.Id != u.Id && (x.NormalizedEmail == normalizado || x.NormalizedUserName == normalizado), ct))
+        {
+            TempData["Erro"] = "Este e-mail já está em uso por outra conta.";
+            return RedirectToAction(nameof(Seguranca));
+        }
+
+        var token = await userManager.GenerateChangeEmailTokenAsync(u, novoEmail);
+
+        // Sem envio real de e-mail (EMAIL_PROVIDER=log) não há como abrir o link: a troca vale na hora
+        if (emailOpt.Provedor == "log")
+            return await AplicarTrocaEmailAsync(u, novoEmail, token, ct);
+
+        var link = contas.Link(Request, "/Conta/ConfirmarNovoEmail", new Dictionary<string, string?>
+        {
+            ["email"] = novoEmail,
+            ["code"] = Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlEncode(System.Text.Encoding.UTF8.GetBytes(token))
+        });
+        await email.EnviarAsync(TemplatesEmail.ConfirmacaoNovoEmail(novoEmail, u.Nome, link), ct);
+        await AvisarAsync(u, "Pedido de troca de e-mail",
+            $"Foi pedida a troca do e-mail desta conta para {novoEmail}. A troca só acontece quando o link enviado ao novo endereço for aberto. Se não foi você, troque a senha imediatamente.", ct);
+        await auditoria.RegistrarAsync("conta.email-troca-solicitada", u.AgenciaId, "Usuario", u.Id, ct: ct);
+
+        TempData["Sucesso"] = $"Enviamos um link de confirmação para {novoEmail}. O e-mail só muda depois que você abrir esse link.";
+        return RedirectToAction(nameof(Seguranca));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ConfirmarNovoEmail([FromQuery(Name = "email")] string? novoEmail, string? code, CancellationToken ct)
+    {
+        var u = await userManager.GetUserAsync(User);
+        if (u == null) return Challenge();
+        var token = ContasService.DecodificarToken(code);
+        if (string.IsNullOrWhiteSpace(novoEmail) || token == null)
+        {
+            TempData["Erro"] = "Link de confirmação inválido ou expirado. Peça a troca de e-mail de novo.";
+            return RedirectToAction(nameof(Seguranca));
+        }
+        return await AplicarTrocaEmailAsync(u, novoEmail, token, ct);
+    }
+
+    private async Task<IActionResult> AplicarTrocaEmailAsync(Usuario u, string novoEmail, string token, CancellationToken ct)
+    {
+        var antigo = u.Email!;
+        if (!(await userManager.ChangeEmailAsync(u, novoEmail, token)).Succeeded)
+        {
+            TempData["Erro"] = "Link de confirmação inválido ou expirado. Peça a troca de e-mail de novo.";
+            return RedirectToAction(nameof(Seguranca));
+        }
+        // O login é pelo e-mail: o nome de usuário acompanha
+        var r = await userManager.SetUserNameAsync(u, novoEmail);
+        if (!r.Succeeded)
+        {
+            await userManager.ChangeEmailAsync(u, antigo, await userManager.GenerateChangeEmailTokenAsync(u, antigo));
+            TempData["Erro"] = string.Join(" ", r.Errors.Select(e => e.Description));
+            return RedirectToAction(nameof(Seguranca));
+        }
+        await signInManager.RefreshSignInAsync(u);
+        await auditoria.RegistrarAsync("conta.email-alterado", u.AgenciaId, "Usuario", u.Id, ct: ct);
+        try
+        {
+            await email.EnviarAsync(TemplatesEmail.Montar(antigo, "AgenciaOS: e-mail da conta alterado", "E-mail da conta alterado",
+                System.Net.WebUtility.HtmlEncode($"O e-mail de acesso da sua conta foi alterado para {u.Email}. Se não foi você, avise o administrador da sua agência imediatamente."),
+                categoria: "seguranca"), ct);
+        }
+        catch { /* aviso por e-mail não pode impedir a operação */ }
+        TempData["Sucesso"] = $"E-mail alterado. Agora você entra com {u.Email}.";
         return RedirectToAction(nameof(Seguranca));
     }
 

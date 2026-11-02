@@ -65,6 +65,12 @@
                         <i class="bi bi-check-circle-fill"></i> @sucesso
                     </div>
                 }
+                @if (TempData["Erro"] is string erroLogin)
+                {
+                    <div class="alert alert-danger d-flex align-items-center gap-2 mb-3 py-2 px-3" style="font-size:13px;border-radius:8px;" role="alert">
+                        <i class="bi bi-exclamation-circle-fill"></i> @erroLogin
+                    </div>
+                }
                 @if (!ViewData.ModelState.IsValid)
                 {
                     <div class="alert alert-danger d-flex align-items-center gap-2 mb-3 py-2 px-3" style="font-size:13px;border-radius:8px;">

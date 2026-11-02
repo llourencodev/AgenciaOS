@@ -16,7 +16,7 @@ public class Configuracao : IPertenceAgencia
     public string CorTextoSobrePrimaria { get; set; } = "#ffffff";
     public string CorSidebar { get; set; } = "#0f0d22";
 
-    // Gradiente do sidebar (pode ser cor sólida ou gradiente)
+    // Gradiente do sidebar 
     public string GradienteIcone { get; set; } = "linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)";
     public string GradienteSaudacao { get; set; } = "linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)";
     public bool IconesMonocromados { get; set; } = false;

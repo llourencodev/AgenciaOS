@@ -12,11 +12,12 @@ backdrop?.addEventListener('click', () => {
     backdrop.classList.remove('show');
 });
 
-// ── TOAST AUTO-HIDE ────────────────────────────
-const toast = document.getElementById('toastMsg');
-if (toast) {
-    setTimeout(() => toast.classList.remove('show'), 4500);
-}
+// ── TOAST ──────────────────────────────────────
+// Sucesso some sozinho; erro fica até o usuário fechar
+document.querySelectorAll('.toast-notification').forEach(toast => {
+    toast.querySelector('.toast-fechar')?.addEventListener('click', () => toast.classList.remove('show'));
+    if (toast.dataset.autoHide === 'true') setTimeout(() => toast.classList.remove('show'), 4500);
+});
 
 // ── NOTIFICATIONS ──────────────────────────────
 async function carregarNotificacoes() {

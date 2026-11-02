@@ -39,6 +39,12 @@ else
     </div>
     <div class="login-right">
         <div class="login-form-wrap">
+            @if (TempData["Erro"] is string erroAuth)
+            {
+                <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3 mb-3" style="font-size:13px;border-radius:8px;" role="alert">
+                    <i class="bi bi-exclamation-circle-fill"></i> @erroAuth
+                </div>
+            }
             @if (!ViewData.ModelState.IsValid)
             {
                 <div class="alert alert-danger py-2 px-3 mb-3" style="font-size:13px;border-radius:8px;">

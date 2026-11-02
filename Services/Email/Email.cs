@@ -128,6 +128,11 @@ public static class TemplatesEmail
             $"<strong>{H(quemConvidou)}</strong> convidou você para acessar a agência <strong>{H(agencia)}</strong> no AgenciaOS. O convite vale até {expiraEm.ToLocalTime():dd/MM/yyyy HH:mm}.",
             "Aceitar convite", link, categoria: "convite");
 
+    public static MensagemEmail ConfirmacaoNovoEmail(string para, string nome, string link) =>
+        Montar(para, "Confirme seu novo e-mail no AgenciaOS", $"Olá, {nome}",
+            "Foi pedida a troca do e-mail de acesso da sua conta para este endereço. Confirme para concluir a troca. Se não foi você, ignore esta mensagem.",
+            "Confirmar novo e-mail", link, categoria: "troca-email");
+
     public static MensagemEmail SenhaAlterada(string para, string nome) =>
         Montar(para, "Sua senha do AgenciaOS foi alterada", $"Olá, {nome}",
             "A senha da sua conta foi alterada e as outras sessões foram encerradas. Se não foi você, redefina a senha imediatamente e avise o administrador da sua agência.",

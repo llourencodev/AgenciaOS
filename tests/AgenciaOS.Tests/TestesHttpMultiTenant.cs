@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.RegularExpressions;
 using AgenciaOS.Data;
 using AgenciaOS.Models;
@@ -493,5 +493,25 @@ public class TestesHttpMultiTenant(AppMultiTenant app)
         Assert.Equal(HttpStatusCode.OK, (await cliente.GetAsync("/Dashboard")).StatusCode);
         var login = await app.CreateClient().GetAsync("/Account/Login");
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+    }
+
+    [Fact]
+    public async Task Datas_do_Brasil_aparecem_sozinhas_sem_duplicar()
+    {
+        var beta = await app.LoginAsync("admin@beta.test");
+        var primeira = await (await beta.GetAsync("/DatasComemorativas?mes=12")).Content.ReadAsStringAsync();
+        Assert.Contains("Natal", primeira);
+        Assert.DoesNotContain("Nenhuma data cadastrada", primeira);
+
+        var segunda = await (await beta.GetAsync("/DatasComemorativas?mes=12")).Content.ReadAsStringAsync();
+        Assert.Equal(Regex.Matches(primeira, "border-top:3px solid").Count, Regex.Matches(segunda, "border-top:3px solid").Count);
+    }
+
+    [Fact]
+    public async Task Logo_leva_para_a_pagina_inicial()
+    {
+        var alpha = await app.LoginAsync("admin@alpha.test");
+        var html = await (await alpha.GetAsync("/Tarefas")).Content.ReadAsStringAsync();
+        Assert.Matches("<a[^>]*href=\"/\"[^>]*class=\"sidebar-brand\"", html);
     }
 }

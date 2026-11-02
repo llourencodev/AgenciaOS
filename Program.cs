@@ -192,10 +192,19 @@ if (app.Environment.EhProducaoOuHomologacao())
 }
 app.UseForwardedHeaders(forwarded);
 
-if (!app.Environment.IsDevelopment())
+// Erros sempre viram página em português (em Development ela mostra também o detalhe técnico)
+app.UseExceptionHandler("/Home/Error");
+app.UseStatusCodePagesWithReExecute("/Home/Status/{0}");
+// Integrações, webhooks, saúde e chamadas que não pedem HTML mantêm a resposta original
+app.Use((ctx, next) =>
 {
-    app.UseExceptionHandler("/Home/Error");
-}
+    var caminho = ctx.Request.Path;
+    var semPagina = caminho.StartsWithSegments("/webhooks") || caminho.StartsWithSegments("/integracoes")
+        || caminho.StartsWithSegments("/health") || caminho.StartsWithSegments("/api")
+        || !ctx.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase);
+    if (semPagina && ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IStatusCodePagesFeature>() is { } f) f.Enabled = false;
+    return next();
+});
 
 // Não redirecionar HTTPS no Railway (proxy cuida disso)
 if (app.Environment.IsDevelopment())

@@ -13,9 +13,37 @@ public class DatasComemorativasController(ApplicationDbContext db) : Controller
     public async Task<IActionResult> Index(int? mes)
     {
         mes ??= DateTime.Now.Month;
-        var todas = await db.DatasComemorativas.OrderBy(d => d.Mes).ThenBy(d => d.Dia).ToListAsync();
+        var anoAtual = DateTime.Now.Year;
+
+        // Datas do Brasil entram sozinhas: na primeira visita da agência e a cada ano novo
+        // (datas móveis como Carnaval e Páscoa mudam de ano para ano)
+        if (!await db.DatasComemorativas.AnyAsync(d => !d.Anual && d.Ano == anoAtual))
+            await ImportarAsync(anoAtual);
+
+        // Datas móveis de anos que já passaram não aparecem mais
+        var todas = await db.DatasComemorativas.Where(d => d.Anual || d.Ano == null || d.Ano >= anoAtual)
+            .OrderBy(d => d.Mes).ThenBy(d => d.Dia).ToListAsync();
         ViewData["MesFiltro"] = mes;
         return View(todas);
+    }
+
+    private async Task<int> ImportarAsync(int ano)
+    {
+        var existentes = await db.DatasComemorativas.ToListAsync();
+        int adicionadas = 0;
+        foreach (var d in BrasilDatasService.ObterParaAno(ano))
+        {
+            var jaExiste = existentes.Any(e =>
+                e.Nome == d.Nome &&
+                e.Dia  == d.Dia  &&
+                e.Mes  == d.Mes  &&
+                (d.Anual ? e.Anual : e.Ano == d.Ano));
+            if (jaExiste) continue;
+            db.DatasComemorativas.Add(d);
+            adicionadas++;
+        }
+        await db.SaveChangesAsync();
+        return adicionadas;
     }
 
     [HttpPost]
@@ -37,28 +65,7 @@ public class DatasComemorativasController(ApplicationDbContext db) : Controller
     public async Task<IActionResult> ImportarBrasil(int? ano)
     {
         var anoImportar = ano ?? DateTime.Now.Year;
-        var datas = BrasilDatasService.ObterParaAno(anoImportar);
-
-        // Busca existentes para evitar duplicatas
-        var existentes = await db.DatasComemorativas.ToListAsync();
-
-        int adicionadas = 0;
-        foreach (var d in datas)
-        {
-            bool jáExiste = existentes.Any(e =>
-                e.Nome == d.Nome &&
-                e.Dia  == d.Dia  &&
-                e.Mes  == d.Mes  &&
-                (d.Anual ? e.Anual : e.Ano == d.Ano));
-
-            if (!jáExiste)
-            {
-                db.DatasComemorativas.Add(d);
-                adicionadas++;
-            }
-        }
-
-        await db.SaveChangesAsync();
+        var adicionadas = await ImportarAsync(anoImportar);
 
         TempData["Sucesso"] = adicionadas > 0
             ? $"{adicionadas} datas do Brasil importadas para {anoImportar}!"
