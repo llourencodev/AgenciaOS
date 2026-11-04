@@ -25,7 +25,9 @@ public class DashboardController(ApplicationDbContext db, UserManager<Usuario> u
             {
                 vm.ClienteId = cliente.Id;
                 vm.NomeCliente = cliente.NomeEmpresa;
-                vm.ConteudosMes = await db.Conteudos.CountAsync(c => c.ClienteId == cliente.Id && c.DataPrevista.Month == DateTime.Now.Month);
+                var agora = DateTime.Now;
+                vm.ConteudosMes = await db.Conteudos.CountAsync(c => c.ClienteId == cliente.Id
+                    && c.DataPrevista.Month == agora.Month && c.DataPrevista.Year == agora.Year);
                 vm.AprovacoesPendentes = await db.Conteudos.CountAsync(c => c.ClienteId == cliente.Id && c.Status == StatusConteudo.AguardandoAprovacao);
                 vm.ConteudosAprovados = await db.Conteudos.CountAsync(c => c.ClienteId == cliente.Id && c.Status == StatusConteudo.Aprovado);
                 vm.ConteudosPublicados = await db.Conteudos.CountAsync(c => c.ClienteId == cliente.Id && c.Status == StatusConteudo.Publicado);

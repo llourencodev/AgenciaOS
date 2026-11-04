@@ -8,7 +8,7 @@
     <p class="text-muted">Código de confirmação: <strong>@ViewData["Protocolo"]</strong></p>
     @if (ViewData["Concluida"] is true)
     {
-        <p>Os dados obtidos da sua conta foram excluídos do AgenciaOS em @(((DateTime?)ViewData["ConcluidaEm"])?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")).</p>
+        <p>Os dados obtidos da sua conta foram excluídos do Midia+ em @(((DateTime?)ViewData["ConcluidaEm"])?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")).</p>
     }
     else
     {

@@ -17,6 +17,7 @@ public class Conteudo : IPertenceAgencia
     public DateTime AtualizadoEm { get; set; } = DateTime.UtcNow;
 
     public int ClienteId { get; set; }
+    [Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ValidateNever]
     public Cliente Cliente { get; set; } = null!;
 
     public string? CriadoPorId { get; set; }

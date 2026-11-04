@@ -37,7 +37,7 @@
                 <form asp-action="Reativar" asp-route-id="@a.Id" method="post" class="mb-2"><button class="btn btn-sm btn-success">Reativar agência</button></form>
             }
             <form asp-action="Isencao" asp-route-id="@a.Id" method="post" class="mb-2">
-                <input type="hidden" name="isenta" value="@(!a.Isenta)" />
+                <input type="hidden" name="isenta" value="@(a.Isenta ? "false" : "true")" />
                 <button class="btn btn-sm btn-outline-secondary">@(a.Isenta ? "Remover isenção" : "Isentar de assinatura")</button>
             </form>
             <form asp-action="EstenderTeste" asp-route-id="@a.Id" method="post" class="d-flex gap-2 mb-2">

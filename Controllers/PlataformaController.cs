@@ -150,8 +150,9 @@ public class PlataformaController(ApplicationDbContext db, UserManager<Usuario> 
 
     // ── Domínios das agências (para configurar o domínio/HTTPS no Railway) ──
     public async Task<IActionResult> Dominios(CancellationToken ct) =>
-        View(await db.DominiosAgencia.Join(db.Agencias, d => d.AgenciaId, a => a.Id, (d, a) => new LinhaDominio(d, a.Nome))
-            .OrderBy(x => x.Dominio.Status).ThenBy(x => x.Dominio.Host).ToListAsync(ct));
+        View((await db.DominiosAgencia.Join(db.Agencias, d => d.AgenciaId, a => a.Id, (d, a) => new { d, a.Nome })
+            .OrderBy(x => x.d.Status).ThenBy(x => x.d.Host).ToListAsync(ct))
+            .Select(x => new LinhaDominio(x.d, x.Nome)).ToList());
 
     public record LinhaDominio(DominioAgencia Dominio, string Agencia);
 

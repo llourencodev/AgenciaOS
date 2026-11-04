@@ -47,7 +47,7 @@ public class FinanceiroController(ApplicationDbContext db, UserManager<Usuario> 
                      && f.DataVencimento.Month == mes && f.DataVencimento.Year == ano)
             .AsQueryable();
 
-        if (vencidas == true)           query = query.Where(f => !f.Pago && f.DataVencimento < DateTime.Now);
+        if (vencidas == true)           { var agora = DateTime.UtcNow; query = query.Where(f => !f.Pago && f.DataVencimento < agora); }
         if (clienteId.HasValue)         query = query.Where(f => f.ClienteId == clienteId);
         if (!string.IsNullOrEmpty(responsavelId)) query = query.Where(f => f.ResponsavelId == responsavelId);
 
@@ -70,7 +70,7 @@ public class FinanceiroController(ApplicationDbContext db, UserManager<Usuario> 
                      && f.DataVencimento.Month == mes && f.DataVencimento.Year == ano)
             .AsQueryable();
 
-        if (vencidas == true)             query = query.Where(f => !f.Pago && f.DataVencimento < DateTime.Now);
+        if (vencidas == true)             { var agora = DateTime.UtcNow; query = query.Where(f => !f.Pago && f.DataVencimento < agora); }
         if (categoria.HasValue)           query = query.Where(f => f.Categoria == categoria);
         if (!string.IsNullOrEmpty(responsavelId)) query = query.Where(f => f.ResponsavelId == responsavelId);
         if (fixas == true)                query = query.Where(f => f.ContaFixa);
@@ -93,9 +93,13 @@ public class FinanceiroController(ApplicationDbContext db, UserManager<Usuario> 
     public async Task<IActionResult> Create(Financeiro model, int? numeroParcelas, bool contaFixa)
     {
         if (!ModelState.IsValid)
+        {
+            TempData["Erro"] = "Não foi possível salvar: " + string.Join(" ", ModelState.Values
+                .SelectMany(v => v.Errors).Select(e => e.ErrorMessage).Where(m => !string.IsNullOrWhiteSpace(m)).Distinct());
             return model.Tipo == TipoFinanceiro.Entrada
                 ? RedirectToAction(nameof(ContasReceber))
                 : RedirectToAction(nameof(ContasPagar));
+        }
 
         var usuario = await userManager.GetUserAsync(User);
         model.CriadoPorId = usuario?.Id;

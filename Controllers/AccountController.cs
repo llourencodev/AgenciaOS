@@ -55,7 +55,7 @@ public class AccountController(
         {
             await signInManager.SignOutAsync();
             await auditoria.RegistrarAsync("conta.login-dominio-incorreto", user?.AgenciaId, "Usuario", user?.Id, new { host = Request.Host.Host });
-            ModelState.AddModelError("", "Este endereço é exclusivo de outra agência. Entre pelo endereço da sua agência ou pelo site do AgenciaOS.");
+            ModelState.AddModelError("", "Este endereço é exclusivo de outra agência. Entre pelo endereço da sua agência ou pelo site do Midia+.");
             return View(model);
         }
 
@@ -208,7 +208,7 @@ public class AccountController(
         var user = string.IsNullOrWhiteSpace(email) ? null : await userManager.FindByEmailAsync(email.Trim());
         if (user is { EmailConfirmed: false, Ativo: true })
         {
-            var agencia = await db.Agencias.Where(a => a.Id == user.AgenciaId).Select(a => a.Nome).FirstOrDefaultAsync(ct) ?? "AgenciaOS";
+            var agencia = await db.Agencias.Where(a => a.Id == user.AgenciaId).Select(a => a.Nome).FirstOrDefaultAsync(ct) ?? "Midia+";
             await contas.EnviarConfirmacaoAsync(user, agencia, Request, ct);
         }
         // Mesma resposta exista ou não a conta (anti-enumeração)

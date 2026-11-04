@@ -131,7 +131,10 @@
             <div class="empty-state">
                 <i class="bi bi-calendar3"></i>
                 <h3>Nenhum conteúdo este mês</h3>
-                <a asp-action="Create" class="btn btn-primary mt-3">Criar pauta</a>
+                @if (User.IsInRole("Admin") || User.IsInRole("Equipe"))
+                {
+                    <a asp-action="Create" class="btn btn-primary mt-3">Criar pauta</a>
+                }
             </div>
         }
     </div>

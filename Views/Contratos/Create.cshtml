@@ -13,6 +13,7 @@
 
 <form asp-action="Create" method="post">
     @Html.AntiForgeryToken()
+    <div asp-validation-summary="All" class="alert alert-danger mb-3" role="alert" style="@(ViewData.ModelState.IsValid ? "display:none" : null)"></div>
     <div class="row g-4">
         <div class="col-lg-8">
             <div class="card">

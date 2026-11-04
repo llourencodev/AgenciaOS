@@ -48,14 +48,20 @@ public class ArquivosController(ApplicationDbContext db, AcessoService acesso, S
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(510L * 1024 * 1024)]
     [RequestFormLimits(MultipartBodyLengthLimit = 510L * 1024 * 1024)]
-    public async Task<IActionResult> Upload(IFormFile arquivo, int clienteId, CategoriaArquivo categoria, string? mesReferencia, CancellationToken ct)
+    public async Task<IActionResult> Upload(IFormFile? arquivo, int clienteId, CategoriaArquivo categoria, string? mesReferencia, CancellationToken ct)
     {
         // Só envia para cliente que o usuário enxerga (cliente: o próprio; sempre dentro da agência atual)
         var escopo = await acesso.ObterAsync(User);
         var cliente = escopo == null ? null : await acesso.Clientes(escopo).FirstOrDefaultAsync(c => c.Id == clienteId, ct);
         if (cliente == null) return NotFound();
 
-        if (arquivo != null && await limites.VerificarArmazenamentoAsync(arquivo.Length, ct) is { } limite)
+        if (arquivo == null || arquivo.Length == 0)
+        {
+            TempData["Erro"] = "Selecione um arquivo para enviar.";
+            return RedirectToAction(nameof(Index), new { clienteId });
+        }
+
+        if (await limites.VerificarArmazenamentoAsync(arquivo.Length, ct) is { } limite)
         {
             TempData["Erro"] = limite;
             return RedirectToAction(nameof(Index), new { clienteId });

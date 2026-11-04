@@ -182,7 +182,7 @@ public class ContasService(
         emailConvidado = emailConvidado.Trim();
         if (!new EmailAddressAttribute().IsValid(emailConvidado)) return (false, "E-mail inválido.");
         if (await userManager.FindByEmailAsync(emailConvidado) != null)
-            return (false, "Este e-mail já tem acesso ao AgenciaOS.");
+            return (false, "Este e-mail já tem acesso ao Midia+.");
 
         // Convites pendentes anteriores para o mesmo e-mail são revogados (só o último link vale)
         await db.ConvitesUsuario.Where(c => c.Email == emailConvidado && c.AceitoEm == null && c.RevogadoEm == null)

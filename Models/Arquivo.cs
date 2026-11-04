@@ -20,6 +20,7 @@ public class Arquivo : IPertenceAgencia
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
 
     public int ClienteId { get; set; }
+    [Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ValidateNever]
     public Cliente Cliente { get; set; } = null!;
 
     public string? UploadPorId { get; set; }

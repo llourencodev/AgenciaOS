@@ -231,7 +231,7 @@ public class ErroGateway(string mensagem) : Exception(mensagem);
 public class GatewayDesabilitado : IGatewayPagamento
 {
     public string Nome => "desabilitado";
-    private static ErroGateway Erro => new("A cobrança ainda não está configurada nesta instalação. Fale com o suporte do AgenciaOS.");
+    private static ErroGateway Erro => new("A cobrança ainda não está configurada nesta instalação. Fale com o suporte do Midia+.");
     public Task<string> CriarClienteAsync(ClienteGateway c, CancellationToken ct = default) => throw Erro;
     public Task<string> CriarAssinaturaAsync(NovaAssinaturaGateway a, CancellationToken ct = default) => throw Erro;
     public Task<IReadOnlyList<CobrancaGateway>> ListarCobrancasAsync(string id, CancellationToken ct = default) => throw Erro;

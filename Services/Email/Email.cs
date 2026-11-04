@@ -16,7 +16,7 @@ public class EmailOptions
 {
     /// <summary>"log" (desenvolvimento: só registra), "memoria" (testes) ou "resend".</summary>
     public string Provedor { get; set; } = "log";
-    public string Remetente { get; set; } = "AgenciaOS <nao-responda@agenciaos.local>";
+    public string Remetente { get; set; } = "Midia+ <nao-responda@agenciaos.local>";
     public string? ResendApiKey { get; set; }
     /// <summary>Base dos links enviados por e-mail. Nunca vem do cabeçalho Host da requisição em produção.</summary>
     public string? UrlBase { get; set; }
@@ -24,7 +24,7 @@ public class EmailOptions
     public static EmailOptions Carregar(IConfiguration cfg) => new()
     {
         Provedor = (cfg["EMAIL_PROVIDER"] ?? "log").Trim().ToLowerInvariant(),
-        Remetente = cfg["EMAIL_FROM"] ?? "AgenciaOS <nao-responda@agenciaos.local>",
+        Remetente = cfg["EMAIL_FROM"] ?? "Midia+ <nao-responda@agenciaos.local>",
         ResendApiKey = cfg["RESEND_API_KEY"],
         UrlBase = cfg["APP_BASE_URL"]?.TrimEnd('/'),
     };
@@ -94,11 +94,11 @@ public static class TemplatesEmail
             <body style="margin:0;background:#f5f6fa;font-family:Inter,Segoe UI,Arial,sans-serif;color:#111827">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f6fa;padding:24px 12px"><tr><td align="center">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:14px;overflow:hidden">
-                <tr><td style="background:#0f0d22;padding:20px 32px;color:#ffffff;font-weight:800;font-size:18px">&#9889; AgenciaOS</td></tr>
+                <tr><td style="background:#0f0d22;padding:20px 32px;color:#ffffff;font-weight:800;font-size:20px;letter-spacing:-.02em">Midia<span style="color:#8b6bff">+</span></td></tr>
                 <tr><td style="padding:28px 32px 8px;font-size:20px;font-weight:700">{H(titulo)}</td></tr>
                 <tr><td style="padding:8px 32px 16px;font-size:15px;line-height:1.6;color:#374151">{paragrafoHtmlSeguro}</td></tr>
                 {botao}
-                <tr><td style="padding:16px 32px 28px;font-size:12px;color:#9ca3af;border-top:1px solid #f0f0f5">{H(rodape ?? "Você recebeu esta mensagem porque há uma conta associada a este endereço no AgenciaOS. Se não foi você, ignore este e-mail.")}</td></tr>
+                <tr><td style="padding:16px 32px 28px;font-size:12px;color:#9ca3af;border-top:1px solid #f0f0f5">{H(rodape ?? "Você recebeu esta mensagem porque há uma conta associada a este endereço no Midia+. Se não foi você, ignore este e-mail.")}</td></tr>
               </table>
             </td></tr></table></body></html>
             """;
@@ -109,32 +109,32 @@ public static class TemplatesEmail
     }
 
     public static MensagemEmail ConfirmacaoCadastro(string para, string nome, string agencia, string link) =>
-        Montar(para, "Confirme seu e-mail no AgenciaOS", $"Olá, {nome}!",
+        Montar(para, "Confirme seu e-mail no Midia+", $"Olá, {nome}!",
             $"A conta da agência <strong>{H(agencia)}</strong> foi criada. Confirme seu e-mail para liberar o acesso. O link vale por 3 horas.",
             "Confirmar e-mail", link, categoria: "confirmacao");
 
     public static MensagemEmail CadastroComEmailExistente(string para, string linkLogin, string linkSenha) =>
-        Montar(para, "Tentativa de cadastro no AgenciaOS", "Você já tem uma conta",
+        Montar(para, "Tentativa de cadastro no Midia+", "Você já tem uma conta",
             $"Alguém tentou criar uma nova agência usando este e-mail, que já está cadastrado. Se foi você, entre normalmente ou <a href=\"{H(linkSenha)}\">redefina sua senha</a>.",
             "Entrar", linkLogin, categoria: "cadastro-duplicado");
 
     public static MensagemEmail RecuperacaoSenha(string para, string nome, string link) =>
-        Montar(para, "Redefinição de senha do AgenciaOS", $"Olá, {nome}",
+        Montar(para, "Redefinição de senha do Midia+", $"Olá, {nome}",
             "Recebemos um pedido para redefinir sua senha. O link vale por 3 horas. Ao redefinir, todas as sessões abertas serão encerradas.",
             "Redefinir senha", link, categoria: "recuperacao-senha");
 
     public static MensagemEmail Convite(string para, string agencia, string quemConvidou, string link, DateTime expiraEm) =>
-        Montar(para, $"Convite para {agencia} no AgenciaOS", "Você foi convidado",
-            $"<strong>{H(quemConvidou)}</strong> convidou você para acessar a agência <strong>{H(agencia)}</strong> no AgenciaOS. O convite vale até {expiraEm.ToLocalTime():dd/MM/yyyy HH:mm}.",
+        Montar(para, $"Convite para {agencia} no Midia+", "Você foi convidado",
+            $"<strong>{H(quemConvidou)}</strong> convidou você para acessar a agência <strong>{H(agencia)}</strong> no Midia+. O convite vale até {expiraEm.ToLocalTime():dd/MM/yyyy HH:mm}.",
             "Aceitar convite", link, categoria: "convite");
 
     public static MensagemEmail ConfirmacaoNovoEmail(string para, string nome, string link) =>
-        Montar(para, "Confirme seu novo e-mail no AgenciaOS", $"Olá, {nome}",
+        Montar(para, "Confirme seu novo e-mail no Midia+", $"Olá, {nome}",
             "Foi pedida a troca do e-mail de acesso da sua conta para este endereço. Confirme para concluir a troca. Se não foi você, ignore esta mensagem.",
             "Confirmar novo e-mail", link, categoria: "troca-email");
 
     public static MensagemEmail SenhaAlterada(string para, string nome) =>
-        Montar(para, "Sua senha do AgenciaOS foi alterada", $"Olá, {nome}",
+        Montar(para, "Sua senha do Midia+ foi alterada", $"Olá, {nome}",
             "A senha da sua conta foi alterada e as outras sessões foram encerradas. Se não foi você, redefina a senha imediatamente e avise o administrador da sua agência.",
             categoria: "senha-alterada");
 }

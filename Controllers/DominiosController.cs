@@ -49,7 +49,7 @@ public class DominiosController(ApplicationDbContext db, DominiosService dominio
         if (d == null) return NotFound();
         var ok = await dominios.VerificarAsync(d, ct);
         await auditoria.RegistrarAsync(ok ? "dominios.verificado" : "dominios.verificacao-falhou", tenant.AgenciaId, "Dominio", d.Host, ct: ct);
-        if (ok) TempData["Sucesso"] = $"{d.Host} verificado. Falta apenas o certificado HTTPS, configurado pela equipe do AgenciaOS.";
+        if (ok) TempData["Sucesso"] = $"{d.Host} verificado. Falta apenas o certificado HTTPS, configurado pela equipe do Midia+.";
         else TempData["Erro"] = d.UltimoErro;
         return RedirectToAction(nameof(Index));
     }

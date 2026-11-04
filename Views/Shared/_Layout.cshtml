@@ -20,6 +20,8 @@
     var _rgb         = HexToRgb(_cfg.CorPrimaria);
     var _rgbS        = HexToRgb(_cfg.CorSecundaria);
     var _logoH       = _cfg.TamanhoLogo switch { "sm" => "36px", "lg" => "68px", "xl" => "90px", _ => "50px" };
+    var _topoH       = _cfg.TamanhoLogo switch { "sm" => "20px", "lg" => "34px", "xl" => "42px", _ => "26px" };
+    var _topoFonte   = _cfg.TamanhoLogo switch { "sm" => "13px", "lg" => "17px", "xl" => "19px", _ => "15px" };
     var _abas        = _currentUser?.AbasPermitidas?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? [];
     bool TemAcesso(string aba) => !_abas.Any() || User.IsInRole("Admin") || _abas.Contains(aba);
     string ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
@@ -29,7 +31,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] — AgenciaOS</title>
+    <title>@ViewData["Title"] — Midia+</title>
+    <partial name="_BrandHead" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -70,6 +73,9 @@
             </text>
         }
         .brand-logo-img { height:@_logoH !important; max-width:170px !important; width:auto !important; object-fit:contain !important; }
+        .brand-logo-mark { width:@_logoH !important; height:@_logoH !important; }
+        .topbar-platform { font-size:@_topoFonte !important; gap:8px !important; line-height:1 !important; }
+        .topbar-platform img { width:@_topoH !important; height:@_topoH !important; }
         .brand-logo,.topbar-avatar,.sidebar-user-avatar { background:@_cfg.GradienteIcone !important; }
         .btn-primary { background:@_cfg.GradienteIcone !important; border:none !important; color:@_cfg.CorTextoSobrePrimaria !important; }
         .btn-primary:hover { filter:brightness(1.08) !important; }
@@ -99,7 +105,7 @@
             }
             else
             {
-                <div class="brand-logo"><i class="bi bi-lightning-charge-fill"></i></div>
+                <img src="~/brand/midia-plus-icon.png" alt="Midia+" class="brand-logo-mark" />
             }
             <div class="brand-text">
                 <span class="brand-name">@_cfg.NomeAgencia</span>
@@ -167,7 +173,7 @@
                         <span class="nav-label">Clientes</span>
                     </a>
                 }
-                @if (TemAcesso("Contratos"))
+                @if ((User.IsInRole("Admin") || User.IsInRole("Equipe")) && TemAcesso("Contratos"))
                 {
                     <a asp-controller="Contratos" asp-action="Index" class="nav-link-item @(ctrl=="Contratos"?"active":"")">
                         <span class="nav-icon ni-slate"><i class="bi bi-file-earmark-text-fill"></i></span>
@@ -264,7 +270,7 @@
                 <i class="bi bi-list fs-4 text-dark"></i>
             </button>
             <div class="topbar-breadcrumb d-none d-md-flex align-items-center gap-2">
-                <span class="text-muted small">AgenciaOS</span>
+                <span class="topbar-platform"><img src="~/brand/midia-plus-icon.png" alt="" />Midia+</span>
                 <i class="bi bi-chevron-right text-muted" style="font-size:9px;"></i>
                 <span class="fw-600 small">@ViewData["Title"]</span>
             </div>

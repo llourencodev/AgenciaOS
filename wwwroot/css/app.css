@@ -1,5 +1,5 @@
 /* ============================================================
-   AGENCIAOS — Design System v4 — Premium Dark Professional
+   MIDIA+ — Design System v4 — Premium Dark Professional
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
@@ -672,7 +672,18 @@ textarea.form-control { min-height:90px; resize:vertical; }
 /* ══════════════════════════════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════════════════════════════ */
+/* ── Marca Midia+ ─────────────────────────────────────────── */
+.brand-logo-mark { width:42px; height:42px; object-fit:contain; flex-shrink:0; }
+.topbar-platform { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:var(--text-muted); }
+.topbar-platform img { width:18px; height:18px; object-fit:contain; }
+.login-page { --primary:#6340FA; --primary-dark:#4f2ee0; --primary-rgb:99,64,250; --primary-light:#efebff;
+              --grad-primary:linear-gradient(135deg,#6340FA 0%,#8b6bff 100%); }
+.login-page .login-left::before { background:radial-gradient(circle, rgba(99,64,250,.32) 0%, transparent 65%); }
+.login-brand-logo { display:block; width:280px; max-width:100%; height:auto; margin:0 auto 34px; }
+.login-brand-logo-mobile { display:none; height:38px; width:auto; margin-bottom:28px; }
+
 @media (max-width:991px) {
+    .login-brand-logo-mobile { display:block; }
     .sidebar { transform:translateX(-100%); }
     .sidebar.open { transform:translateX(0); }
     .main-wrapper { margin-left:0; }

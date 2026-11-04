@@ -14,6 +14,7 @@ public class Contrato : IPertenceAgencia
     public DateTime? DataVigencia { get; set; }
 
     public int ClienteId { get; set; }
+    [Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ValidateNever]
     public Cliente Cliente { get; set; } = null!;
 
     public string? CriadoPorId { get; set; }

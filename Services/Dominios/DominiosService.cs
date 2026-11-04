@@ -82,7 +82,7 @@ public partial class DominiosService(ApplicationDbContext db, IConsultaDns dns, 
     {
         var host = Normalizar(entrada);
         if (host == null) return (null, "Domínio inválido. Use algo como painel.suaagencia.com.br.");
-        if (EhHostDaPlataforma(host)) return (null, "Este é um endereço do próprio AgenciaOS.");
+        if (EhHostDaPlataforma(host)) return (null, "Este é um endereço do próprio Midia+.");
 
         var agencia = await db.Agencias.SingleAsync(a => a.Id == tenant.AgenciaId, ct);
         var automatico = SubdominioAutomatico(host, agencia);
@@ -196,7 +196,7 @@ public class DominioMiddleware(RequestDelegate next)
             else if (opt.HostsPlataforma.Count > 0 && !livre)
             {
                 http.Response.StatusCode = StatusCodes.Status404NotFound;
-                await http.Response.WriteAsync("Domínio não configurado no AgenciaOS.");
+                await http.Response.WriteAsync("Domínio não configurado no Midia+.");
                 return;
             }
         }

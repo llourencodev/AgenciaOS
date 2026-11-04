@@ -4,7 +4,7 @@ public class Configuracao : IPertenceAgencia
 {
     public int Id { get; set; }
     public int AgenciaId { get; set; }
-    public string NomeAgencia { get; set; } = "AgenciaOS";
+    public string NomeAgencia { get; set; } = "Midia+";
     public string Tagline { get; set; } = "Gestão de Agência";
     public string? LogoUrl { get; set; }
     public string? LogoMarcaUrl { get; set; }

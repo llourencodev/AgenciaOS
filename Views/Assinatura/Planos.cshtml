@@ -8,7 +8,7 @@
 <div class="page-header">
     <div>
         <h1>Escolha seu plano</h1>
-        <p>O pagamento é feito na página segura do nosso parceiro de pagamentos (PIX, boleto ou cartão). Os dados do cartão não passam pelo AgenciaOS.</p>
+        <p>O pagamento é feito na página segura do nosso parceiro de pagamentos (PIX, boleto ou cartão). Os dados do cartão não passam pelo Midia+.</p>
     </div>
     <a asp-action="Index" class="btn btn-outline">Voltar</a>
 </div>
@@ -17,7 +17,7 @@
 
 @if (Model.Planos.Count == 0)
 {
-    <div class="alert alert-info">Nenhum plano disponível no momento. Fale com o suporte do AgenciaOS.</div>
+    <div class="alert alert-info">Nenhum plano disponível no momento. Fale com o suporte do Midia+.</div>
 }
 <div class="row g-3">
     @foreach (var p in Model.Planos)

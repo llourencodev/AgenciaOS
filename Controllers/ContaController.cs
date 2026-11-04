@@ -35,7 +35,7 @@ public class ContaController(UserManager<Usuario> userManager, SignInManager<Usu
     {
         if (!aceita)
         {
-            ModelState.AddModelError("", "Para continuar usando o AgenciaOS é preciso aceitar os documentos atualizados.");
+            ModelState.AddModelError("", "Para continuar usando o Midia+ é preciso aceitar os documentos atualizados.");
             ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
@@ -212,7 +212,7 @@ public class ContaController(UserManager<Usuario> userManager, SignInManager<Usu
         await auditoria.RegistrarAsync("conta.email-alterado", u.AgenciaId, "Usuario", u.Id, ct: ct);
         try
         {
-            await email.EnviarAsync(TemplatesEmail.Montar(antigo, "AgenciaOS: e-mail da conta alterado", "E-mail da conta alterado",
+            await email.EnviarAsync(TemplatesEmail.Montar(antigo, "Midia+: e-mail da conta alterado", "E-mail da conta alterado",
                 System.Net.WebUtility.HtmlEncode($"O e-mail de acesso da sua conta foi alterado para {u.Email}. Se não foi você, avise o administrador da sua agência imediatamente."),
                 categoria: "seguranca"), ct);
         }
@@ -254,7 +254,7 @@ public class ContaController(UserManager<Usuario> userManager, SignInManager<Usu
             await signInManager.RefreshSignInAsync(u);
             chave = await userManager.GetAuthenticatorKeyAsync(u);
         }
-        var uri = $"otpauth://totp/{Uri.EscapeDataString("AgenciaOS")}:{Uri.EscapeDataString(u.Email!)}?secret={chave}&issuer=AgenciaOS&digits=6";
+        var uri = $"otpauth://totp/{Uri.EscapeDataString("Midia+")}:{Uri.EscapeDataString(u.Email!)}?secret={chave}&issuer={Uri.EscapeDataString("Midia+")}&digits=6";
         var formatada = string.Join(" ", Enumerable.Range(0, (chave!.Length + 3) / 4).Select(i => chave.Substring(i * 4, Math.Min(4, chave.Length - i * 4)))).ToLowerInvariant();
         return new(false, formatada, uri, 0, null);
     }
@@ -338,7 +338,7 @@ public class ContaController(UserManager<Usuario> userManager, SignInManager<Usu
 
     private async Task AvisarAsync(Usuario u, string assunto, string texto, CancellationToken ct)
     {
-        try { await email.EnviarAsync(TemplatesEmail.Montar(u.Email!, $"AgenciaOS: {assunto}", assunto, System.Net.WebUtility.HtmlEncode(texto), categoria: "seguranca"), ct); }
+        try { await email.EnviarAsync(TemplatesEmail.Montar(u.Email!, $"Midia+: {assunto}", assunto, System.Net.WebUtility.HtmlEncode(texto), categoria: "seguranca"), ct); }
         catch { /* aviso por e-mail não pode impedir a operação */ }
     }
 }

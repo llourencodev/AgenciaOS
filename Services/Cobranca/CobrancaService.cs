@@ -68,7 +68,7 @@ public class CobrancaService(
 
         var hoje = DateOnly.FromDateTime(DateTime.UtcNow);
         var gatewayId = await gateway.CriarAssinaturaAsync(new NovaAssinaturaGateway(
-            clienteId, forma, plano.Preco, hoje, plano.Periodicidade, $"AgenciaOS - {plano.Nome}", $"agencia-{agencia.Id}"), ct);
+            clienteId, forma, plano.Preco, hoje, plano.Periodicidade, $"Midia+ - {plano.Nome}", $"agencia-{agencia.Id}"), ct);
 
         var assinatura = new Assinatura
         {
@@ -102,7 +102,7 @@ public class CobrancaService(
         if (plano.Periodicidade != atual.Plano!.Periodicidade)
             throw new ErroGateway("Para mudar entre mensal e anual, cancele e assine o novo plano.");
 
-        await gateway.AtualizarValorAsync(atual.GatewayAssinaturaId!, plano.Preco, $"AgenciaOS - {plano.Nome}", ct);
+        await gateway.AtualizarValorAsync(atual.GatewayAssinaturaId!, plano.Preco, $"Midia+ - {plano.Nome}", ct);
         atual.PlanoId = plano.Id;
         atual.Valor = plano.Preco;
         atual.AtualizadoEm = DateTime.UtcNow;
@@ -335,7 +335,7 @@ public class CobrancaService(
             var destino = await db.Agencias.Where(a => a.Id == agenciaId).Select(a => a.EmailPrincipal).FirstOrDefaultAsync(ct)
                           ?? await EmailAdminAsync(agenciaId, ct);
             if (destino == null) return;
-            await email.EnviarAsync(TemplatesEmail.Montar(destino, $"AgenciaOS: {assunto}", assunto,
+            await email.EnviarAsync(TemplatesEmail.Montar(destino, $"Midia+: {assunto}", assunto,
                 System.Text.Encodings.Web.HtmlEncoder.Default.Encode(mensagem),
                 link == null ? null : "Ver cobrança", link, categoria: "cobranca"), ct);
         }
