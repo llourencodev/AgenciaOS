@@ -186,6 +186,13 @@ public class DominioMiddleware(RequestDelegate next)
     {
         var host = http.Request.Host.Host.ToLowerInvariant();
         var caminho = http.Request.Path;
+        // /health não depende de domínio: responde sem consultar o banco, para o ping de uptime
+        // não acordar o Postgres (o Neon gratuito dorme quando fica sem consultas).
+        if (caminho.StartsWithSegments("/health/live") || caminho.Equals("/health", StringComparison.OrdinalIgnoreCase))
+        {
+            await next(http);
+            return;
+        }
         // Health checks e webhooks podem chegar pelo host interno do Railway
         var livre = caminho.StartsWithSegments("/health") || caminho.StartsWithSegments("/webhooks") || caminho.StartsWithSegments("/integracoes/meta") || caminho.StartsWithSegments("/integracoes/tiktok");
 
