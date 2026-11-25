@@ -8,3 +8,6 @@ appsettings.Development.json
 backups/
 App_Data/
 wwwroot/uploads/
+
+# Segredos do servidor próprio
+deploy/servidor/.env

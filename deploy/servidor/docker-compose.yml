@@ -1,0 +1,63 @@
+# Mídia+ (AgenciaOS) no servidor próprio (notebook Ubuntu).
+#
+# Uso, dentro desta pasta:
+#   cp .env.example .env && nano .env      (preencha as senhas)
+#   docker compose up -d --build           (sobe banco + app)
+#   docker compose --profile tunnel up -d  (sobe também o Cloudflare Tunnel)
+#
+# O banco não fica exposto na rede: só o app (porta APP_PORTA) e o túnel falam com ele.
+
+name: midiaplus
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-agenciaos}
+      POSTGRES_USER: ${POSTGRES_USER:-agenciaos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      TZ: America/Sao_Paulo
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: midiaplus-app:local
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${AMBIENTE:-Production}
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-agenciaos};Username=${POSTGRES_USER:-agenciaos};Password=${POSTGRES_PASSWORD}"
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      STORAGE_LOCAL_PATH: /data/storage
+      TZ: America/Sao_Paulo
+    volumes:
+      - storage:/data/storage
+    ports:
+      # Acesso pela rede de casa / Tailscale: http://IP-DO-SERVIDOR:8080
+      - "${APP_PORTA:-8080}:8080"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - app
+
+volumes:
+  pgdata:
+  storage:
