@@ -30,7 +30,7 @@ Também vale desligar a suspensão automática nas configurações de energia e 
 
 **3. IP fixo na rede de casa**
 
-No roteador, reserve um IP para o notebook (hoje ele usa `192.168.1.132`). Assim o endereço não muda.
+No roteador, reserve um IP para o notebook (hoje ele usa `192.168.0.107`). Assim o endereço não muda.
 
 **4. Atualizações de segurança automáticas e firewall**
 
@@ -38,11 +38,11 @@ No roteador, reserve um IP para o notebook (hoje ele usa `192.168.1.132`). Assim
 sudo apt install -y unattended-upgrades
 sudo dpkg-reconfigure -plow unattended-upgrades
 sudo ufw allow OpenSSH
-sudo ufw allow from 192.168.1.0/24 to any port 8080
+sudo ufw allow from 192.168.0.0/24 to any port 8090
 sudo ufw enable
 ```
 
-A porta 8080 fica aberta só para a rede de casa. Para a internet, o acesso é pelo túnel.
+A porta 8090 fica aberta só para a rede de casa. Para a internet, o acesso é pelo túnel.
 
 **5. Pastas**
 
@@ -88,7 +88,7 @@ Preencha no `.env`:
 | Campo | O que colocar |
 |---|---|
 | `POSTGRES_PASSWORD` | a senha gerada acima |
-| `APP_BASE_URL` | por enquanto `http://192.168.1.132:8080`; depois do túnel, o endereço `https://...` |
+| `APP_BASE_URL` | por enquanto `http://192.168.0.107:8090`; depois do túnel, o endereço `https://...` |
 | `SUPERADMIN_EMAIL` | seu e-mail de dono da plataforma |
 | `SUPERADMIN_PASSWORD` | senha forte, 12+ caracteres |
 | `EMAIL_PROVIDER` | `log` por enquanto (não envia e-mail); depois `resend` com a chave |
@@ -134,10 +134,10 @@ Na primeira subida o app atualiza o banco sozinho (cria a estrutura de agências
 **11. Conferir**
 
 ```bash
-curl http://localhost:8080/health/ready
+curl http://localhost:8090/health/ready
 ```
 
-Depois abra `http://192.168.1.132:8080` em outro computador da casa e entre com um usuário real e com o superadmin (painel em `/Plataforma`).
+Depois abra `http://192.168.0.107:8090` em outro computador da casa e entre com um usuário real e com o superadmin (painel em `/Plataforma`).
 
 **12. Arquivos antigos** (anexos e logos enviados antes). Eles ficam no disco do Railway, não no banco. Se conseguirmos copiá-los de lá no passo 8, eu te passo o comando para colocá-los no servidor e rodar a migração (`--migrar-arquivos`), que os guarda no armazenamento privado novo.
 
